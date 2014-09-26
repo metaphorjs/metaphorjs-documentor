@@ -6,18 +6,29 @@ var Base = require("./Base.js"),
 module.exports = Base.$extend({
 
     doc: null,
+    file: null,
     type: null,
     name: null,
     items: null,
     flags: null,
     map: null,
     ignore: false,
+    comment: null,
+    line: null,
 
     $init: function() {
 
         this.flags = {};
         this.items = {};
         this.map = {};
+
+        if (this.file && this.comment && this.constructor.stackable) {
+            var inx = this.comment.endIndex,
+                content = this.file.getContent(),
+                part = content.substr(0, inx);
+
+            this.line = part.split("\n").length;
+        }
 
         this.$super();
     },
@@ -49,6 +60,14 @@ module.exports = Base.$extend({
             case "ignore":
                 this.ignore = true;
                 break;
+            case "required":
+                this.flags[flag] = true;
+                break;
+            case "public":
+            case "protected":
+            case "private":
+                this.flags['access'] = flag;
+                break;
             default:
                 this.flags[flag] = content;
                 break;
@@ -63,9 +82,18 @@ module.exports = Base.$extend({
     getData: function() {
 
         var exprt = {
-            name: this.name,
+            name:  this.name,
             flags: this.flags
         };
+
+        if (this.constructor.stackable) {
+            if (this.file) {
+                exprt.file = this.file.path;
+            }
+            if (this.line) {
+                exprt.line = this.line;
+            }
+        }
 
         var items = this.items,
             key, i, l,
@@ -96,6 +124,16 @@ module.exports = Base.$extend({
             return flagString;
         }
         else {
+
+            var parts = comment.parts,
+                i, l;
+
+            for (i = 0, l = parts.length; i < l; i++) {
+                if (parts[i].type == "name") {
+                    return parts[i].content;
+                }
+            }
+
             var ext = doc.getExtension(file);
             if (ext) {
                 var part = ext.getTypeAndName(file, comment.endIndex, context, itemType);

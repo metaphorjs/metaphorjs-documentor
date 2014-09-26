@@ -35,6 +35,20 @@ module.exports = Base.$extend({
         this.sortParts();
     },
 
+    hasFlag: function(flag) {
+
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].type == flag) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
     determineType: function(currentContext) {
 
         var parts   = this.parts,
@@ -49,9 +63,14 @@ module.exports = Base.$extend({
             }
         }
 
-        var ext     = doc.getExtension(this.file);
+        var ext     = doc.getExtension(this.file),
+            itemType;
 
-        if (ext && (part = ext.getTypeAndName(this.file, this.endIndex, currentContext))) {
+        if (this.hasFlag("return") || this.hasFlag("returns")) {
+            itemType = "function";
+        }
+
+        if (ext && (part = ext.getTypeAndName(this.file, this.endIndex, currentContext, itemType))) {
             parts.unshift(part);
             return;
         }

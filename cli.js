@@ -3,8 +3,12 @@ var Documentor = require("./dist/metaphorjs.documentor.js");
 
 var doc = new Documentor;
 
-
-doc.eat(process.cwd() + "/src/**", "js");
+try {
+    doc.eat(process.cwd() + "/../metaphorjs-model/src/**", "js");
+}
+catch (thrown) {
+    console.log(thrown);
+}
 
 
 if (process.argv[2] == "--json") {

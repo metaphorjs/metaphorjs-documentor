@@ -157,6 +157,27 @@ module.exports = Base.$extend({
         }
     },
 
+    normalizeType: function(type, file) {
+
+        var ext = this.getExtension(file),
+            i, l;
+
+        if (type.indexOf("|") != -1) {
+            type = type.split("|");
+        }
+        else {
+            type = [type];
+        }
+
+        if (ext) {
+            for (i = 0, l = type.length; i < l; i++) {
+                type[i] = ext.normalizeType(type[i]);
+            }
+        }
+
+        return type;
+    },
+
     getData: function() {
         return this.root.getData();
     },

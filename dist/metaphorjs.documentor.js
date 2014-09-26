@@ -338,7 +338,7 @@ var extend = function(){
      * @param {Object} src2 ... srcN
      * @param {boolean} override = false
      * @param {boolean} deep = false
-     * @returns {*}
+     * @returns {object}
      */
     var extend = function extend() {
 
@@ -1041,6 +1041,20 @@ var Comment = Base.$extend({
         this.sortParts();
     },
 
+    hasFlag: function(flag) {
+
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].type == flag) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
     determineType: function(currentContext) {
 
         var parts   = this.parts,
@@ -1055,9 +1069,14 @@ var Comment = Base.$extend({
             }
         }
 
-        var ext     = doc.getExtension(this.file);
+        var ext     = doc.getExtension(this.file),
+            itemType;
 
-        if (ext && (part = ext.getTypeAndName(this.file, this.endIndex, currentContext))) {
+        if (this.hasFlag("return") || this.hasFlag("returns")) {
+            itemType = "function";
+        }
+
+        if (ext && (part = ext.getTypeAndName(this.file, this.endIndex, currentContext, itemType))) {
             parts.unshift(part);
             return;
         }
@@ -1501,18 +1520,24 @@ var File = function(){
 
                 name = part.name || typeClass.getItemName(part.content, comment, this.doc, this, context, type);
 
+
+
                 item = context.getItem(type, name) ||
                         new typeClass({
                             doc: this.doc,
-                            file: this.file,
-                            name: name
+                            file: this,
+                            name: name,
+                            comment: comment
                         });
+
 
                 if (typeof part.content == "string") {
                     item.addFlag(part.type, part.content);
 
-                    context.addItem(item);
-                    contextStack.lenght = stackInx + 1;
+                    if (!context.getItem(type, name)) {
+                        context.addItem(item);
+                    }
+                    contextStack.length = stackInx + 1;
 
                     if (typeClass.stackable) {
                         contextStack.push(item);
@@ -1520,7 +1545,9 @@ var File = function(){
                 }
                 else {
 
-                    context.addItem(item);
+                    if (!context.getItem(type, name)) {
+                        context.addItem(item);
+                    }
 
                     cl = contextStack.length;
                     contextStack.push(item);
@@ -1595,6 +1622,10 @@ var Extension = Base.$extend({
 
     getTypeAndName: function(file, start, context) {
         return null;
+    },
+
+    normalizeType: function(type) {
+        return type;
     }
 
 
@@ -1638,13 +1669,19 @@ var JsExt = Extension.$extend({
             content = file.getContent(),
             part = content.substr(startIndex, 200),
             rVar = /var\s+([^\s]+)\s*=\s*([^\s(;]+)/,
-            rProp = /\s*(['"a-zA-Z0-9\-_]+)\s*:\s*([^\s(;]+)/,
-            rFunc = /;\s*function\s+([^(]+)/,
-            rNamedFunc = /(['"a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[a-zA-Z0-9_]+)/,
+            rProp = /\s*(['"$a-zA-Z0-9\-_]+)\s*:\s*([^\s(;]+)/,
+            rFunc = /(return|;|=)\s*function\s+([^(]+)/,
+            rNamedFunc = /(['"$a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[$a-zA-Z0-9_]+)/,
             isFunc = null,
             isProp = null,
             name, type,
-            match;
+            match,
+            inx;
+
+        inx = part.indexOf('/**');
+        if (inx > -1) {
+            part = part.substr(0, inx);
+        }
 
         if (itemType) {
             isFunc = itemType == "function" || itemType == "method";
@@ -1652,15 +1689,14 @@ var JsExt = Extension.$extend({
         }
 
         if ((isFunc === null || isFunc === true) && (match = part.match(rFunc))) {
-            name = trim(match[1]);
+            name = trim(match[2]);
             type = "function";
         }
         else if ((isFunc === null || isFunc === true) && (match = part.match(rNamedFunc))) {
             name = trim(match[2]);
             if (name == '(') {
                 name = trim(match[1]);
-                name = name.replace('"', "");
-                name = name.replace("'", "");
+                name = name.replace(/['"]/g, "");
                 var tmp = name.split(".");
                 name = tmp.pop();
             }
@@ -1685,7 +1721,26 @@ var JsExt = Extension.$extend({
             }
             return {type: type, name: name, content: ""};
         }
+    },
+
+    normalizeType: function(type) {
+        return this.constructor.types[type.toLowerCase()] || type;
     }
+
+}, {
+
+
+    types: {
+        "{}": "object",
+        "[]": "array",
+        "bool": "boolean",
+        "string": "string",
+        "object": "object",
+        "array": "array",
+        "boolean": "boolean",
+        "function": "function"
+    }
+
 
 });
 
@@ -1695,18 +1750,29 @@ var JsExt = Extension.$extend({
 var Item = Base.$extend({
 
     doc: null,
+    file: null,
     type: null,
     name: null,
     items: null,
     flags: null,
     map: null,
     ignore: false,
+    comment: null,
+    line: null,
 
     $init: function() {
 
         this.flags = {};
         this.items = {};
         this.map = {};
+
+        if (this.file && this.comment && this.constructor.stackable) {
+            var inx = this.comment.endIndex,
+                content = this.file.getContent(),
+                part = content.substr(0, inx);
+
+            this.line = part.split("\n").length;
+        }
 
         this.$super();
     },
@@ -1738,6 +1804,14 @@ var Item = Base.$extend({
             case "ignore":
                 this.ignore = true;
                 break;
+            case "required":
+                this.flags[flag] = true;
+                break;
+            case "public":
+            case "protected":
+            case "private":
+                this.flags['access'] = flag;
+                break;
             default:
                 this.flags[flag] = content;
                 break;
@@ -1752,9 +1826,18 @@ var Item = Base.$extend({
     getData: function() {
 
         var exprt = {
-            name: this.name,
+            name:  this.name,
             flags: this.flags
         };
+
+        if (this.constructor.stackable) {
+            if (this.file) {
+                exprt.file = this.file.path;
+            }
+            if (this.line) {
+                exprt.line = this.line;
+            }
+        }
 
         var items = this.items,
             key, i, l,
@@ -1785,6 +1868,16 @@ var Item = Base.$extend({
             return flagString;
         }
         else {
+
+            var parts = comment.parts,
+                i, l;
+
+            for (i = 0, l = parts.length; i < l; i++) {
+                if (parts[i].type == "name") {
+                    return parts[i].content;
+                }
+            }
+
             var ext = doc.getExtension(file);
             if (ext) {
                 var part = ext.getTypeAndName(file, comment.endIndex, context, itemType);
@@ -2337,7 +2430,7 @@ var Promise = function(){
         },
 
         /**
-         * @returns {{then: function, done: function, fail: function, always: function}}
+         * @returns {object} then: function, done: function, fail: function, always: function
          */
         promise: function() {
             var self = this;
@@ -2615,12 +2708,69 @@ Item.$extend({
 
 });
 
+var getCurly = function(content) {
+
+    var left = 0,
+        right = 0,
+        i, l,
+        first, last,
+        char;
+
+    for (i  = 0, l = content.length; i < l; i++) {
+
+        char = content.charAt(i);
+
+        if (char == '{') {
+            left++;
+            first = i + 1;
+        }
+        else if (char == '}') {
+            right++;
+        }
+
+        if (left > 0 && left == right) {
+            last = i;
+            break;
+        }
+    }
+
+    if (first && last) {
+        return content.substring(first, last);
+    }
+};
+
 
 
 Item.$extend({
 
     $class: "item.Function",
-    type: "function"
+    type: "function",
+
+    addFlag: function(flag, content) {
+
+        switch (flag) {
+            case "return":
+            case "returns":
+                if (content.charAt(0) == '{') {
+                    var curly = getCurly(content);
+                    this.flags["returns"] = this.doc.normalizeType(curly, this.file);
+                    content = trim(content.replace('{' + curly + '}', ''));
+                    if (content) {
+                        this.flags['returnDescription'] = content;
+                    }
+                }
+                else {
+                    this.flags["returns"] = this.doc.normalizeType(content, this.file);
+                }
+                break;
+            case "constructor":
+                break;
+
+            default:
+                this.$super(flag, content);
+        }
+
+    }
 
 }, {
 
@@ -2680,13 +2830,45 @@ Item.$extend({
 Item.$extend({
 
     $class: "item.Var",
-    type: "var"
+    type: "var",
+
+    addFlag: function(flag, content) {
+        switch (flag) {
+            case "description":
+                if (!this.flags['type'] && !this.flags['description']) {
+                    this.processOwnFlag(content);
+                }
+                break;
+            default:
+                this.$super(flag, content);
+                break;
+        }
+    },
+
+    processOwnFlag: function(content) {
+
+        if (content.charAt(0) == '{') {
+            var curly = getCurly(content);
+            this.flags["type"] = this.doc.normalizeType(curly, this.file);
+            content = trim(content.replace('{' + curly + '}', ""));
+        }
+
+        var inx = content.indexOf(" ");
+        if (inx > -1) {
+            content = trim(content.substr(inx));
+
+            if (content) {
+                this.flags['description'] = content;
+            }
+        }
+
+    }
 
 }, {
 
     priority: 50,
     stackable: false,
-    parents: ["namespace", "root"],
+    parents: ["class", "interface", "mixin", "namespace", "root"],
 
     getItemName: function(flagString, comment, doc, file, context, type) {
 
@@ -2726,18 +2908,18 @@ Item.$extend({
                     }
                 }
             }
+        }
 
-            if (flagString) {
-                var tmp = flagString.split(" ");
+        if (flagString) {
+            var tmp = flagString.split(" ");
 
-                switch (tmp.length) {
-                    case 0:
-                        return null;
-                    case 1:
-                        return tmp[1];
-                    default:
-                        return tmp[2]
-                }
+            switch (tmp.length) {
+                case 0:
+                    return null;
+                case 1:
+                    return tmp[0];
+                default:
+                    return tmp[1];
             }
         }
 
@@ -2929,6 +3111,27 @@ var Documentor = Base.$extend({
         }
     },
 
+    normalizeType: function(type, file) {
+
+        var ext = this.getExtension(file),
+            i, l;
+
+        if (type.indexOf("|") != -1) {
+            type = type.split("|");
+        }
+        else {
+            type = [type];
+        }
+
+        if (ext) {
+            for (i = 0, l = type.length; i < l; i++) {
+                type[i] = ext.normalizeType(type[i]);
+            }
+        }
+
+        return type;
+    },
+
     getData: function() {
         return this.root.getData();
     },
@@ -2954,7 +3157,7 @@ cs.define({
         var ext = doc.getExtension(file);
 
         if (ext) {
-            return ext.getTypeAndName(file, comment.endIndex, file.getCurrentContext());
+            return ext.getTypeAndName(file, comment.endIndex, file.getCurrentContext(), "function");
         }
 
         return null;

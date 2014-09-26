@@ -143,18 +143,24 @@ module.exports = function(){
 
                 name = part.name || typeClass.getItemName(part.content, comment, this.doc, this, context, type);
 
+
+
                 item = context.getItem(type, name) ||
                         new typeClass({
                             doc: this.doc,
-                            file: this.file,
-                            name: name
+                            file: this,
+                            name: name,
+                            comment: comment
                         });
+
 
                 if (typeof part.content == "string") {
                     item.addFlag(part.type, part.content);
 
-                    context.addItem(item);
-                    contextStack.lenght = stackInx + 1;
+                    if (!context.getItem(type, name)) {
+                        context.addItem(item);
+                    }
+                    contextStack.length = stackInx + 1;
 
                     if (typeClass.stackable) {
                         contextStack.push(item);
@@ -162,7 +168,9 @@ module.exports = function(){
                 }
                 else {
 
-                    context.addItem(item);
+                    if (!context.getItem(type, name)) {
+                        context.addItem(item);
+                    }
 
                     cl = contextStack.length;
                     contextStack.push(item);

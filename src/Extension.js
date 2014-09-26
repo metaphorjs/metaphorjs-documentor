@@ -10,6 +10,10 @@ module.exports = Base.$extend({
 
     getTypeAndName: function(file, start, context) {
         return null;
+    },
+
+    normalizeType: function(type) {
+        return type;
     }
 
 

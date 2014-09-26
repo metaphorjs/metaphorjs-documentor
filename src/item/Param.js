@@ -15,7 +15,7 @@ module.exports = cs.define({
         var ext = doc.getExtension(file);
 
         if (ext) {
-            return ext.getTypeAndName(file, comment.endIndex, file.getCurrentContext());
+            return ext.getTypeAndName(file, comment.endIndex, file.getCurrentContext(), "function");
         }
 
         return null;

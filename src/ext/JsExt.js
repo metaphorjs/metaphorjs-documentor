@@ -38,13 +38,19 @@ module.exports = Extension.$extend({
             content = file.getContent(),
             part = content.substr(startIndex, 200),
             rVar = /var\s+([^\s]+)\s*=\s*([^\s(,;]+)/,
-            rProp = /\s*(['"a-zA-Z0-9\-_]+)\s*:\s*([^\s(,;]+)/,
-            rFunc = /;\s*function\s+([^(]+)/,
-            rNamedFunc = /(['"a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[a-zA-Z0-9_]+)/,
+            rProp = /\s*(['"$a-zA-Z0-9\-_]+)\s*:\s*([^\s(,;]+)/,
+            rFunc = /(return|;|=)\s*function\s+([^(]+)/,
+            rNamedFunc = /(['"$a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[$a-zA-Z0-9_]+)/,
             isFunc = null,
             isProp = null,
             name, type,
-            match;
+            match,
+            inx;
+
+        inx = part.indexOf('/**');
+        if (inx > -1) {
+            part = part.substr(0, inx);
+        }
 
         if (itemType) {
             isFunc = itemType == "function" || itemType == "method";
@@ -52,15 +58,14 @@ module.exports = Extension.$extend({
         }
 
         if ((isFunc === null || isFunc === true) && (match = part.match(rFunc))) {
-            name = trim(match[1]);
+            name = trim(match[2]);
             type = "function";
         }
         else if ((isFunc === null || isFunc === true) && (match = part.match(rNamedFunc))) {
             name = trim(match[2]);
             if (name == '(') {
                 name = trim(match[1]);
-                name = name.replace('"', "");
-                name = name.replace("'", "");
+                name = name.replace(/['"]/g, "");
                 var tmp = name.split(".");
                 name = tmp.pop();
             }
@@ -85,6 +90,25 @@ module.exports = Extension.$extend({
             }
             return {type: type, name: name, content: ""};
         }
+    },
+
+    normalizeType: function(type) {
+        return this.constructor.types[type.toLowerCase()] || type;
     }
+
+}, {
+
+
+    types: {
+        "{}": "object",
+        "[]": "array",
+        "bool": "boolean",
+        "string": "string",
+        "object": "object",
+        "array": "array",
+        "boolean": "boolean",
+        "function": "function"
+    }
+
 
 });
