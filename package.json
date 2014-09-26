@@ -1,0 +1,17 @@
+{
+  "name": "metaphorjs-documentor",
+  "version": "0.0.1",
+  "description": "",
+  "main": "cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "kuindji",
+  "license": "MIT",
+  "devDependencies": {
+    "metaphorjs": "^0.3.13",
+    "metaphorjs-class": "^1.0.10",
+    "metaphorjs-namespace": "^1.0.4",
+    "metaphorjs-promise": "^1.0.7"
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "build": {
+        "npm": {
+            "auto": true,
+            "target": "dist/metaphorjs.documentor.js",
+            "compile": false,
+            "files": [
+                "src/**",
+                ["src/Documentor.js", {"as": "Documentor"}]
+            ],
+            "exports": "Documentor"
+        }
+    }
+}
