@@ -4,7 +4,7 @@ module.exports = function(content) {
     var left = 0,
         right = 0,
         i, l,
-        first, last,
+        first = null, last,
         char;
 
     for (i  = 0, l = content.length; i < l; i++) {
@@ -13,7 +13,9 @@ module.exports = function(content) {
 
         if (char == '{') {
             left++;
-            first = i + 1;
+            if (first === null) {
+                first = i + 1;
+            }
         }
         else if (char == '}') {
             right++;

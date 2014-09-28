@@ -12,6 +12,7 @@
     "metaphorjs": "^0.3.13",
     "metaphorjs-class": "^1.0.10",
     "metaphorjs-namespace": "^1.0.4",
-    "metaphorjs-promise": "^1.0.7"
+    "metaphorjs-promise": "^1.0.7",
+    "minimist": "^1.1.0"
   }
 }

@@ -11,6 +11,7 @@ var Base = require("./Base.js"),
     File = require("./File.js"),
     JsExt = require("./ext/JsExt.js"),
     Root = require("./item/Root.js"),
+    Renderer = require("./Renderer.js"),
     Promise = require("../../metaphorjs-promise/src/metaphorjs.promise.js");
 
 
@@ -21,6 +22,7 @@ require("./item/Namespace.js");
 require("./item/Var.js");
 require("./item/Property.js");
 
+require("./renderer/Json.js");
 
 module.exports = Base.$extend({
 
@@ -30,6 +32,7 @@ module.exports = Base.$extend({
     cs: null,
     ns: null,
     root: null,
+    argv: null,
 
     itemPromises: null,
 
@@ -56,6 +59,7 @@ module.exports = Base.$extend({
         this.addItemType("type", "item.Property");
         this.addItemType("param", "item.Param");
 
+
         this.$super();
     },
 
@@ -78,6 +82,10 @@ module.exports = Base.$extend({
         }
 
         this.itemPromises[id].done(fn, context);
+    },
+
+    getRenderer: function(name){
+        return ns.get("renderer." + name, true);
     },
 
     getExtension: function(ext) {
@@ -182,7 +190,13 @@ module.exports = Base.$extend({
         return this.root.getData();
     },
 
+    render: function() {
+
+    },
+
     clear: function() {
         File.clear();
     }
+}, {
+    RendererBase: Renderer
 });

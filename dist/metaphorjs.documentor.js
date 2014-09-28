@@ -1907,6 +1907,18 @@ var Root = Item.$extend({
 
 
 
+var Renderer = Base.$extend({
+
+    doc: null,
+
+    render: function() {
+
+    }
+
+});
+
+
+
 /**
  * Returns 'then' function or false
  * @param {*} any
@@ -2713,7 +2725,7 @@ var getCurly = function(content) {
     var left = 0,
         right = 0,
         i, l,
-        first, last,
+        first = null, last,
         char;
 
     for (i  = 0, l = content.length; i < l; i++) {
@@ -2722,7 +2734,9 @@ var getCurly = function(content) {
 
         if (char == '{') {
             left++;
-            first = i + 1;
+            if (first === null) {
+                first = i + 1;
+            }
         }
         else if (char == '}') {
             right++;
@@ -2968,6 +2982,23 @@ cs.define({
 
 
 
+ns.add("renderer.json", Renderer.$extend({
+
+    render: function() {
+        return JSON.stringify(this.doc.getData());
+    }
+
+}, {
+    mime: "application/json"
+}));
+
+
+
+
+
+
+
+
 
 
 
@@ -2984,6 +3015,7 @@ var Documentor = Base.$extend({
     cs: null,
     ns: null,
     root: null,
+    argv: null,
 
     itemPromises: null,
 
@@ -3010,6 +3042,7 @@ var Documentor = Base.$extend({
         this.addItemType("type", "item.Property");
         this.addItemType("param", "item.Param");
 
+
         this.$super();
     },
 
@@ -3032,6 +3065,10 @@ var Documentor = Base.$extend({
         }
 
         this.itemPromises[id].done(fn, context);
+    },
+
+    getRenderer: function(name){
+        return ns.get("renderer." + name, true);
     },
 
     getExtension: function(ext) {
@@ -3136,9 +3173,15 @@ var Documentor = Base.$extend({
         return this.root.getData();
     },
 
+    render: function() {
+
+    },
+
     clear: function() {
         File.clear();
     }
+}, {
+    RendererBase: Renderer
 });
 
 
@@ -3168,4 +3211,97 @@ cs.define({
     parents: ["method", "function"]
 
 });
+
+
+
+
+ns.add("renderer.plain", Renderer.$extend({
+
+    render: function() {
+
+        var data = this.doc.getData(),
+            html = "<ul>",
+            keys = ["param", "var", "function", "namespace", "class", "property", "method"];
+
+        var renderItem = function(type, item) {
+
+            html += '<li>';
+            html += '<p>';
+
+            if (type) {
+                html += '<i>' + type + '</i> ';
+            }
+
+            if (item.name) {
+                if (item.flags.type) {
+                    html += '['+ (item.flags.type.join(" | ")) +'] ';
+                    delete item.flags.type;
+                }
+                html += '<b>' + item.name + '</b>';
+
+                if (item.param) {
+                    html += '(';
+
+                    var params = [];
+                    item.param.forEach(function(param){
+                        params.push(param.name);
+                    });
+                    html += params.join(", ");
+                    html += ')';
+                }
+
+                if (item.flags.returns) {
+                    html += ' : '+ (item.flags.returns.join(" | "));
+                }
+            }
+
+            html += '</p>';
+
+            if (item.flags.description) {
+                html += item.flags.description;
+                delete item.flags.description;
+            }
+
+            keys.forEach(function(key){
+
+                var items = item[key];
+
+                if (items) {
+                    html += '<ul>';
+                    items.forEach(function(item){
+                        renderItem(key, item);
+                    });
+                    html += '</ul>';
+                }
+            });
+
+            html += '</li>';
+
+        };
+
+        renderItem(null, data);
+
+        html += '</ul>';
+
+        return html;
+    }
+
+}, {
+    mime: "text/html"
+}));
+
+
+
+
+
+
+ns.add("renderer.raw", Renderer.$extend({
+
+    render: function() {
+        return this.doc.getData();
+    }
+
+}));
+
+
 module.exports = Documentor;
