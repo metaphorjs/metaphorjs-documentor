@@ -12,6 +12,9 @@
                 "src/**",
                 ["src/Documentor.js", {"as": "Documentor"}]
             ],
+            "omit": [
+                "../metaphorjs-namespace/src/var/ns.js"
+            ],
             "exports": "Documentor"
         }
     }

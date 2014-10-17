@@ -1,12 +1,11 @@
 
 var Renderer = require("../Renderer.js"),
-    ns = require("../var/ns.js");
+    globalCache = require("../var/globalCache.js");
 
-
-module.exports = ns.add("renderer.json", Renderer.$extend({
+module.exports = globalCache.add("renderer.json", Renderer.$extend({
 
     render: function() {
-        return JSON.stringify(this.doc.getData());
+        return JSON.stringify(this.doc.getData(), null, 2);
     }
 
 }, {

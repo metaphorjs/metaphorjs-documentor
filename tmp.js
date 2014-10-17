@@ -7,7 +7,7 @@ var http    = require("http"),
 
 http.createServer(function(request, response){
 
-    var proc = child.spawn("node", ["runner.js", "--renderer=plain"]),
+    var proc = child.spawn("node", ["runner.js", "--renderer=json"]),
         json = "";
 
     proc.stdout.on("data", function(data){
@@ -15,7 +15,7 @@ http.createServer(function(request, response){
     });
 
     proc.on("exit", function(){
-        response.writeHead(200, {'Content-Type': 'text/html'});
+        response.writeHead(200, {'Content-Type': 'application/json'});
         response.end(json);
     });
 

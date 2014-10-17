@@ -1,120 +1,145 @@
 
 var Base = require("./Base.js"),
-    isDir = require("../../metaphorjs/src/func/fs/isDir.js"),
     isFile = require("../../metaphorjs/src/func/fs/isFile.js"),
+    extend = require("../../metaphorjs/src/func/extend.js"),
     getFileList = require("../../metaphorjs/src/func/fs/getFileList.js"),
     undf = require("../../metaphorjs/src/var/undf.js"),
-    ns = require("./var/ns.js"),
-    cs = require("./var/cs.js"),
     path = require("path"),
     fs = require("fs"),
     File = require("./File.js"),
-    JsExt = require("./ext/JsExt.js"),
-    Root = require("./item/Root.js"),
     Renderer = require("./Renderer.js"),
-    Promise = require("../../metaphorjs-promise/src/metaphorjs.promise.js");
+    Item = require("./Item.js"),
+    Comment = require("./Comment.js"),
+    Cache = require("../../metaphorjs/src/lib/Cache.js"),
+    globalCache = require("./var/globalCache.js"),
+    generateNames = require("./func/generateNames.js"),
+    nextUid = require("../../metaphorjs/src/func/nextUid.js");
 
 
-require("./item/Class.js");
-require("./item/Function.js");
-require("./item/Method.js");
-require("./item/Namespace.js");
-require("./item/Var.js");
-require("./item/Property.js");
-
-require("./renderer/Json.js");
 
 module.exports = Base.$extend({
 
     files: null,
-    ext: null,
-    types: null,
-    cs: null,
-    ns: null,
     root: null,
-    argv: null,
-
-    itemPromises: null,
+    cache: null,
+    id: null,
+    map: null,
 
     $init: function(){
 
-        this.files = {};
-        this.ext = {};
-        this.types = {};
-        this.cs = cs;
-        this.ns = ns;
-        this.itemPromises = {};
-        this.root = new Root({
-            doc: this
+        var self = this;
+
+        self.id = nextUid();
+        self.files = {};
+        self.map = {};
+        self.root = new Item({
+            doc: self,
+            type: "root"
         });
 
-        this.addExtension("js", JsExt);
-
-        this.addItemType("namespace", "item.Namespace");
-        this.addItemType("class", "item.Class");
-        this.addItemType("function", "item.Function");
-        this.addItemType("method", "item.Method");
-        this.addItemType("var", "item.Var");
-        this.addItemType("property", "item.Property");
-        this.addItemType("type", "item.Property");
-        this.addItemType("param", "item.Param");
+        self.cache = new Cache(true);
 
 
-        this.$super();
+        self.$super();
     },
 
-    available: function(type, name, item) {
-        var id = type +"-"+ name;
 
-        if (!this.itemPromises[id]) {
-            this.itemPromises[id] = new Promise;
+
+
+    pcall: function(name) {
+        var fn = this.pget(name),
+            args = Array.prototype.slice.call(arguments, 1);
+
+        return fn ? fn.apply(this, args) : null;
+    },
+
+    pget: function(name, collect, passthru, exact, merge) {
+
+        var names = generateNames(name),
+            ret = collect ? [] : null,
+            self = this,
+            id = self.id,
+            value,
+            i, l;
+
+        if (exact) {
+            names.length = 1;
         }
 
-        this.itemPromises[id].resolve(item);
-    },
+        [self.cache, globalCache].forEach(function(cache){
+            for (i = 0, l = names.length; i < l; i++) {
 
-    onAvailable: function(type, name, fn, context) {
+                name = names[i];
 
-        var id = type +"-"+ name;
+                if (cache.exists(name)) {
 
-        if (!this.itemPromises[id]) {
-            this.itemPromises[id] = new Promise;
+                    value = cache.get(name);
+
+                    if (typeof value == "function" && !value.hasOwnProperty(id)) {
+                        value = function(fn){
+                            return function(){
+                                return fn.apply(self, arguments);
+                            };
+                        }(value);
+                        value[id] = true;
+                    }
+
+                    if (value !== undf) {
+
+                        if (collect) {
+                            ret.push(value);
+                        }
+                        else if (passthru) {
+                            if (passthru(value) === false) {
+                                return false;
+                            }
+                        }
+                        else {
+                            ret = value;
+                            return false;
+                        }
+                    }
+                }
+            }
+        });
+
+        if (collect && merge) {
+            value = ret.shift();
+            while (ret.length) {
+                extend(value, ret.shift());
+            }
+            return value;
         }
 
-        this.itemPromises[id].done(fn, context);
+        return ret;
     },
+
+
 
     getRenderer: function(name){
-        return ns.get("renderer." + name, true);
+        return this.cache.get("renderer." + name) ||
+               globalCache.get("renderer." + name);
     },
 
-    getExtension: function(ext) {
-        if (ext instanceof File) {
-            ext = ext.ext;
+
+    addUniqueItem: function(item) {
+
+        var name = item.fullName;
+
+        if (name && !this.map.hasOwnProperty(name)) {
+            this.map[name] = item;
         }
-        return this.ext[ext] || null;
     },
 
-    addExtension: function(ext, pluginClass) {
-
-        this.ext[ext] = new pluginClass({
-            doc: this
-        });
+    getItem: function(name) {
+        return this.map.hasOwnProperty(name) ? this.map[name] : null;
     },
 
-    getItemType: function(type) {
-        return this.types.hasOwnProperty(type) ? this.types[type] : null;
-    },
 
-    getItemTypes: function() {
-        return this.types;
-    },
 
-    addItemType: function(type, itemClass) {
-        this.types[type] = typeof itemClass == "string" ? ns.get(itemClass) : itemClass;
-    },
+    eat: function(directory, ext, options) {
 
-    eat: function(directory, ext, priv) {
+        options = options || {};
 
         if (!ext) {
             throw "Extension required";
@@ -123,80 +148,92 @@ module.exports = Base.$extend({
             throw "Directory or file required";
         }
 
-        priv = priv === undf ? false : priv;
+        options.hidden = options.hidden === undf ? false : options.hidden;
 
         var self = this;
 
         if (isFile(directory)) {
-            self.addFile(directory, priv);
+            self.addFile(directory, options);
         }
         else {
             var list = getFileList(directory);
             list.forEach(function(file) {
-                self.addFile(file, priv);
+                self.addFile(file, options);
             });
         }
     },
 
-    resolveIncludes: function(file, priv) {
+    addFile: function(filePath, options) {
 
-        var self = this,
-            plugin = self.getExtension(file.ext);
+        var self = this;
 
-        if (plugin) {
-            var includes = plugin.resolveIncludes(file);
+        options = options || {};
 
-            includes.forEach(function(include){
-                self.addFile(include, priv);
-            });
-        }
+        if (!self.files[filePath]) {
 
-    },
+            var file = File.get(filePath, self, options);
 
-    addFile: function(filePath, priv) {
+            if (!options.hideIncludes) {
+                self.resolveIncludes(file, options);
+            }
 
-        if (!this.files[filePath]) {
-
-            var file = File.get(filePath, this);
-            this.resolveIncludes(file, priv);
-            this.files[filePath] = file;
+            self.files[filePath] = file;
 
             file.parse();
         }
     },
 
-    normalizeType: function(type, file) {
+    resolveIncludes: function(file, options) {
 
-        var ext = this.getExtension(file),
-            i, l;
+        var self = this,
+            includes = this.pcall(file.ext + ".resolveIncludes", file);
 
-        if (type.indexOf("|") != -1) {
-            type = type.split("|");
+        if (includes) {
+            includes.forEach(function(include){
+                self.addFile(include, options);
+            });
         }
-        else {
-            type = [type];
-        }
+    },
 
-        if (ext) {
-            for (i = 0, l = type.length; i < l; i++) {
-                type[i] = ext.normalizeType(type[i]);
-            }
-        }
 
-        return type;
+    prepareItems: function() {
+
+        var self = this;
+
+
+        self.eachItem("resolveFullName");
+        self.eachItem("resolveInheritanceNames");
+        self.eachItem("applyInheritance");
+        self.eachItem("resolveOtherNames");
+    },
+
+
+
+    eachItem: function(fn, context) {
+        this.root.eachItem(fn, context);
     },
 
     getData: function() {
         return this.root.getData();
     },
 
-    render: function() {
-
-    },
-
     clear: function() {
         File.clear();
+        this.files = {};
+        this.root = null;
+        this.map = {};
     }
+
 }, {
-    RendererBase: Renderer
+    RendererBase: Renderer,
+    ItemBase: Item,
+    Base: Base,
+    File: File,
+    Comment: Comment,
+
+
+    cache: globalCache
+
+
 });
+

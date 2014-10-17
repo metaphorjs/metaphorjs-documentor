@@ -1,15 +1,16 @@
 
 var Renderer = require("../Renderer.js"),
-    ns = require("../var/ns.js");
+    globalCache = require("../var/globalCache.js");
 
 
-module.exports = ns.add("renderer.plain", Renderer.$extend({
+module.exports = globalCache.add("renderer.plain", Renderer.$extend({
 
     render: function() {
 
         var data = this.doc.getData(),
             html = "<ul>",
-            keys = ["param", "var", "function", "namespace", "class", "property", "method"];
+            keys = ["param", "var", "function", "namespace", "class", "property", "method"],
+            key, value;
 
         var renderItem = function(type, item) {
 
@@ -39,14 +40,22 @@ module.exports = ns.add("renderer.plain", Renderer.$extend({
                 }
 
                 if (item.flags.returns) {
-                    html += ' : '+ (item.flags.returns.join(" | "));
+                    if (typeof item.flags.returns == "string") {
+                        html += ' : !!![' + (item.flags.returns) + ']';
+                    }
+                    else {
+                        html += ' : [' + (item.flags.returns.join(" | ")) + ']';
+                    }
+                    delete item.flags.returns;
                 }
             }
 
             html += '</p>';
 
             if (item.flags.description) {
+                html += '<p>';
                 html += item.flags.description;
+                html += '</p>';
                 delete item.flags.description;
             }
 
@@ -62,6 +71,15 @@ module.exports = ns.add("renderer.plain", Renderer.$extend({
                     html += '</ul>';
                 }
             });
+
+            var flags = "";
+            for (key in item.flags) {
+                value = item.flags[key];
+                flags += '<li>'+key+' : '+value+'</li>';
+            }
+            if (flags) {
+                html += '<ul>' + flags + '</ul>';
+            }
 
             html += '</li>';
 

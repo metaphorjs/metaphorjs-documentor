@@ -1,15 +1,29 @@
 
+
+
+
 var Documentor = require("./dist/metaphorjs.documentor.js"),
-    minimist = require("minimist");
+    minimist = require("minimist"),
+    path = require("path");
 
 var doc = new Documentor;
 
-try {
-    doc.eat(process.cwd() + "/../metaphorjs-model/src/**", "js");
-}
-catch (thrown) {
-    console.log(thrown);
-}
+var loc = path.normalize(process.cwd() + "/../metaphorjs-namespace/src"),
+    base = path.normalize(loc + "/../../");
+
+//try {
+    doc.eat(loc + "/**", "js", {
+        namePrefix: "MetaphorJs.",
+        basePath: base
+    });
+//}
+//catch (thrown) {
+//    console.log(thrown);
+//}
+
+
+doc.prepareItems();
+
 
 var args = minimist(process.argv.slice(2), {boolean: true});
 

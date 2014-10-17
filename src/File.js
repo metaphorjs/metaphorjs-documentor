@@ -1,14 +1,20 @@
 
 var Base = require("./Base.js"),
-    Parser = require("./Parser.js"),
     fs = require("fs"),
     path = require("path"),
-    trim = require("../../metaphorjs/src/func/trim.js");
+    Item = require("./Item.js"),
+    Comment = require("./Comment.js"),
+    extend = require("../../metaphorjs/src/func/extend.js"),
+    hideLinks = require("./func/hideLinks.js");
 
 module.exports = function(){
 
     var all = {};
 
+    /**
+     * @class
+     * @extends Base
+     */
     var File = Base.$extend({
 
 
@@ -16,6 +22,11 @@ module.exports = function(){
          * @type string
          */
         path: null,
+
+        /**
+         * @type string
+         */
+        exportPath: null,
 
         /**
          * @type string
@@ -42,183 +53,367 @@ module.exports = function(){
          */
         comments: null,
 
+        /**
+         * @type {string}
+         */
+        content: null,
 
-        $init: function () {
+        /**
+         * @type {object}
+         */
+        tmp: null,
 
-            this.contextStack = [this.doc.root];
-            this.comments = [];
-            this.dir = path.dirname(this.path);
-            this.ext = path.extname(this.path).substr(1);
+        /**
+         * @type {object}
+         */
+        options: null,
 
+        $init: function() {
+
+            var self = this;
+
+            self.contextStack = [self.doc.root];
+            self.comments = [];
+            self.tmp = {};
+            self.dir = path.dirname(self.path);
+            self.ext = path.extname(self.path).substr(1);
+
+            if (self.options.basePath) {
+                self.exportPath = self.path.replace(self.options.basePath, "");
+            }
+            else {
+                self.exportPath = self.path;
+            }
         },
 
+        pcall: function(name) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        },
+
+        pget: function(name, collect, passthru) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pget.apply(this.doc, arguments);
+        },
+
+
         getContent: function () {
-            return fs.readFileSync(this.path).toString();
+            if (!this.content) {
+                this.content = fs.readFileSync(this.path).toString();
+            }
+            return this.content;
         },
 
         parse: function () {
-
-            var parser = new Parser({
-                file: this,
-                doc:  this.doc
-            });
-
-            parser.parse();
-
-            this.comments = parser.comments;
-
-            parser.$destroy();
-
+            this.parseComments();
             this.processComments();
+            this.content = '';
         },
 
-        isPending: function () {
-            return this.comments.length > 0;
-        },
+        parseComments: function() {
 
-        processComments: function () {
+            var self = this,
+                content = self.getContent(),
+                i = 0,
+                l = content.length,
+                comment,
+                cmtObj,
+                nexti,
+                line,
+                lineNo = 1;
 
-            var cmts = this.comments,
-                parts,
-                context,
-                j, jl,
-                i, l,
-                cmt;
+            while (i < l) {
 
-            for (i = 0, l = cmts.length; i < l; i++) {
-                cmt = cmts[i];
-                cmt.determineType(this.getCurrentContext());
+                nexti = content.indexOf("\n", i);
 
-                parts = cmt.parts;
-                for (j = 0, jl = parts.length; j < jl; j++) {
-                    this.processCommentPart(parts[j], cmt);
+                if (nexti == -1) {
+                    break;
                 }
 
-                context = this.getCurrentContext();
-                if (context.constructor.onePerComment) {
-                    this.contextStack.pop();
+                line    = content.substring(i, nexti);
+                i       = nexti + 1;
+                lineNo++;
+
+                if (line.trim().substr(0, 3) == '/**') {
+                    nexti = content.indexOf('*/', i);
+
+                    if (nexti == -1) {
+                        continue;
+                    }
+
+                    comment = content.substring(i, nexti);
+
+                    lineNo += comment.split("\n").length - 1;
+
+                    comment = hideLinks(comment);
+
+                    cmtObj = new Comment({
+                        comment: comment,
+                        doc: this.doc,
+                        file: this,
+                        line: lineNo + 1,
+                        startIndex: i - 2,
+                        endIndex: nexti + 2
+                    });
+
+                    cmtObj.parse();
+
+                    if (!cmtObj.hasFlag("ignore")) {
+                        this.comments.push(cmtObj);
+                    }
+
+                    i = nexti;
                 }
             }
         },
 
-        processCommentPart: function (part, comment) {
+        processComments: function(cmts, fixedContext) {
 
-            var type = part.type,
-                typeClass = this.doc.getItemType(type),
-                contextStack = this.contextStack,
-                context,
-                stackInx,
-                item, name,
-                i, l, cl;
+            var self = this,
+                cs = self.contextStack,
+                csl,
+                item,
+                last,
+                lastCsl;
 
-            if (!typeClass) {
+            cmts = cmts || self.comments;
 
-                if (!contextStack.length) {
+            var commentPart = function(part, cmt) {
+                csl     = cs.length;
+                item    = self.processCommentPart(part, cmt, fixedContext);
+
+                // if returned value is a new part of the comment
+                // but not a new item
+                // (this can happen if current part does not
+                // have an acceptable context)
+                if (item && !(item instanceof Item)) {
+                    // process it as usual
+                    item = commentPart(item, cmt);
+                    // if it worked, process the original part
+                    if (item !== null) {
+                        item = commentPart(part, cmt);
+                    }
+                    return item;
+                }
+
+                if (item && item.getTypeProps().onePerComment && lastCsl === null) {
+                    last    = item;
+                    lastCsl = csl;
+                }
+
+                return item;
+            };
+
+            cmts.forEach(function(cmt){
+
+                if (cmt.isTemporary()) {
+                    self.tmp[cmt.getFlag("md-tmp")] = cmt;
+                    cmt.removeFlag("md-tmp");
                     return;
                 }
 
-                context = contextStack[contextStack.length - 1];
+                lastCsl = null;
+                last = null;
 
-                return context.addFlag(part.type, part.content);
+                cmt.parts.forEach(function(part){
+                    commentPart(part, cmt);
+                });
+
+                if (last && !fixedContext) {
+                    cs.length = lastCsl;
+                }
+            });
+        },
+
+        processCommentPart: function(part, cmt, fixedContext) {
+
+            var self = this,
+                cs = self.contextStack,
+                type = self.getPartType(part, fixedContext),
+                typeProps,
+                context,
+                item,
+                name;
+
+            if (part.flag == "md-apply") {
+                context = fixedContext || self.getCurrentContext();
+                var tmp = self.tmp[part.content];
+                if (tmp) {
+                    self.processComments([tmp], context);
+                }
+                return null;
+            }
+
+            if (!type) {
+
+                if (typeof type === "undefined" || type === null) {
+                    context = fixedContext || self.getCurrentContext();
+                    context.addFlag(part.flag, part.content);
+                }
+                else if (type === false) {
+
+                    // if there is no acceptable context for the given part
+                    // we try to create this context.
+                    // function returns new comment part
+                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
+
+                    // we return this new part
+                    // and it will be processed as if it were
+                    // in the comment
+                    return item === false ? null : item;
+                }
             }
             else {
+                typeProps   = self.pcall("getItemType", type, self);
+                context     = fixedContext || self.getCurrentContext();
+                name        = self.getItemName(type, part, cmt);
 
-                if (!typeClass.parents) {
-                    console.log(type);
-                    throw "parents undefined";
-                }
+                item = (!typeProps.multiple && name ?
+                        context.getItem(type, name, true) :
+                        null) ||
 
-                stackInx = this.findParent(typeClass.parents);
-
-                if (stackInx == -1) {
-                    var req = typeClass.createRequiredContext(part, comment, this.doc, this);
-                    if (req) {
-                        this.processCommentPart(req, comment);
-                        this.processCommentPart(part, comment);
-                    }
-                    return;
-                }
-
-                context = contextStack[stackInx];
-
-                name = part.name || typeClass.getItemName(part.content, comment, this.doc, this, context, type);
-
-
-
-                item = context.getItem(type, name) ||
-                        new typeClass({
-                            doc: this.doc,
-                            file: this,
-                            name: name,
-                            comment: comment
+                        new Item({
+                            doc: self.doc,
+                            file: self,
+                            comment: cmt,
+                            type: type,
+                            name: name
                         });
 
+                item.addFlag(type, part.content);
+                context.addItem(item);
 
-                if (typeof part.content == "string") {
-                    item.addFlag(part.type, part.content);
-
-                    if (!context.getItem(type, name)) {
-                        context.addItem(item);
-                    }
-                    contextStack.length = stackInx + 1;
-
-                    if (typeClass.stackable) {
-                        contextStack.push(item);
-                    }
+                if (typeProps.children.length && typeProps.stackable !== false) {
+                    cs.push(item);
                 }
-                else {
 
-                    if (!context.getItem(type, name)) {
-                        context.addItem(item);
-                    }
-
-                    cl = contextStack.length;
-                    contextStack.push(item);
-
-                    for (i = 0, l = part.content.length; i < l; i++) {
-                        this.processCommentPart(part.content[i], comment);
-                    }
-
-                    contextStack.length = cl;
-
-
+                if (part.sub.length) {
+                    part.sub.forEach(function (part) {
+                        self.processCommentPart(part, null, item);
+                    });
                 }
+
+                return item;
             }
         },
 
-        findParent: function(parents) {
 
-            var stack = this.contextStack,
-                i, il,
-                j,
-                parent;
 
-            for (i = 0, il = parents.length; i < il; i++) {
+        getPartType: function(part, fixedContext) {
 
-                parent = parents[i];
+            var type = part.flag,
+                stack = this.contextStack,
+                context,
+                children,
+                transform,
+                i,
+                isItem;
 
-                for (j = stack.length - 1; j >= 0; j--) {
 
-                    if (stack[j].type == parent) {
-                        return j;
+            if (fixedContext) {
+                transform   = fixedContext.getTypeProps().transform;
+                type        = transform && transform.hasOwnProperty(type) ? transform[type] : type;
+
+                return this.pcall("getItemType", type, this) ? type : null;
+            }
+
+            var requiredContext = this.pget("requiredContext", true, null, null, true);
+
+            if (requiredContext.hasOwnProperty(type)) {
+                requiredContext = requiredContext[type];
+            }
+            else {
+                requiredContext = null;
+            }
+
+            // we go backwards through current context stack
+            // and see which parent can accept given comment item
+            for (i = stack.length - 1; i >= 0; i--) {
+                context = stack[i];
+
+                children = context.getTypeProps().children;
+                transform = context.getTypeProps().transform;
+
+                // if current context supports given type
+                // via transform
+                if (transform && transform.hasOwnProperty(type)) {
+                    type = transform[type];
+                }
+
+                isItem = !!this.pcall("getItemType", type, this);
+
+                if (!isItem && requiredContext && requiredContext.indexOf(context.type) != -1) {
+                    return null;
+                }
+
+                // if current context supports given type
+                // as is
+                if (children &&
+                         (children.indexOf(type) != -1 ||
+                          children.indexOf("*") != -1) &&
+                            children.indexOf("!" + type) == -1) {
+
+                    // make this context last in stack
+                    if (isItem) {
+                        this.contextStack.length = i + 1;
+                        return type;
                     }
                 }
             }
 
-            return -1;
+            // there is no acceptable context found
+
+            // if there is no such class,
+            // we return null which means
+            // this is just a flag
+            if (!this.pcall("getItemType", type, this)) {
+                return requiredContext ? false : null;
+            }
+            // if class exists but there is no context
+            // for it we return false which means
+            // that the context must be created
+            else {
+                return false;
+            }
+        },
+
+        getItemName: function(type, part, comment) {
+
+            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
+
+            if (res && res.name) {
+                return res.name;
+            }
+
+            if (comment) {
+                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
+                return res ? res[1] : null;
+            }
+
+            return null;
+        },
+
+        getContext: function(inx) {
+            return this.contextStack[inx];
         },
 
         getCurrentContext: function() {
             return this.contextStack[this.contextStack.length - 1];
+        },
+
+        getContextStack: function() {
+            return this.contextStack.slice();
         }
+
 
     }, {
 
-        get: function(filePath, doc) {
+        get: function(filePath, doc, options) {
             if (!all[filePath]) {
                 all[filePath] = new File({
                     path: filePath,
-                    doc: doc
+                    doc: doc,
+                    options: extend({}, options)
                 });
             }
             return all[filePath];

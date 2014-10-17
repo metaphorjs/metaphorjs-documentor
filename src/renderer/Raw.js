@@ -1,9 +1,9 @@
 
 var Renderer = require("../Renderer.js"),
-    ns = require("../var/ns.js");
+    globalCache = require("../var/globalCache.js");
 
 
-module.exports = ns.add("renderer.raw", Renderer.$extend({
+module.exports = globalCache.add("renderer.raw", Renderer.$extend({
 
     render: function() {
         return this.doc.getData();

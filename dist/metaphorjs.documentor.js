@@ -25,19 +25,21 @@ var varType = function(){
 
 
     /**
-        'string': 0,
-        'number': 1,
-        'boolean': 2,
-        'object': 3,
-        'function': 4,
-        'array': 5,
-        'null': 6,
-        'undefined': 7,
-        'NaN': 8,
-        'regexp': 9,
-        'date': 10
-    */
-
+     * 'string': 0,
+     * 'number': 1,
+     * 'boolean': 2,
+     * 'object': 3,
+     * 'function': 4,
+     * 'array': 5,
+     * 'null': 6,
+     * 'undefined': 7,
+     * 'NaN': 8,
+     * 'regexp': 9,
+     * 'date': 10,
+     * unknown: -1
+     * @param {*} value
+     * @returns {number}
+     */
     return function varType(val) {
 
         if (!val) {
@@ -95,7 +97,121 @@ function isObject(value) {
 
 
 
+var Cache = function(){
+
+    var globalCache;
+
+    /**
+     * @class Cache
+     * @param {bool} cacheRewritable
+     * @constructor
+     */
+    var Cache = function(cacheRewritable) {
+
+        var storage = {};
+
+        if (arguments.length == 0) {
+            cacheRewritable = true;
+        }
+
+        return {
+
+            /**
+             * @method
+             * @param {string} name
+             * @param {*} value
+             * @param {bool} rewritable
+             * @returns {*} value
+             */
+            add: function(name, value, rewritable) {
+
+                if (storage[name] && storage[name].rewritable === false) {
+                    return storage[name];
+                }
+
+                storage[name] = {
+                    rewritable: typeof rewritable != strUndef ? rewritable : cacheRewritable,
+                    value: value
+                };
+
+                return value;
+            },
+
+            /**
+             * @method
+             * @param {string} name
+             * @returns {*}
+             */
+            get: function(name) {
+                return storage[name] ? storage[name].value : undefined;
+            },
+
+            /**
+             * @method
+             * @param {string} name
+             * @returns {*}
+             */
+            remove: function(name) {
+                var rec = storage[name];
+                if (rec && rec.rewritable === true) {
+                    delete storage[name];
+                }
+                return rec ? rec.value : undefined;
+            },
+
+            /**
+             * @method
+             * @param {string} name
+             * @returns {boolean}
+             */
+            exists: function(name) {
+                return !!storage[name];
+            },
+
+            /**
+             * @method
+             */
+            destroy: function() {
+
+                storage = null;
+                cacheRewritable = null;
+
+                this.add = null;
+                this.get = null;
+                this.destroy = null;
+                this.exists = null;
+                this.remove = null;
+            }
+        };
+    };
+
+    /**
+     * @method
+     * @static
+     * @returns {Cache}
+     */
+    Cache.global = function() {
+
+        if (!globalCache) {
+            globalCache = new Cache(true);
+        }
+
+        return globalCache;
+    };
+
+    return Cache;
+
+}();
+
+
+
+
+
+/**
+ * @class Namespace
+ */
 var Namespace = function(){
+
 
     /**
      * @param {Object} root optional; usually window or global
@@ -108,12 +224,14 @@ var Namespace = function(){
      * var ns = new MetaphorJs.lib.Namespace(privateNs, "privateNs");
      * ns.register("privateNs.Test", something); // -> privateNs.Test
      * </code></pre>
+     * @param {Cache} cache optional
      * @constructor
      */
-    var Namespace   = function(root, rootName) {
+    var Namespace   = function(root, rootName, cache) {
 
-        var cache   = {},
-            self    = this;
+        cache       = cache || new Cache(false);
+        var self    = this,
+            rootL   = rootName ? rootName.length : null;
 
         if (!root) {
             if (typeof global != strUndef) {
@@ -125,13 +243,15 @@ var Namespace = function(){
         }
 
         var normalize   = function(ns) {
-            if (ns && rootName && ns.indexOf(rootName) !== 0) {
+            if (ns && rootName && ns.substr(0, rootL) != rootName) {
                 return rootName + "." + ns;
             }
             return ns;
         };
 
         var parseNs     = function(ns) {
+
+            ns = normalize(ns);
 
             var tmp     = ns.split("."),
                 i,
@@ -151,14 +271,9 @@ var Namespace = function(){
 
                     name    = tmp[i];
 
-                    if (rootName && i == 0) {
-                        if (name == rootName) {
-                            current = root;
-                            continue;
-                        }
-                        else {
-                            ns = rootName + "." + ns;
-                        }
+                    if (rootName && i == 0 && name == rootName) {
+                        current = root;
+                        continue;
                     }
 
                     if (current[name] === undf) {
@@ -168,30 +283,23 @@ var Namespace = function(){
                     current = current[name];
                 }
             }
-            else {
-                if (rootName) {
-                    ns = rootName + "." + ns;
-                }
-            }
 
             return [current, last, ns];
         };
 
         /**
          * Get namespace/cache object
-         * @function MetaphorJs.ns.get
+         * @method
          * @param {string} ns
          * @param {bool} cacheOnly
-         * @returns {object} constructor
+         * @returns {*}
          */
         var get       = function(ns, cacheOnly) {
 
-            if (cache[ns] !== undf) {
-                return cache[ns];
-            }
+            ns = normalize(ns);
 
-            if (rootName && cache[rootName + "." + ns] !== undf) {
-                return cache[rootName + "." + ns];
+            if (cache.exists(ns)) {
+                return cache.get(ns);
             }
 
             if (cacheOnly) {
@@ -208,11 +316,9 @@ var Namespace = function(){
 
                 name    = tmp[i];
 
-                if (rootName && i == 0) {
-                    if (name == rootName) {
-                        current = root;
-                        continue;
-                    }
+                if (rootName && i == 0 && name == rootName) {
+                    current = root;
+                    continue;
                 }
 
                 if (current[name] === undf) {
@@ -223,15 +329,15 @@ var Namespace = function(){
             }
 
             if (current) {
-                cache[ns] = current;
+                cache.add(ns, current);
             }
 
             return current;
         };
 
         /**
-         * Register class constructor
-         * @function MetaphorJs.ns.register
+         * Register item
+         * @method
          * @param {string} ns
          * @param {*} value
          */
@@ -244,40 +350,61 @@ var Namespace = function(){
             if (isObject(parent) && parent[name] === undf) {
 
                 parent[name]        = value;
-                cache[parse[2]]     = value;
+                cache.add(parse[2], value);
             }
 
             return value;
         };
 
         /**
-         * Class exists
-         * @function MetaphorJs.ns.exists
+         * Item exists
+         * @method
          * @param {string} ns
          * @returns boolean
          */
         var exists      = function(ns) {
-            return cache[ns] !== undf;
+            return get(ns, true) !== undf;
         };
 
         /**
-         * Add constructor to cache
-         * @function MetaphorJs.ns.add
+         * Add item only to the cache
+         * @function add
          * @param {string} ns
          * @param {*} value
          */
         var add = function(ns, value) {
-            if (rootName && ns.indexOf(rootName) !== 0) {
-                ns = rootName + "." + ns;
-            }
-            if (cache[ns] === undf) {
-                cache[ns] = value;
-            }
+
+            ns = normalize(ns);
+            cache.add(ns, value);
             return value;
         };
 
+        /**
+         * Remove item from cache
+         * @method
+         * @param {string} ns
+         */
         var remove = function(ns) {
-            delete cache[ns];
+            ns = normalize(ns);
+            cache.remove(ns);
+        };
+
+        /**
+         * Make alias in the cache
+         * @method
+         * @param {string} from
+         * @param {string} to
+         */
+        var makeAlias = function(from, to) {
+
+            from = normalize(from);
+            to = normalize(to);
+
+            var value = cache.get(from);
+
+            if (value !== undf) {
+                cache.add(to, value);
+            }
         };
 
         self.register   = register;
@@ -286,6 +413,7 @@ var Namespace = function(){
         self.add        = add;
         self.remove     = remove;
         self.normalize  = normalize;
+        self.makeAlias  = makeAlias;
     };
 
     Namespace.prototype.register = null;
@@ -294,9 +422,16 @@ var Namespace = function(){
     Namespace.prototype.add = null;
     Namespace.prototype.remove = null;
     Namespace.prototype.normalize = null;
+    Namespace.prototype.makeAlias = null;
 
     var globalNs;
 
+    /**
+     * Get global namespace
+     * @method
+     * @static
+     * @returns {*}
+     */
     Namespace.global = function() {
         if (!globalNs) {
             globalNs = new Namespace;
@@ -537,8 +672,6 @@ var Class = function(){
         };
 
 
-
-
     var Class = function(ns){
 
         if (!ns) {
@@ -619,6 +752,10 @@ var Class = function(){
         };
 
 
+        /**
+         * @class BaseClass
+         * @constructor
+         */
         var BaseClass = function() {
 
         };
@@ -639,19 +776,42 @@ var Class = function(){
             $beforeDestroy: [],
             $afterDestroy: [],
 
+            /**
+             * Get class name
+             * @method
+             * @returns {string}
+             */
             $getClass: function() {
                 return this.$class;
             },
 
+            /**
+             * Get parent class name
+             * @method
+             * @returns {null}
+             */
             $getParentClass: function() {
                 return this.$extends;
             },
 
+            /**
+             * Intercept method
+             * @method
+             * @param {string} method Intercepted method name
+             * @param {function} fn function to call before or after intercepted method
+             * @param {object} newContext optional interceptor's "this" object
+             * @param {string} when optional, when to call interceptor before | after | instead; default "before"
+             * @param {bool} replaceValue optional, return interceptor's return value or original method's; default false
+             */
             $intercept: function(method, fn, newContext, when, replaceValue) {
                 var self = this;
                 self[method] = intercept(self[method], fn, newContext || self, self, when, replaceValue);
             },
 
+            /**
+             * Implement new methods or properties on instance
+             * @param {object} methods
+             */
             $implement: function(methods) {
                 var $self = this.constructor;
                 if ($self && $self.$parent) {
@@ -659,6 +819,9 @@ var Class = function(){
                 }
             },
 
+            /**
+             * @method
+             */
             $destroy: function() {
 
                 var self    = this,
@@ -702,11 +865,21 @@ var Class = function(){
                 self.$destroyed = true;
             },
 
+            /**
+             * Implement your destroy actions here
+             * @method
+             */
             destroy: function(){}
         });
 
         BaseClass.$self = BaseClass;
 
+        /**
+         * Create an instance of current class.
+         * @method
+         * @static
+         * @returns {object} class instance
+         */
         BaseClass.$instantiate = function() {
 
             var cls = this,
@@ -732,6 +905,12 @@ var Class = function(){
             }
         };
 
+        /**
+         * Override class methods
+         * @method
+         * @static
+         * @param {object} methods
+         */
         BaseClass.$override = function(methods) {
             var $self = this.$self,
                 $parent = this.$parent;
@@ -741,22 +920,23 @@ var Class = function(){
             }
         };
 
+        /**
+         * Create new class based on current one
+         * @param {object} definition
+         * @param {object} statics
+         * @returns {function}
+         */
         BaseClass.$extend = function(definition, statics) {
             return define(definition, statics, this);
         };
 
 
         /**
-         * @namespace MetaphorJs
-         */
-
-
-        /**
-         * Define class
-         * @function MetaphorJs.define
+         * @class Class
+         * @method
          * @param {object} definition
-         * @param {object} statics (optional)
-         * @return function New class constructor
+         * @param {object} statics
+         * @param {string|function} $extends
          */
         var define = function(definition, statics, $extends) {
 
@@ -851,11 +1031,12 @@ var Class = function(){
 
 
         /**
-         * Instantiate class
-         * @function MetaphorJs.create
+         * Instantiate class. Pass constructor parameters after "name"
+         * @method
          * @param {string} name Full name of the class
+         * @returns {object} class instance
          */
-        var instantiate = function(name) {
+        var factory = function(name) {
 
             var cls     = ns.get(name),
                 args    = slice.call(arguments, 1);
@@ -871,10 +1052,10 @@ var Class = function(){
 
         /**
          * Is cmp instance of cls
-         * @function MetaphorJs.is
+         * @method
          * @param {object} cmp
          * @param {string|object} cls
-         * @returns boolean
+         * @returns {boolean}
          */
         var isInstanceOf = function(cmp, cls) {
             var _cls    = isString(cls) ? ns.get(cls) : cls;
@@ -885,11 +1066,10 @@ var Class = function(){
 
         /**
          * Is one class subclass of another class
-         * @function MetaphorJs.isSubclass
+         * @method
          * @param {string|object} childClass
          * @param {string|object} parentClass
-         * @return bool
-         * @alias MetaphorJs.iss
+         * @return {bool}
          */
         var isSubclassOf = function(childClass, parentClass) {
 
@@ -920,10 +1100,14 @@ var Class = function(){
 
         var self    = this;
 
-        self.factory = instantiate;
+        self.factory = factory;
         self.isSubclassOf = isSubclassOf;
         self.isInstanceOf = isInstanceOf;
         self.define = define;
+
+        /**
+         * @type {function} BaseClass reference to the BaseClass class
+         */
         self.BaseClass = BaseClass;
 
     };
@@ -938,6 +1122,12 @@ var Class = function(){
 
     var globalCs;
 
+    /**
+     * Get default global class manager
+     * @method
+     * @static
+     * @returns {Class}
+     */
     Class.global = function() {
         if (!globalCs) {
             globalCs = new Class(Namespace.global());
@@ -960,53 +1150,56 @@ var ns = new Namespace({});
 var cs = new Class(ns);
 
 
+/**
+ * @class Base
+ * @extends BaseClass
+ */
 var Base = cs.define({
 
     $constructor: function(cfg) {
         extend(this, cfg, true, false);
         this.$super(cfg);
+    },
+
+    /**
+     * @method
+     * @param {string} name
+     * @returns {*}
+     */
+    pcall: function(name) {
+
+        if (this.file) {
+            return this.file.pcall.apply(this.file, arguments);
+        }
+        else if (this.doc) {
+            arguments[0] = "*." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        }
+
+        return null;
+    },
+
+    /**
+     * @method
+     * @param {string} name
+     * @param {bool} collect
+     * @param {function} passthru
+     * @param {bool} merge
+     * @returns {*}
+     */
+    pget: function(name, collect, passthru, merge) {
+
+        if (this.file) {
+            return this.file.pget.apply(this.file, arguments);
+        }
+        else if (this.doc) {
+            arguments[0] = "*." + arguments[0];
+            return this.doc.pget.apply(this.doc, arguments);
+        }
+
+        return null;
     }
 });
-
-
-
-/**
- * @function trim
- * @param {String} value
- */
-var trim = function() {
-    // native trim is way faster: http://jsperf.com/angular-trim-test
-    // but IE doesn't have it... :-(
-    if (!String.prototype.trim) {
-        return function(value) {
-            return isString(value) ? value.replace(/^\s\s*/, '').replace(/\s\s*$/, '') : value;
-        };
-    }
-    return function(value) {
-        return isString(value) ? value.trim() : value;
-    };
-}();
-
-
-var calcCurlies = function(line) {
-
-    var i, l,
-        char,
-        left = 0,
-        right = 0;
-
-    for (i = 0, l = line.length; i < l; i++) {
-        char = line.charAt(i);
-        if (char == '{') {
-            left++;
-        }
-        else if (char == '}') {
-            right++;
-        }
-    }
-
-    return [left, right];
-};
 
 
 
@@ -1019,231 +1212,75 @@ var Comment = Base.$extend({
     comment: null,
     doc: null,
     file: null,
+    line: null,
     startIndex: null,
     endIndex: null,
     parts: null,
 
-    /**
-     * @param {object} cfg {
-     *      @type {string} a
-     *      @type {string} b
-     * }
-     */
     $init: function() {
         this.parts = [];
         this.$super();
     },
 
-    parse: function() {
-
-        this.removeAsterisk();
-        this.parts = this.splitParts(this.comment);
-        this.sortParts();
+    isTemporary: function() {
+        return this.hasFlag("md-tmp");
     },
 
-    hasFlag: function(flag) {
+    hasFlag: function(name) {
+        return this.getFlag(name) !== null;
+    },
+
+    getFlag: function(name) {
 
         var parts = this.parts,
             i, l;
 
         for (i = 0, l = parts.length; i < l; i++) {
-            if (parts[i].type == flag) {
-                return true;
+            if (parts[i].flag == name) {
+                return parts[i].content;
             }
         }
 
-        return false;
+        return null;
     },
 
-    determineType: function(currentContext) {
+    removeFlag: function(name) {
 
-        var parts   = this.parts,
-            doc     = this.doc,
-            part,
+        var parts = this.parts,
             i, l;
 
         for (i = 0, l = parts.length; i < l; i++) {
-            part = parts[i];
-            if (doc.getItemType(part.type)) {
-                return;
-            }
-        }
-
-        var ext     = doc.getExtension(this.file),
-            itemType;
-
-        if (this.hasFlag("return") || this.hasFlag("returns")) {
-            itemType = "function";
-        }
-
-        if (ext && (part = ext.getTypeAndName(this.file, this.endIndex, currentContext, itemType))) {
-            parts.unshift(part);
-            return;
-        }
-
-        this.parts = [];
-    },
-
-    sortParts: function() {
-
-        var parts = this.parts,
-            types = this.doc.getItemTypes(),
-            compare = function(a, b) {
-                var atype = types[a.type],
-                    btype = types[b.type],
-                    apri, bpri;
-
-                if (!atype && !btype) {
-                    return 0;
-                }
-                else if (atype && !btype) {
-                    return -1;
-                }
-                else if (!atype && btype) {
-                    return 1;
-                }
-
-                apri = atype.priority;
-                bpri = btype.priority;
-
-                if (apri == bpri) {
-                    return 0;
-                }
-                else if (apri === undf || apri > bpri) {
-                    return 1;
-                }
-                else if (bpri === undf || apri < bpri) {
-                    return -1;
-                }
-            };
-
-        parts.sort(compare);
-    },
-
-    splitDeepParts: function(text) {
-
-        var lines   = text.split("\n"),
-            fline   = lines.shift(),
-            lline   = lines.pop(),
-            parts   = this.splitParts(lines.join("\n")),
-            i       = fline.length;
-
-        while (i > 0) {
-            if (fline.charAt(i) == '{') {
-                fline = trim(fline.substring(0, i - 1));
-                parts.unshift({type: "description", content: fline});
+            if (parts[i].flag == name) {
+                parts.splice(i, 1);
                 break;
             }
-            i--;
         }
-
-        return parts;
     },
 
-    splitParts: function(text) {
+    parse: function() {
 
-        var lines = text.split("\n"),
-            parts = [],
-            line,
-            left, right,
-            crls,
-            flag,
-            deep = false,
-            part = "",
-            i, l;
+        var parts = this.pcall("parseComment", this.comment, this.file);
 
+        parts = this.pcall("sortParts", parts, this);
 
-
-        for (i = 0, l = lines.length; i < l; i++) {
-
-            line = lines[i];
-
-            if (trim(line).charAt(0) == '@') {
-
-                if (part) {
-                    parts.push({type: flag || "description", content: part});
-                    part = "";
-                    flag = null;
-                }
-
-                flag    = line.match(/@[^\s]+/)[0].substr(1);
-                line    = trim(line.substr(line.indexOf('@' + flag) + flag.length + 1));
-                crls    = calcCurlies(line);
-                left    = crls[0];
-                right   = crls[1];
-                part    = line;
-                deep    = false;
-
-                while (left != right) {
-                    line    = lines[++i];
-                    crls    = calcCurlies(line);
-                    left   += crls[0];
-                    right  += crls[1];
-                    part   += "\n" + line;
-                    deep    = true;
-                }
-
-                if (deep) {
-                    part = this.splitDeepParts(part);
-                    parts.push({type: flag, content: part});
-                    part = "";
-                    flag = null;
-                }
-            }
-            else {
-                part += line;
-            }
-        }
-
-        if (part || flag) {
-            parts.push({type: flag || "description", content: part});
-        }
-
-        return parts;
-    },
-
-    removeAsterisk: function() {
-
-        var text    = this.comment,
-            lines   = text.split("\n"),
-            min     = 1000,
-            line,
-            i, l,
-            j, jl;
-
-        for (i = 0, l = lines.length; i < l; i++) {
-            line = trim(lines[i]);
-            line = line.substr(1);
-            lines[i] = line;
-
-            for (j = 0, jl = line.length; j < jl; j++) {
-                if (line.charAt(j) != " ") {
-                    min = Math.min(min, j);
-                    break;
-                }
-            }
-        }
-
-        for (i = 0, l = lines.length; i < l; i++) {
-            lines[i] = lines[i].substr(min);
-        }
-
-        this.comment = trim(lines.join("\n"));
+        this.parts = parts || [];
     }
 
 });
 
 
+
 var fs = require("fs");
 
-var isDir = function(dirPath) {
-    return fs.existsSync(dirPath) && fs.lstatSync(dirPath).isDirectory();
+var isFile = function(filePath) {
+    return fs.existsSync(filePath) && fs.lstatSync(filePath).isFile();
 };
 
 
 
-var isFile = function(filePath) {
-    return fs.existsSync(filePath) && fs.lstatSync(filePath).isFile();
+
+var isDir = function(dirPath) {
+    return fs.existsSync(dirPath) && fs.lstatSync(dirPath).isDirectory();
 };
 
 var path = require("path");
@@ -1295,90 +1332,422 @@ var getFileList = function(directory) {
 
 
 
-/**
- * @class Parser
- */
-var Parser = Base.$extend({
 
-    /**
-     * @type {Documentor}
-     */
-    doc: null,
-    file: null,
-    comments: null,
+var Item = (function(){
 
-    $init: function() {
 
-        this.comments = [];
-        this.$super();
-    },
+    var Item = Base.$extend({
 
-    /**
-     * @method
-     */
-    parse: function() {
+        doc: null,
+        file: null,
+        type: null,
+        name: null,
+        fullName: null,
+        items: null,
+        flags: null,
+        comment: null,
+        line: null,
+        props: null,
+        parent: null,
 
-        var self = this,
-            content = self.file.getContent(),
-            i = 0,
-            l = content.length,
-            char,
-            comment,
-            nexti;
 
-        while (i < l) {
 
-            char = content.charAt(i);
+        $init: function() {
 
-            if (char == '"' || char == "'") {
-                nexti = content.indexOf(char, i+1);
-                while (content.charAt(nexti - 1) == '\\') {
-                    nexti = content.indexOf(char, nexti+1);
-                }
+            var self = this;
 
-                if (nexti == -1) {
-                    break;
-                }
+            self.items = {};
+            self.flags = {};
 
-                i = nexti + 1;
-                continue;
+            self.$super();
+
+            if (self.name) {
+                self.setName(self.name);
+            }
+        },
+
+        getTypeProps: function() {
+            if (!this.props) {
+                this.props = this.pcall("getItemType", this.type, this.file);
+            }
+            return this.props;
+        },
+
+        getItem: function(type, name, last) {
+            var list = this.items[type],
+                ret = null;
+
+            if (!list) {
+                return null;
             }
 
-            // comment start
-            if (char == '*' && content.charAt(i - 1) == '*' && content.charAt(i - 2) == '/') {
-                nexti = content.indexOf('*/', i + 1);
-
-                if (nexti == -1) {
-                    break;
+            list.forEach(function(item){
+                if (item.name == name) {
+                    ret = item;
+                    if (!last) {
+                        return false;
+                    }
                 }
+            });
 
-                comment = content.substring(i, nexti);
-                self.parseComment(comment, i - 2, nexti + 2);
-                i = nexti;
-                continue;
+            return ret;
+        },
+
+        addItem: function(item) {
+
+            var type = item.type,
+                self = this,
+                items = self.items;
+
+            if (!items[type]) {
+                items[type] = [];
             }
 
-            i++;
+            if (!item.parent) {
+                item.parent = self;
+            }
+
+            items[type].push(item);
+        },
+
+        hasFlag: function(flag) {
+            return this.flags.hasOwnProperty(flag);
+        },
+
+        addFlag: function(flag, content) {
+
+            var self = this;
+
+            var prepared = this.pcall("flag." + flag + ".prepare", flag, content, this);
+
+            if (prepared) {
+                content = prepared;
+            }
+
+            this.pget("flag." + flag + ".add", false, function(fn){
+                return fn(flag, content, self);
+            });
+
+            if (flag == this.type) {
+                return;
+            }
+
+            switch (flag) {
+                case "md-tmp":
+                case "md-apply":
+                    break;
+                case "public":
+                case "protected":
+                case "private":
+                    this.addFlag("access", flag);
+                    break;
+                default:
+                    if (!this.flags.hasOwnProperty(flag)) {
+                        this.flags[flag] = [];
+                    }
+                    if (isArray(content)) {
+                        this.flags[flag] = this.flags[flag].concat(content);
+                    }
+                    else {
+                        this.flags[flag].push(content);
+                    }
+                    break;
+            }
+        },
+
+        setName: function(name) {
+            this.name = name;
+        },
+
+        setFullName: function(name) {
+
+            var self = this;
+
+            if (name && (!self.fullName || self.fullName != name)) {
+                self.fullName = name;
+                self.doc.addUniqueItem(self);
+            }
+        },
+
+
+        applyInheritance: function() {
+
+            var self = this,
+                doc = self.doc,
+                flags = self.flags;
+
+            self.applyInheritance = emptyFn;
+
+            ["extends", "implements", "mixes"].forEach(function(flag){
+                if (flags.hasOwnProperty(flag)) {
+                    flags[flag].forEach(function(parentClass){
+
+                        parentClass = typeof parentClass == "string" ? parentClass : parentClass.ref;
+
+                        var parent = doc.getItem(parentClass);
+
+                        if (parent) {
+                            parent.applyInheritance();
+                            self.inheritFrom(parent);
+                        }
+                    });
+                }
+            });
+        },
+
+        inheritFrom: function(parent) {
+
+            var self = this;
+
+            parent.eachItem(function(item){
+
+                if (!self.getItem(item.type, item.name)) {
+                    self.addItem(item);
+                }
+            }, null, true);
+        },
+
+
+
+
+        getInheritedParents: function() {
+
+            var parents = [],
+                self = this,
+                doc = self.doc,
+                flags = ["extends", "implements", "mixes"];
+
+            flags.forEach(function(flag){
+
+                if (self.flags.hasOwnProperty(flag)) {
+                    self.flags[flag].forEach(function(name){
+
+                        name = typeof name == "string" ? name : name.ref;
+
+                        var item = doc.getItem(name);
+
+                        if (item) {
+                            parents.push(item);
+                        }
+                    });
+                }
+            });
+
+            return parents;
+        },
+
+        getParents: function() {
+
+            var parents = [],
+                parent = this.parent;
+
+            while (parent) {
+                parents.push(parent);
+                parent = parent.parent;
+            }
+
+            return parents;
+        },
+
+        getParentNamespace: function() {
+
+            var parents     = this.getParents(),
+                getProps    = this.pget("getItemType"),
+                i, l,
+                props;
+
+            for (i = 0, l = parents.length; i < l; i++) {
+                props = getProps(parents[i].type, this.file);
+                if (props.namespace) {
+                    return parents[i];
+                }
+            }
+        },
+
+        findItem: function(name, type, thisOnly) {
+
+            var found = [];
+
+            this.eachItem(function(item){
+
+                if (name == item.name) {
+
+                    if (type) {
+                        if (typeof type == "string") {
+                            if (type != item.type) {
+                                return;
+                            }
+                        }
+                        else {
+                            if (type.indexOf(item.type) == -1) {
+                                return;
+                            }
+                        }
+                    }
+
+                    found.push(item);
+                }
+            }, null, thisOnly);
+
+            return found;
+        },
+
+
+        resolveFullName: function() {
+
+            var self = this;
+
+            if (self.type == "root") {
+                return;
+            }
+
+            if (!self.fullName) {
+                self.setFullName(self.pcall("item." + self.type + ".getFullName", self));
+            }
+        },
+
+        resolveInheritanceNames: function() {
+            this.resolveNames(["extends", "implements", "mixes"]);
+        },
+
+        resolveOtherNames: function() {
+            this.resolveNames(null, ["extends", "implements", "mixes"]);
+        },
+
+        resolveNames: function(flags, notFlags) {
+
+            var self = this, k;
+
+            if (!flags) {
+                flags = [];
+                for (k in self.flags) {
+                    if (self.flags.hasOwnProperty(k)) {
+                        flags.push(k);
+                    }
+                }
+            }
+
+            flags.forEach(function(k) {
+
+                if (notFlags && notFlags.indexOf(k) != -1) {
+                    return;
+                }
+
+                if (self.flags.hasOwnProperty(k)) {
+                    self.flags[k].forEach(function (flag, inx) {
+
+                        var res = self.pcall("flag." + k + ".resolveName", self, k, flag);
+
+                        if (res) {
+                            self.flags[k][inx] = res;
+                        }
+                    });
+                }
+            });
+        },
+
+        eachItem: function(fn, context, thisOnly) {
+
+            var k, self = this;
+
+            for (k in self.items) {
+                self.items[k].forEach(function(item) {
+
+                    if (typeof fn == "function") {
+                        fn.call(context, item);
+                    }
+                    else {
+                        if (fn.indexOf(".") == -1) {
+                            item[fn]();
+                        }
+                        else {
+                            item.pcall(fn, item);
+                        }
+                    }
+
+                    if (!thisOnly) {
+                        item.eachItem(fn, context);
+                    }
+                });
+            }
+        },
+
+
+
+
+        importItem: function(item) {
+
+            var self = this;
+
+            for (var type in item.items) {
+                item.items[type].forEach(function (item) {
+                    self.addItem(item);
+                });
+            }
+
+            for (var key in item.flags) {
+                self.addFlag(key, item.flags[key]);
+            }
+        },
+
+        createRef: function(name) {
+            return {
+                name: name,
+                ref: this.fullName
+            };
+        },
+
+        getData: function(currentParent) {
+
+            var self = this,
+                exprt = self.type == "root" ? {} : {
+                    name:  self.name,
+                    fullName: self.fullName,
+                    flags: self.flags,
+                    file: self.file.exportPath,
+                    line: self.comment.line
+                };
+
+            if (currentParent && currentParent !== self.parent) {
+                exprt.inheritedFrom = self.parent.fullName;
+            }
+
+            self.eachItem(function(child){
+
+                var type = child.type;
+
+                if (!exprt.hasOwnProperty(type)) {
+                    exprt[type] = [];
+                }
+
+                exprt[type].push(child.getData(self));
+
+            }, null, true);
+
+            return exprt;
         }
-    },
 
-    parseComment: function(commentText, commentStart, commentEnd) {
-
-        var comment = new Comment({
-            comment: commentText,
-            doc: this.doc,
-            file: this.file,
-            startIndex: commentStart,
-            endIndex: commentEnd
-        });
-
-        comment.parse();
-
-        this.comments.push(comment);
-    }
+    });
 
 
-});
+    return Item;
+
+
+}());
+
+
+function hideLinks(comment) {
+
+    comment = comment.replace(/{\s*@(link|tutorial).+}/ig, function(match){
+        if (match.substr(match.length - 2) == '\\') {
+            return match;
+        }
+        return '[#' + match.substring(2, match.length - 1) + ']';
+    });
+
+    return comment;
+
+};
 
 
 
@@ -1386,6 +1755,10 @@ var File = function(){
 
     var all = {};
 
+    /**
+     * @class
+     * @extends Base
+     */
     var File = Base.$extend({
 
 
@@ -1393,6 +1766,11 @@ var File = function(){
          * @type string
          */
         path: null,
+
+        /**
+         * @type string
+         */
+        exportPath: null,
 
         /**
          * @type string
@@ -1419,183 +1797,367 @@ var File = function(){
          */
         comments: null,
 
+        /**
+         * @type {string}
+         */
+        content: null,
 
-        $init: function () {
+        /**
+         * @type {object}
+         */
+        tmp: null,
 
-            this.contextStack = [this.doc.root];
-            this.comments = [];
-            this.dir = path.dirname(this.path);
-            this.ext = path.extname(this.path).substr(1);
+        /**
+         * @type {object}
+         */
+        options: null,
 
+        $init: function() {
+
+            var self = this;
+
+            self.contextStack = [self.doc.root];
+            self.comments = [];
+            self.tmp = {};
+            self.dir = path.dirname(self.path);
+            self.ext = path.extname(self.path).substr(1);
+
+            if (self.options.basePath) {
+                self.exportPath = self.path.replace(self.options.basePath, "");
+            }
+            else {
+                self.exportPath = self.path;
+            }
         },
 
+        pcall: function(name) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        },
+
+        pget: function(name, collect, passthru) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pget.apply(this.doc, arguments);
+        },
+
+
         getContent: function () {
-            return fs.readFileSync(this.path).toString();
+            if (!this.content) {
+                this.content = fs.readFileSync(this.path).toString();
+            }
+            return this.content;
         },
 
         parse: function () {
-
-            var parser = new Parser({
-                file: this,
-                doc:  this.doc
-            });
-
-            parser.parse();
-
-            this.comments = parser.comments;
-
-            parser.$destroy();
-
+            this.parseComments();
             this.processComments();
+            this.content = '';
         },
 
-        isPending: function () {
-            return this.comments.length > 0;
-        },
+        parseComments: function() {
 
-        processComments: function () {
+            var self = this,
+                content = self.getContent(),
+                i = 0,
+                l = content.length,
+                comment,
+                cmtObj,
+                nexti,
+                line,
+                lineNo = 1;
 
-            var cmts = this.comments,
-                parts,
-                context,
-                j, jl,
-                i, l,
-                cmt;
+            while (i < l) {
 
-            for (i = 0, l = cmts.length; i < l; i++) {
-                cmt = cmts[i];
-                cmt.determineType(this.getCurrentContext());
+                nexti = content.indexOf("\n", i);
 
-                parts = cmt.parts;
-                for (j = 0, jl = parts.length; j < jl; j++) {
-                    this.processCommentPart(parts[j], cmt);
+                if (nexti == -1) {
+                    break;
                 }
 
-                context = this.getCurrentContext();
-                if (context.constructor.onePerComment) {
-                    this.contextStack.pop();
+                line    = content.substring(i, nexti);
+                i       = nexti + 1;
+                lineNo++;
+
+                if (line.trim().substr(0, 3) == '/**') {
+                    nexti = content.indexOf('*/', i);
+
+                    if (nexti == -1) {
+                        continue;
+                    }
+
+                    comment = content.substring(i, nexti);
+
+                    lineNo += comment.split("\n").length - 1;
+
+                    comment = hideLinks(comment);
+
+                    cmtObj = new Comment({
+                        comment: comment,
+                        doc: this.doc,
+                        file: this,
+                        line: lineNo + 1,
+                        startIndex: i - 2,
+                        endIndex: nexti + 2
+                    });
+
+                    cmtObj.parse();
+
+                    if (!cmtObj.hasFlag("ignore")) {
+                        this.comments.push(cmtObj);
+                    }
+
+                    i = nexti;
                 }
             }
         },
 
-        processCommentPart: function (part, comment) {
+        processComments: function(cmts, fixedContext) {
 
-            var type = part.type,
-                typeClass = this.doc.getItemType(type),
-                contextStack = this.contextStack,
-                context,
-                stackInx,
-                item, name,
-                i, l, cl;
+            var self = this,
+                cs = self.contextStack,
+                csl,
+                item,
+                last,
+                lastCsl;
 
-            if (!typeClass) {
+            cmts = cmts || self.comments;
 
-                if (!contextStack.length) {
+            var commentPart = function(part, cmt) {
+                csl     = cs.length;
+                item    = self.processCommentPart(part, cmt, fixedContext);
+
+                // if returned value is a new part of the comment
+                // but not a new item
+                // (this can happen if current part does not
+                // have an acceptable context)
+                if (item && !(item instanceof Item)) {
+                    // process it as usual
+                    item = commentPart(item, cmt);
+                    // if it worked, process the original part
+                    if (item !== null) {
+                        item = commentPart(part, cmt);
+                    }
+                    return item;
+                }
+
+                if (item && item.getTypeProps().onePerComment && lastCsl === null) {
+                    last    = item;
+                    lastCsl = csl;
+                }
+
+                return item;
+            };
+
+            cmts.forEach(function(cmt){
+
+                if (cmt.isTemporary()) {
+                    self.tmp[cmt.getFlag("md-tmp")] = cmt;
+                    cmt.removeFlag("md-tmp");
                     return;
                 }
 
-                context = contextStack[contextStack.length - 1];
+                lastCsl = null;
+                last = null;
 
-                return context.addFlag(part.type, part.content);
+                cmt.parts.forEach(function(part){
+                    commentPart(part, cmt);
+                });
+
+                if (last && !fixedContext) {
+                    cs.length = lastCsl;
+                }
+            });
+        },
+
+        processCommentPart: function(part, cmt, fixedContext) {
+
+            var self = this,
+                cs = self.contextStack,
+                type = self.getPartType(part, fixedContext),
+                typeProps,
+                context,
+                item,
+                name;
+
+            if (part.flag == "md-apply") {
+                context = fixedContext || self.getCurrentContext();
+                var tmp = self.tmp[part.content];
+                if (tmp) {
+                    self.processComments([tmp], context);
+                }
+                return null;
+            }
+
+            if (!type) {
+
+                if (typeof type === "undefined" || type === null) {
+                    context = fixedContext || self.getCurrentContext();
+                    context.addFlag(part.flag, part.content);
+                }
+                else if (type === false) {
+
+                    // if there is no acceptable context for the given part
+                    // we try to create this context.
+                    // function returns new comment part
+                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
+
+                    // we return this new part
+                    // and it will be processed as if it were
+                    // in the comment
+                    return item === false ? null : item;
+                }
             }
             else {
+                typeProps   = self.pcall("getItemType", type, self);
+                context     = fixedContext || self.getCurrentContext();
+                name        = self.getItemName(type, part, cmt);
 
-                if (!typeClass.parents) {
-                    console.log(type);
-                    throw "parents undefined";
-                }
+                item = (!typeProps.multiple && name ?
+                        context.getItem(type, name, true) :
+                        null) ||
 
-                stackInx = this.findParent(typeClass.parents);
-
-                if (stackInx == -1) {
-                    var req = typeClass.createRequiredContext(part, comment, this.doc, this);
-                    if (req) {
-                        this.processCommentPart(req, comment);
-                        this.processCommentPart(part, comment);
-                    }
-                    return;
-                }
-
-                context = contextStack[stackInx];
-
-                name = part.name || typeClass.getItemName(part.content, comment, this.doc, this, context, type);
-
-
-
-                item = context.getItem(type, name) ||
-                        new typeClass({
-                            doc: this.doc,
-                            file: this,
-                            name: name,
-                            comment: comment
+                        new Item({
+                            doc: self.doc,
+                            file: self,
+                            comment: cmt,
+                            type: type,
+                            name: name
                         });
 
+                item.addFlag(type, part.content);
+                context.addItem(item);
 
-                if (typeof part.content == "string") {
-                    item.addFlag(part.type, part.content);
-
-                    if (!context.getItem(type, name)) {
-                        context.addItem(item);
-                    }
-                    contextStack.length = stackInx + 1;
-
-                    if (typeClass.stackable) {
-                        contextStack.push(item);
-                    }
+                if (typeProps.children.length && typeProps.stackable !== false) {
+                    cs.push(item);
                 }
-                else {
 
-                    if (!context.getItem(type, name)) {
-                        context.addItem(item);
-                    }
-
-                    cl = contextStack.length;
-                    contextStack.push(item);
-
-                    for (i = 0, l = part.content.length; i < l; i++) {
-                        this.processCommentPart(part.content[i], comment);
-                    }
-
-                    contextStack.length = cl;
-
-
+                if (part.sub.length) {
+                    part.sub.forEach(function (part) {
+                        self.processCommentPart(part, null, item);
+                    });
                 }
+
+                return item;
             }
         },
 
-        findParent: function(parents) {
 
-            var stack = this.contextStack,
-                i, il,
-                j,
-                parent;
 
-            for (i = 0, il = parents.length; i < il; i++) {
+        getPartType: function(part, fixedContext) {
 
-                parent = parents[i];
+            var type = part.flag,
+                stack = this.contextStack,
+                context,
+                children,
+                transform,
+                i,
+                isItem;
 
-                for (j = stack.length - 1; j >= 0; j--) {
 
-                    if (stack[j].type == parent) {
-                        return j;
+            if (fixedContext) {
+                transform   = fixedContext.getTypeProps().transform;
+                type        = transform && transform.hasOwnProperty(type) ? transform[type] : type;
+
+                return this.pcall("getItemType", type, this) ? type : null;
+            }
+
+            var requiredContext = this.pget("requiredContext", true, null, null, true);
+
+            if (requiredContext.hasOwnProperty(type)) {
+                requiredContext = requiredContext[type];
+            }
+            else {
+                requiredContext = null;
+            }
+
+            // we go backwards through current context stack
+            // and see which parent can accept given comment item
+            for (i = stack.length - 1; i >= 0; i--) {
+                context = stack[i];
+
+                children = context.getTypeProps().children;
+                transform = context.getTypeProps().transform;
+
+                // if current context supports given type
+                // via transform
+                if (transform && transform.hasOwnProperty(type)) {
+                    type = transform[type];
+                }
+
+                isItem = !!this.pcall("getItemType", type, this);
+
+                if (!isItem && requiredContext && requiredContext.indexOf(context.type) != -1) {
+                    return null;
+                }
+
+                // if current context supports given type
+                // as is
+                if (children &&
+                         (children.indexOf(type) != -1 ||
+                          children.indexOf("*") != -1) &&
+                            children.indexOf("!" + type) == -1) {
+
+                    // make this context last in stack
+                    if (isItem) {
+                        this.contextStack.length = i + 1;
+                        return type;
                     }
                 }
             }
 
-            return -1;
+            // there is no acceptable context found
+
+            // if there is no such class,
+            // we return null which means
+            // this is just a flag
+            if (!this.pcall("getItemType", type, this)) {
+                return requiredContext ? false : null;
+            }
+            // if class exists but there is no context
+            // for it we return false which means
+            // that the context must be created
+            else {
+                return false;
+            }
+        },
+
+        getItemName: function(type, part, comment) {
+
+            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
+
+            if (res && res.name) {
+                return res.name;
+            }
+
+            if (comment) {
+                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
+                return res ? res[1] : null;
+            }
+
+            return null;
+        },
+
+        getContext: function(inx) {
+            return this.contextStack[inx];
         },
 
         getCurrentContext: function() {
             return this.contextStack[this.contextStack.length - 1];
+        },
+
+        getContextStack: function() {
+            return this.contextStack.slice();
         }
+
 
     }, {
 
-        get: function(filePath, doc) {
+        get: function(filePath, doc, options) {
             if (!all[filePath]) {
                 all[filePath] = new File({
                     path: filePath,
-                    doc: doc
+                    doc: doc,
+                    options: extend({}, options)
                 });
             }
             return all[filePath];
@@ -1613,300 +2175,6 @@ var File = function(){
 
 
 
-var Extension = Base.$extend({
-
-
-    resolveIncludes: function(file) {
-        return [];
-    },
-
-    getTypeAndName: function(file, start, context) {
-        return null;
-    },
-
-    normalizeType: function(type) {
-        return type;
-    }
-
-
-});
-
-
-
-
-var JsExt = Extension.$extend({
-
-    resolveIncludes: function(file) {
-
-        var content     = file.getContent(),
-            base        = file.dir + "/",
-            rInclude    = /require\(['|"]([^)]+)['|"]\)/,
-            start       = 0,
-            list        = [],
-            required,
-            match;
-
-        while (match = rInclude.exec(content.substr(start))) {
-
-
-            required = match[1];
-            start += match.index + required.length;
-
-            if (required.indexOf(".js") == -1) {
-                continue;
-            }
-
-            required = path.normalize(base + required);
-            list.push(required);
-        }
-
-        return list;
-    },
-
-    getTypeAndName: function(file, startIndex, context, itemType) {
-
-        var classLike = context ? context.constructor.classLike : false,
-            content = file.getContent(),
-            part = content.substr(startIndex, 200),
-            rVar = /var\s+([^\s]+)\s*=\s*([^\s(;]+)/,
-            rProp = /\s*(['"$a-zA-Z0-9\-_]+)\s*:\s*([^\s(;]+)/,
-            rFunc = /(return|;|=)\s*function\s+([^(]+)/,
-            rNamedFunc = /(['"$a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[$a-zA-Z0-9_]+)/,
-            isFunc = null,
-            isProp = null,
-            name, type,
-            match,
-            inx;
-
-        inx = part.indexOf('/**');
-        if (inx > -1) {
-            part = part.substr(0, inx);
-        }
-
-        if (itemType) {
-            isFunc = itemType == "function" || itemType == "method";
-            isProp = itemType == "type" || itemType == "property" || itemType == "var" || itemType == "param";
-        }
-
-        if ((isFunc === null || isFunc === true) && (match = part.match(rFunc))) {
-            name = trim(match[2]);
-            type = "function";
-        }
-        else if ((isFunc === null || isFunc === true) && (match = part.match(rNamedFunc))) {
-            name = trim(match[2]);
-            if (name == '(') {
-                name = trim(match[1]);
-                name = name.replace(/['"]/g, "");
-                var tmp = name.split(".");
-                name = tmp.pop();
-            }
-            type = "function";
-        }
-        else if ((isProp === null || isProp === true) && (match = part.match(rVar))) {
-            name = trim(match[1]);
-            type = trim(match[2]);
-        }
-        else if ((isProp === null || isProp === true) && (match = part.match(rProp))) {
-            name = trim(match[1]);
-            type = trim(match[2]);
-        }
-
-
-        if (type && name) {
-            if (type == "function") {
-                type = classLike ? "method" : "function";
-            }
-            else {
-                type = classLike ? "property" : "var";
-            }
-            return {type: type, name: name, content: ""};
-        }
-    },
-
-    normalizeType: function(type) {
-        return this.constructor.types[type.toLowerCase()] || type;
-    }
-
-}, {
-
-
-    types: {
-        "{}": "object",
-        "[]": "array",
-        "bool": "boolean",
-        "string": "string",
-        "object": "object",
-        "array": "array",
-        "boolean": "boolean",
-        "function": "function"
-    }
-
-
-});
-
-
-
-
-var Item = Base.$extend({
-
-    doc: null,
-    file: null,
-    type: null,
-    name: null,
-    items: null,
-    flags: null,
-    map: null,
-    ignore: false,
-    comment: null,
-    line: null,
-
-    $init: function() {
-
-        this.flags = {};
-        this.items = {};
-        this.map = {};
-
-        if (this.file && this.comment && this.constructor.stackable) {
-            var inx = this.comment.endIndex,
-                content = this.file.getContent(),
-                part = content.substr(0, inx);
-
-            this.line = part.split("\n").length;
-        }
-
-        this.$super();
-    },
-
-    getItem: function(type, name) {
-        var id = type +"-"+ name;
-        return this.map[id] || null;
-    },
-
-    addItem: function(item) {
-        var type = item.type;
-        if (!this.items[type]) {
-            this.items[type] = [];
-        }
-        this.items[type].push(item);
-
-        if (item.name) {
-            var id = item.type + "-" + item.name;
-            this.map[id] = item;
-        }
-    },
-
-    addFlag: function(flag, content) {
-
-        switch (flag) {
-            case this.type:
-                this.processOwnFlag(content);
-                break;
-            case "ignore":
-                this.ignore = true;
-                break;
-            case "required":
-                this.flags[flag] = true;
-                break;
-            case "public":
-            case "protected":
-            case "private":
-                this.flags['access'] = flag;
-                break;
-            default:
-                this.flags[flag] = content;
-                break;
-        }
-    },
-
-    processOwnFlag: function(content) {
-
-    },
-
-
-    getData: function() {
-
-        var exprt = {
-            name:  this.name,
-            flags: this.flags
-        };
-
-        if (this.constructor.stackable) {
-            if (this.file) {
-                exprt.file = this.file.path;
-            }
-            if (this.line) {
-                exprt.line = this.line;
-            }
-        }
-
-        var items = this.items,
-            key, i, l,
-            item;
-
-        for (key in items) {
-            exprt[key] = [];
-
-            for (i = 0, l = items[key].length; i < l; i++) {
-                item = items[key][i];
-                if (!item.ignore) {
-                    exprt[key].push(item.getData());
-                }
-            }
-        }
-
-        return exprt;
-    }
-
-}, {
-
-    createRequiredContext: function(commentPart, comment, doc, file) {
-        return null;
-    },
-
-    getItemName: function(flagString, comment, doc, file, context, itemType) {
-        if (flagString) {
-            return flagString;
-        }
-        else {
-
-            var parts = comment.parts,
-                i, l;
-
-            for (i = 0, l = parts.length; i < l; i++) {
-                if (parts[i].type == "name") {
-                    return parts[i].content;
-                }
-            }
-
-            var ext = doc.getExtension(file);
-            if (ext) {
-                var part = ext.getTypeAndName(file, comment.endIndex, context, itemType);
-                if (part) {
-                    return part.name;
-                }
-            }
-        }
-        return null;
-    }
-
-});
-
-
-
-var Root = Item.$extend({
-
-    $class: "item.Root",
-    type: "root"
-
-
-}, {
-
-    parents: []
-
-});
-
-
-
 var Renderer = Base.$extend({
 
     doc: null,
@@ -1919,1073 +2187,1201 @@ var Renderer = Base.$extend({
 
 
 
-/**
- * Returns 'then' function or false
- * @param {*} any
- * @returns {Function|boolean}
- */
-function isThenable(any) {
-    if (!any || !any.then) {
-        return false;
+var globalCache = Cache.global();
+
+var generateNames = function(name) {
+
+    var list = [],
+        path = name.split("."),
+        tmp,
+        i,
+        max = Math.floor(path.length / 2),
+        last = path.length - 2,
+        j, z;
+
+    list.push(name);
+
+    for (j = 1; j <= max; j++) {
+
+        for (i = last; i >= 0 && i >= (j - 1) * 2; i-=2) {
+            tmp = path.slice();
+            for (z = 0; z < j; z++) {
+                tmp[i - (z * 2)] = "*";
+            }
+            list.push(tmp.join("."));
+        }
     }
-    var then, t;
-    //if (!any || (!isObject(any) && !isFunction(any))) {
-    if (((t = typeof any) != "object" && t != "function")) {
-        return false;
-    }
-    return isFunction((then = any.then)) ?
-           then : false;
-};
 
-/**
- * @param {Function} fn
- * @param {*} context
- */
-var bind = Function.prototype.bind ?
-              function(fn, context){
-                  return fn.bind(context);
-              } :
-              function(fn, context) {
-                  return function() {
-                      return fn.apply(context, arguments);
-                  };
-              };
-
-
-/**
- * @param {Function} fn
- * @param {Object} context
- * @param {[]} args
- * @param {number} timeout
- */
-function async(fn, context, args, timeout) {
-    setTimeout(function(){
-        fn.apply(context, args || []);
-    }, timeout || 0);
+    return list.filter(function(value, index, self){
+        return self.indexOf(value) === index;
+    });
 };
 
 
+var nextUid = function(){
+    var uid = ['0', '0', '0'];
 
-function error(e) {
-
-    var stack = e.stack || (new Error).stack;
-
-    if (typeof console != strUndef && console.log) {
-        async(function(){
-            console.log(e);
-            if (stack) {
-                console.log(stack);
-            }
-        });
-    }
-    else {
-        throw e;
-    }
-};
-
-
-
-
-var Promise = function(){
-
-    var PENDING     = 0,
-        FULFILLED   = 1,
-        REJECTED    = 2,
-
-        queue       = [],
-        qRunning    = false,
-
-
-        nextTick    = typeof process != strUndef ?
-                        process.nextTick :
-                        function(fn) {
-                            setTimeout(fn, 0);
-                        },
-
-        // synchronous queue of asynchronous functions:
-        // callbacks must be called in "platform stack"
-        // which means setTimeout/nextTick;
-        // also, they must be called in a strict order.
-        nextInQueue = function() {
-            qRunning    = true;
-            var next    = queue.shift();
-            nextTick(function(){
-                next[0].apply(next[1], next[2]);
-                if (queue.length) {
-                    nextInQueue();
-                }
-                else {
-                    qRunning = false;
-                }
-            }, 0);
-        },
-
-        /**
-         * add to execution queue
-         * @param {Function} fn
-         * @param {Object} scope
-         * @param {[]} args
-         * @ignore
-         */
-        next        = function(fn, scope, args) {
-            args = args || [];
-            queue.push([fn, scope, args]);
-            if (!qRunning) {
-                nextInQueue();
-            }
-        },
-
-        /**
-         * returns function which receives value from previous promise
-         * and tries to resolve next promise with new value returned from given function(prev value)
-         * or reject on error.
-         * promise1.then(success, failure) -> promise2
-         * wrapper(success, promise2) -> fn
-         * fn(promise1 resolve value) -> new value
-         * promise2.resolve(new value)
-         *
-         * @param {Function} fn
-         * @param {Promise} promise
-         * @returns {Function}
-         * @ignore
-         */
-        wrapper     = function(fn, promise) {
-            return function(value) {
-                try {
-                    promise.resolve(fn(value));
-                }
-                catch (thrownError) {
-                    promise.reject(thrownError);
-                }
-            };
-        };
-
-
+    // from AngularJs
     /**
-     * @param {Function} fn -- function(resolve, reject)
-     * @param {Object} fnScope
-     * @returns {Promise}
-     * @constructor
+     * @returns {String}
      */
-    var Promise = function(fn, fnScope) {
+    return function nextUid() {
+        var index = uid.length;
+        var digit;
 
-        if (fn instanceof Promise) {
-            return fn;
-        }
-
-        if (!(this instanceof Promise)) {
-            return new Promise(fn, fnScope);
-        }
-
-        var self = this,
-            then;
-
-        self._fulfills   = [];
-        self._rejects    = [];
-        self._dones      = [];
-        self._fails      = [];
-
-        if (arguments.length > 0) {
-
-            if (then = isThenable(fn)) {
-                if (fn instanceof Promise) {
-                    fn.then(
-                        bind(self.resolve, self),
-                        bind(self.reject, self));
-                }
-                else {
-                    (new Promise(then, fn)).then(
-                        bind(self.resolve, self),
-                        bind(self.reject, self));
-                }
+        while(index) {
+            index--;
+            digit = uid[index].charCodeAt(0);
+            if (digit == 57 /*'9'*/) {
+                uid[index] = 'A';
+                return uid.join('');
             }
-            else if (isFunction(fn)) {
-                try {
-                    fn.call(fnScope,
-                            bind(self.resolve, self),
-                            bind(self.reject, self));
-                }
-                catch (thrownError) {
-                    self.reject(thrownError);
-                }
-            }
-            else {
-                self.resolve(fn);
+            if (digit == 90  /*'Z'*/) {
+                uid[index] = '0';
+            } else {
+                uid[index] = String.fromCharCode(digit + 1);
+                return uid.join('');
             }
         }
+        uid.unshift('0');
+        return uid.join('');
     };
-
-    extend(Promise.prototype, {
-
-        _state: PENDING,
-
-        _fulfills: null,
-        _rejects: null,
-        _dones: null,
-        _fails: null,
-
-        _wait: 0,
-
-        _value: null,
-        _reason: null,
-
-        _triggered: false,
-
-        isPending: function() {
-            return this._state == PENDING;
-        },
-
-        isFulfilled: function() {
-            return this._state == FULFILLED;
-        },
-
-        isRejected: function() {
-            return this._state == REJECTED;
-        },
-
-        _cleanup: function() {
-            var self    = this;
-
-            self._fulfills = null;
-            self._rejects = null;
-            self._dones = null;
-            self._fails = null;
-        },
-
-        _processValue: function(value, cb) {
-
-            var self    = this,
-                then;
-
-            if (self._state != PENDING) {
-                return;
-            }
-
-            if (value === self) {
-                self._doReject(new TypeError("cannot resolve promise with itself"));
-                return;
-            }
-
-            try {
-                if (then = isThenable(value)) {
-                    if (value instanceof Promise) {
-                        value.then(
-                            bind(self._processResolveValue, self),
-                            bind(self._processRejectReason, self));
-                    }
-                    else {
-                        (new Promise(then, value)).then(
-                            bind(self._processResolveValue, self),
-                            bind(self._processRejectReason, self));
-                    }
-                    return;
-                }
-            }
-            catch (thrownError) {
-                if (self._state == PENDING) {
-                    self._doReject(thrownError);
-                }
-                return;
-            }
-
-            cb.call(self, value);
-        },
-
-
-        _callResolveHandlers: function() {
-
-            var self    = this;
-
-            self._done();
-
-            var cbs  = self._fulfills,
-                cb;
-
-            while (cb = cbs.shift()) {
-                next(cb[0], cb[1], [self._value]);
-            }
-
-            self._cleanup();
-        },
-
-
-        _doResolve: function(value) {
-            var self    = this;
-
-            self._value = value;
-            self._state = FULFILLED;
-
-            if (self._wait == 0) {
-                self._callResolveHandlers();
-            }
-        },
-
-        _processResolveValue: function(value) {
-            this._processValue(value, this._doResolve);
-        },
-
-        /**
-         * @param {*} value
-         */
-        resolve: function(value) {
-
-            var self    = this;
-
-            if (self._triggered) {
-                return self;
-            }
-
-            self._triggered = true;
-            self._processResolveValue(value);
-
-            return self;
-        },
-
-
-        _callRejectHandlers: function() {
-
-            var self    = this;
-
-            self._fail();
-
-            var cbs  = self._rejects,
-                cb;
-
-            while (cb = cbs.shift()) {
-                next(cb[0], cb[1], [self._reason]);
-            }
-
-            self._cleanup();
-        },
-
-        _doReject: function(reason) {
-
-            var self        = this;
-
-            self._state     = REJECTED;
-            self._reason    = reason;
-
-            if (self._wait == 0) {
-                self._callRejectHandlers();
-            }
-        },
-
-
-        _processRejectReason: function(reason) {
-            this._processValue(reason, this._doReject);
-        },
-
-        /**
-         * @param {*} reason
-         */
-        reject: function(reason) {
-
-            var self    = this;
-
-            if (self._triggered) {
-                return self;
-            }
-
-            self._triggered = true;
-
-            self._processRejectReason(reason);
-
-            return self;
-        },
-
-        /**
-         * @param {Function} resolve -- called when this promise is resolved; returns new resolve value
-         * @param {Function} reject -- called when this promise is rejects; returns new reject reason
-         * @returns {Promise} new promise
-         */
-        then: function(resolve, reject) {
-
-            var self            = this,
-                promise         = new Promise,
-                state           = self._state;
-
-            if (state == PENDING || self._wait != 0) {
-
-                if (resolve && isFunction(resolve)) {
-                    self._fulfills.push([wrapper(resolve, promise), null]);
-                }
-                else {
-                    self._fulfills.push([promise.resolve, promise])
-                }
-
-                if (reject && isFunction(reject)) {
-                    self._rejects.push([wrapper(reject, promise), null]);
-                }
-                else {
-                    self._rejects.push([promise.reject, promise]);
-                }
-            }
-            else if (state == FULFILLED) {
-
-                if (resolve && isFunction(resolve)) {
-                    next(wrapper(resolve, promise), null, [self._value]);
-                }
-                else {
-                    promise.resolve(self._value);
-                }
-            }
-            else if (state == REJECTED) {
-                if (reject && isFunction(reject)) {
-                    next(wrapper(reject, promise), null, [self._reason]);
-                }
-                else {
-                    promise.reject(self._reason);
-                }
-            }
-
-            return promise;
-        },
-
-        /**
-         * @param {Function} reject -- same as then(null, reject)
-         * @returns {Promise} new promise
-         */
-        "catch": function(reject) {
-            return this.then(null, reject);
-        },
-
-        _done: function() {
-
-            var self    = this,
-                cbs     = self._dones,
-                cb;
-
-            while (cb = cbs.shift()) {
-                try {
-                    cb[0].call(cb[1] || null, self._value);
-                }
-                catch (thrown) {
-                    error(thrown);
-                }
-            }
-        },
-
-        /**
-         * @param {Function} fn -- function to call when promise is resolved
-         * @param {Object} fnScope -- function's "this" object
-         * @returns {Promise} same promise
-         */
-        done: function(fn, fnScope) {
-            var self    = this,
-                state   = self._state;
-
-            if (state == FULFILLED && self._wait == 0) {
-                try {
-                    fn.call(fnScope || null, self._value);
-                }
-                catch (thrown) {
-                    error(thrown);
-                }
-            }
-            else if (state == PENDING) {
-                self._dones.push([fn, fnScope]);
-            }
-
-            return self;
-        },
-
-        _fail: function() {
-
-            var self    = this,
-                cbs     = self._fails,
-                cb;
-
-            while (cb = cbs.shift()) {
-                try {
-                    cb[0].call(cb[1] || null, self._reason);
-                }
-                catch (thrown) {
-                    error(thrown);
-                }
-            }
-        },
-
-        /**
-         * @param {Function} fn -- function to call when promise is rejected.
-         * @param {Object} fnScope -- function's "this" object
-         * @returns {Promise} same promise
-         */
-        fail: function(fn, fnScope) {
-
-            var self    = this,
-                state   = self._state;
-
-            if (state == REJECTED && self._wait == 0) {
-                try {
-                    fn.call(fnScope || null, self._reason);
-                }
-                catch (thrown) {
-                    error(thrown);
-                }
-            }
-            else if (state == PENDING) {
-                self._fails.push([fn, fnScope]);
-            }
-
-            return self;
-        },
-
-        /**
-         * @param {Function} fn -- function to call when promise resolved or rejected
-         * @param {Object} fnScope -- function's "this" object
-         * @return {Promise} same promise
-         */
-        always: function(fn, fnScope) {
-            this.done(fn, fnScope);
-            this.fail(fn, fnScope);
-            return this;
-        },
-
-        /**
-         * @returns {object} then: function, done: function, fail: function, always: function
-         */
-        promise: function() {
-            var self = this;
-            return {
-                then: bind(self.then, self),
-                done: bind(self.done, self),
-                fail: bind(self.fail, self),
-                always: bind(self.always, self)
-            };
-        },
-
-        after: function(value) {
-
-            var self = this;
-
-            if (isThenable(value)) {
-
-                self._wait++;
-
-                var done = function() {
-                    self._wait--;
-                    if (self._wait == 0 && self._state != PENDING) {
-                        self._state == FULFILLED ?
-                            self._callResolveHandlers() :
-                            self._callRejectHandlers();
-                    }
-                };
-
-                if (isFunction(value.done)) {
-                    value.done(done);
-                }
-                else {
-                    value.then(done);
-                }
-            }
-
-            return self;
-        }
-    }, true, false);
-
-
-    Promise.fcall = function(fn, context, args) {
-        return Promise.resolve(fn.apply(context, args || []));
-    };
-
-    /**
-     * @param {*} value
-     * @returns {Promise}
-     */
-    Promise.resolve = function(value) {
-        var p = new Promise;
-        p.resolve(value);
-        return p;
-    };
-
-
-    /**
-     * @param {*} reason
-     * @returns {Promise}
-     */
-    Promise.reject = function(reason) {
-        var p = new Promise;
-        p.reject(reason);
-        return p;
-    };
-
-
-    /**
-     * @param {[]} promises -- array of promises or resolve values
-     * @returns {Promise}
-     */
-    Promise.all = function(promises) {
-
-        if (!promises.length) {
-            return Promise.resolve(null);
-        }
-
-        var p       = new Promise,
-            len     = promises.length,
-            values  = new Array(len),
-            cnt     = len,
-            i,
-            item,
-            done    = function(value, inx) {
-                values[inx] = value;
-                cnt--;
-
-                if (cnt == 0) {
-                    p.resolve(values);
-                }
-            };
-
-        for (i = 0; i < len; i++) {
-
-            (function(inx){
-                item = promises[i];
-
-                if (item instanceof Promise) {
-                    item.done(function(value){
-                        done(value, inx);
-                    })
-                        .fail(p.reject, p);
-                }
-                else if (isThenable(item) || isFunction(item)) {
-                    (new Promise(item))
-                        .done(function(value){
-                            done(value, inx);
-                        })
-                        .fail(p.reject, p);
-                }
-                else {
-                    done(item, inx);
-                }
-            })(i);
-        }
-
-        return p;
-    };
-
-    /**
-     * @param {Promise|*} promise1
-     * @param {Promise|*} promise2
-     * @param {Promise|*} promiseN
-     * @returns {Promise}
-     */
-    Promise.when = function() {
-        return Promise.all(arguments);
-    };
-
-    /**
-     * @param {[]} promises -- array of promises or resolve values
-     * @returns {Promise}
-     */
-    Promise.allResolved = function(promises) {
-
-        if (!promises.length) {
-            return Promise.resolve(null);
-        }
-
-        var p       = new Promise,
-            len     = promises.length,
-            values  = [],
-            cnt     = len,
-            i,
-            item,
-            settle  = function(value) {
-                values.push(value);
-                proceed();
-            },
-            proceed = function() {
-                cnt--;
-                if (cnt == 0) {
-                    p.resolve(values);
-                }
-            };
-
-        for (i = 0; i < len; i++) {
-            item = promises[i];
-
-            if (item instanceof Promise) {
-                item.done(settle).fail(proceed);
-            }
-            else if (isThenable(item) || isFunction(item)) {
-                (new Promise(item)).done(settle).fail(proceed);
-            }
-            else {
-                settle(item);
-            }
-        }
-
-        return p;
-    };
-
-    /**
-     * @param {[]} promises -- array of promises or resolve values
-     * @returns {Promise}
-     */
-    Promise.race = function(promises) {
-
-        if (!promises.length) {
-            return Promise.resolve(null);
-        }
-
-        var p   = new Promise,
-            len = promises.length,
-            i,
-            item;
-
-        for (i = 0; i < len; i++) {
-            item = promises[i];
-
-            if (item instanceof Promise) {
-                item.done(p.resolve, p).fail(p.reject, p);
-            }
-            else if (isThenable(item) || isFunction(item)) {
-                (new Promise(item)).done(p.resolve, p).fail(p.reject, p);
-            }
-            else {
-                p.resolve(item);
-            }
-
-            if (!p.isPending()) {
-                break;
-            }
-        }
-
-        return p;
-    };
-
-    /**
-     * @param {[]} functions -- array of promises or resolve values or functions
-     * @returns {Promise}
-     */
-    Promise.waterfall = function(functions) {
-
-        if (!functions.length) {
-            return Promise.resolve(null);
-        }
-
-        var first   = functions.shift(),
-            promise = isFunction(first) ? Promise.fcall(first) : Promise.resolve(fn),
-            fn;
-
-        while (fn = functions.shift()) {
-            if (isThenable(fn)) {
-                promise = promise.then(function(fn){
-                    return function(){
-                        return fn;
-                    };
-                }(fn));
-            }
-            else if (isFunction(fn)) {
-                promise = promise.then(fn);
-            }
-            else {
-                promise.resolve(fn);
-            }
-        }
-
-        return promise;
-    };
-
-    Promise.counter = function(cnt) {
-
-        var promise     = new Promise;
-
-        promise.countdown = function() {
-            cnt--;
-            if (cnt == 0) {
-                promise.resolve();
-            }
-        };
-
-        return promise;
-    };
-
-    return Promise;
 }();
 
 
 
 
 
-Item.$extend({
 
-    $class: "item.Class",
-    type: "class"
+var Documentor = Base.$extend({
+
+    files: null,
+    root: null,
+    cache: null,
+    id: null,
+    map: null,
+
+    $init: function(){
+
+        var self = this;
+
+        self.id = nextUid();
+        self.files = {};
+        self.map = {};
+        self.root = new Item({
+            doc: self,
+            type: "root"
+        });
+
+        self.cache = new Cache(true);
+
+
+        self.$super();
+    },
+
+
+
+
+    pcall: function(name) {
+        var fn = this.pget(name),
+            args = Array.prototype.slice.call(arguments, 1);
+
+        return fn ? fn.apply(this, args) : null;
+    },
+
+    pget: function(name, collect, passthru, exact, merge) {
+
+        var names = generateNames(name),
+            ret = collect ? [] : null,
+            self = this,
+            id = self.id,
+            value,
+            i, l;
+
+        if (exact) {
+            names.length = 1;
+        }
+
+        [self.cache, globalCache].forEach(function(cache){
+            for (i = 0, l = names.length; i < l; i++) {
+
+                name = names[i];
+
+                if (cache.exists(name)) {
+
+                    value = cache.get(name);
+
+                    if (typeof value == "function" && !value.hasOwnProperty(id)) {
+                        value = function(fn){
+                            return function(){
+                                return fn.apply(self, arguments);
+                            };
+                        }(value);
+                        value[id] = true;
+                    }
+
+                    if (value !== undf) {
+
+                        if (collect) {
+                            ret.push(value);
+                        }
+                        else if (passthru) {
+                            if (passthru(value) === false) {
+                                return false;
+                            }
+                        }
+                        else {
+                            ret = value;
+                            return false;
+                        }
+                    }
+                }
+            }
+        });
+
+        if (collect && merge) {
+            value = ret.shift();
+            while (ret.length) {
+                extend(value, ret.shift());
+            }
+            return value;
+        }
+
+        return ret;
+    },
+
+
+
+    getRenderer: function(name){
+        return this.cache.get("renderer." + name) ||
+               globalCache.get("renderer." + name);
+    },
+
+
+    addUniqueItem: function(item) {
+
+        var name = item.fullName;
+
+        if (name && !this.map.hasOwnProperty(name)) {
+            this.map[name] = item;
+        }
+    },
+
+    getItem: function(name) {
+        return this.map.hasOwnProperty(name) ? this.map[name] : null;
+    },
+
+
+
+    eat: function(directory, ext, options) {
+
+        options = options || {};
+
+        if (!ext) {
+            throw "Extension required";
+        }
+        if (!directory) {
+            throw "Directory or file required";
+        }
+
+        options.hidden = options.hidden === undf ? false : options.hidden;
+
+        var self = this;
+
+        if (isFile(directory)) {
+            self.addFile(directory, options);
+        }
+        else {
+            var list = getFileList(directory);
+            list.forEach(function(file) {
+                self.addFile(file, options);
+            });
+        }
+    },
+
+    addFile: function(filePath, options) {
+
+        var self = this;
+
+        options = options || {};
+
+        if (!self.files[filePath]) {
+
+            var file = File.get(filePath, self, options);
+
+            if (!options.hideIncludes) {
+                self.resolveIncludes(file, options);
+            }
+
+            self.files[filePath] = file;
+
+            file.parse();
+        }
+    },
+
+    resolveIncludes: function(file, options) {
+
+        var self = this,
+            includes = this.pcall(file.ext + ".resolveIncludes", file);
+
+        if (includes) {
+            includes.forEach(function(include){
+                self.addFile(include, options);
+            });
+        }
+    },
+
+
+    prepareItems: function() {
+
+        var self = this;
+
+
+        self.eachItem("resolveFullName");
+        self.eachItem("resolveInheritanceNames");
+        self.eachItem("applyInheritance");
+        self.eachItem("resolveOtherNames");
+    },
+
+
+
+    eachItem: function(fn, context) {
+        this.root.eachItem(fn, context);
+    },
+
+    getData: function() {
+        return this.root.getData();
+    },
+
+    clear: function() {
+        File.clear();
+        this.files = {};
+        this.root = null;
+        this.map = {};
+    }
 
 }, {
+    RendererBase: Renderer,
+    ItemBase: Item,
+    Base: Base,
+    File: File,
+    Comment: Comment,
 
-    priority: 20,
-    stackable: true,
-    classLike: true,
-    parents: ["namespace", "root"]
+
+    cache: globalCache
+
 
 });
 
-var getCurly = function(content) {
 
-    var left = 0,
-        right = 0,
+
+function resolveExtendableName(item, flag, content) {
+
+    if (content.indexOf(".") != -1) {
+        return content;
+    }
+
+    var find = {
+        "extends": "class",
+        "implements": "interface",
+        "mixes": ["mixin", "trait"]
+    };
+
+    find = find.hasOwnProperty(flag) ? find[flag] : null;
+
+    if (find) {
+        var ns = item.getParentNamespace(),
+            refs = ns.findItem(content, find);
+
+        return refs.length ? refs[0].createRef(content) : content;
+    }
+
+    return content;
+};
+
+function resolveTypeName(item, flag, content) {
+
+    if (content.indexOf(".") != -1) {
+        return content;
+    }
+
+    if (content == item.name) {
+        return item.fullName;
+    }
+
+    var ns = item.getParentNamespace(),
+        refs = ns ? ns.findItem(content) : [];
+
+    return refs.length ? refs[0].createRef(content) : content;
+};
+
+
+globalCache.add("*.flag.*.add", function(flag, content, item) {
+
+    if (item.type == flag && typeof content == "string" && content) {
+        item.setName(content.trim());
+        // stop cycle
+        return false;
+    }
+});
+
+
+
+globalCache.add("*.flag.*.prepare", function(flag, content, item) {
+
+    if (content === null) {
+        return true;
+    }
+});
+
+
+
+globalCache.add("*.flag.emits.resolveName", function(item, flag, content){
+
+    var parents = item.getParents(),
+        items = [],
         i, l,
-        first = null, last,
-        char;
+        trg;
 
-    for (i  = 0, l = content.length; i < l; i++) {
+    parents.forEach(function(parent){
+        items.push(parent);
+        items = items.concat(parent.getInheritedParents());
+    });
 
-        char = content.charAt(i);
+    items.unshift(item);
 
-        if (char == '{') {
-            left++;
-            if (first === null) {
-                first = i + 1;
+    for (i = 0, l = items.length; i < l; i++) {
+
+        trg = items[i].findItem(content, "event", true);
+
+        if (trg.length) {
+            return trg[0].createRef(content);
+        }
+    }
+
+    return content;
+});
+
+
+
+globalCache.add("*.flag.extends.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("*.flag.implements.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("*.flag.mixes.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("*.flag.returns.prepare", function(flag, content, item) {
+
+    if (!item.file) {
+        return content;
+    }
+
+    var ext = item.file.ext,
+        getCurly = this.pget(ext + ".getCurly"),
+        normalizeType = this.pget(ext + ".normalizeType");
+
+    if (content.charAt(0) == '{') {
+
+        var curly = getCurly(content);
+        content = content.replace('{' + curly + '}', '').trim();
+
+        if (content) {
+            item.addFlag("returnDescription", content);
+        }
+
+        return normalizeType(curly, ext);
+    }
+    else {
+        return normalizeType(content, ext);
+    }
+
+});
+
+
+
+globalCache.add("*.flag.returns.resolveName", resolveTypeName);
+
+
+
+globalCache.add("*.flag.throws.resolveName", resolveTypeName);
+
+
+
+globalCache.add("*.flag.type.resolveName", resolveTypeName);
+
+
+(function(){
+
+    var fn = function(flag, content, item) {
+
+        if (item.type == flag) {
+
+            var res = this.pcall(item.file.ext + ".flag." + flag + ".parse", flag, content, item.comment, item);
+
+            if (res.name) {
+                item.name = res.name;
+            }
+            if (res.description) {
+                item.addFlag("description", res.description);
+            }
+            if (res.type) {
+                item.addFlag("type", res.type);
+            }
+
+            return false;
+        }
+    };
+
+    globalCache.add("*.flag.var.add", fn);
+    globalCache.add("*.flag.property.add", fn);
+    globalCache.add("*.flag.param.add", fn);
+
+    return fn;
+
+}());
+
+
+
+(function(){
+
+    var fn = function(flag, content, comment, item) {
+
+        var ext = comment ? comment.file.ext : (item ? item.file.ext : null);
+
+        if (!ext) {
+            return {};
+        }
+
+        var getCurly = this.pget(ext + ".getCurly"),
+            normalizeType = this.pget(ext + ".normalizeType"),
+            type, name,
+            description,
+            inx;
+
+        if (content.charAt(0) == '{') {
+            var curly = getCurly.call(this, content);
+            type = normalizeType.call(this, curly, ext);
+            content = content.replace('{' + curly + '}', "").trim();
+        }
+
+        inx = content.indexOf(" ", 0);
+
+        if (inx > -1) {
+            name = content.substr(0, inx).trim();
+            content = content.substr(inx).trim();
+
+            if (content) {
+                description = content;
             }
         }
-        else if (char == '}') {
-            right++;
+        else if (content) {
+            if (!type) {
+                type = content;
+            }
+            else {
+                name = content;
+            }
         }
 
-        if (left > 0 && left == right) {
-            last = i;
-            break;
+
+        return {
+            name: name,
+            type: type,
+            description: description
+        };
+    };
+
+    globalCache.add("*.flag.var.parse", fn);
+    globalCache.add("*.flag.property.parse", fn);
+    globalCache.add("*.flag.param.parse", fn);
+
+    return fn;
+}());
+
+
+
+globalCache.add("*.flagAliases", {
+
+    "type": "var",
+    "return": "returns",
+    "extend": "extends",
+    "implement": "implements",
+    "emit": "emits",
+    "throw": "throws"
+
+});
+
+
+
+globalCache.add("*.getCurly", function(content, start, backwards, returnIndexes) {
+
+    var left, right,
+        i, l,
+        first, last,
+        char;
+
+    if (!backwards) {
+
+        left    = 0;
+        right   = 0;
+        i       = start || 0;
+        l       = content.length;
+        first   = null;
+
+        for (; i < l; i++) {
+
+            char = content.charAt(i);
+
+            if (char == '{') {
+                left++;
+                if (first === null) {
+                    first = i + 1;
+                }
+            }
+            else if (char == '}' && first !== null) {
+                right++;
+            }
+
+            if (left > 0 && left == right) {
+                last = i;
+                break;
+            }
+        }
+    }
+    else {
+
+        left    = 0;
+        right   = 0;
+        i       = start || content.length - 1;
+        last    = null;
+
+        for (; i >= 0; i--) {
+
+            char = content.charAt(i);
+
+            if (char == '}') {
+                right++;
+                if (last === null) {
+                    last = i;
+                }
+            }
+            else if (char == '{' && last !== null) {
+                left++;
+            }
+
+            if (left > 0 && left == right) {
+                first = i + 1;
+                break;
+            }
         }
     }
 
     if (first && last) {
-        return content.substring(first, last);
+        if (returnIndexes) {
+            return [first, last];
+        }
+        else {
+            return content.substring(first, last);
+        }
     }
-};
+
+    return null;
+});
 
 
 
-Item.$extend({
+globalCache.add("*.getFlagAliases", function(ext){
 
-    $class: "item.Function",
-    type: "function",
+    var all = this.pget(ext + ".flagAliases", true),
+        aliases = {},
+        i, l;
 
-    addFlag: function(flag, content) {
+    for (i = 0, l = all.length; i < l; i++) {
+        extend(aliases, all[i]);
+    }
 
-        switch (flag) {
-            case "return":
-            case "returns":
-                if (content.charAt(0) == '{') {
-                    var curly = getCurly(content);
-                    this.flags["returns"] = this.doc.normalizeType(curly, this.file);
-                    content = trim(content.replace('{' + curly + '}', ''));
-                    if (content) {
-                        this.flags['returnDescription'] = content;
+    return aliases;
+});
+
+
+
+globalCache.add("*.getItemType", function(type, file) {
+
+    var ext = file ? file.ext : "*",
+        types = this.pget(ext + ".items"),
+        i, l;
+
+    if (types) {
+        for (i = 0, l = types.length; i < l; i++) {
+            if (types[i].name == type) {
+                return types[i];
+            }
+        }
+    }
+
+    return null;
+});
+
+
+
+(function(){
+
+    var createFunctionContext = function createFunctionContext(commentPart, comment) {
+
+        var res = this.pcall(comment.file.ext + ".extractTypeAndName",
+            comment.file, comment.endIndex, true, false);
+
+        if (res) {
+            return {flag: res[0], content: res[1], sub: []};
+        }
+    };
+
+
+    globalCache.add("*.item.param.createContext", createFunctionContext);
+    globalCache.add("*.item.returns.createContext", createFunctionContext);
+
+    return createFunctionContext;
+}());
+
+
+
+
+globalCache.add("*.items", [
+    {
+        name: "root",
+        children: ["*", "!param"]
+    }
+]);
+
+
+
+globalCache.add("*.normalizeType", function(type, ext){
+
+    if (!this.pget) {
+        console.trace();
+    }
+
+    var aliases = this.pget(ext + ".typeAliases"),
+        ret = [],
+        tmp = type.split("|");
+
+    if (aliases) {
+        tmp.forEach(function(type){
+            ret.push(aliases[type] || type);
+        });
+    }
+
+    return ret;
+});
+
+
+
+(function(){
+
+
+    var parseComment = function(text, file) {
+
+        var ext = file.ext,
+            removeAsterisk = this.pget(ext + ".removeAsterisk"),
+            getCurly = this.pget(ext + ".getCurly");
+
+
+        text = removeAsterisk(text);
+
+        var lines       = text.split("\n"),
+            flagReg     = /@[^\s]+/,
+            aliases     = file.pcall("getFlagAliases", file.ext),
+            descrFlag   = aliases["description"] || "description",
+            line,
+            i, l, j,
+            description = "",
+            inx         = 0,
+            parts       = [],
+            part,
+            flag,
+            subInx,
+            sub;
+
+        for (i = 0, l = lines.length; i < l; i++) {
+
+            if (i > 0) {
+                inx = lines.slice(0, i).join("\n").length;
+            }
+
+            line = lines[i];
+            part = line.trim();
+
+            if (part == '{' || part == '}') {
+                continue;
+            }
+
+            if (part.charAt(0) == '@') {
+
+                if (description) {
+                    parts.push({flag: descrFlag, content: description, sub: []});
+                    description = "";
+                }
+
+                sub     = null;
+                flag    = null;
+
+                if (part.charAt(part.length - 1) == '{') {
+
+                    sub     = getCurly(text, inx + lines[i].length - 1);
+                    part    = part.substring(0, part.length - 2).trim();
+                    i      += sub.trim().split("\n").length + 1;
+                }
+                else if (part.charAt(part.length - 1) == '}') {
+
+                    subInx  = getCurly(part, null, true, true);
+                    if (subInx && (sub = part.substring(subInx[0], subInx[1])) &&
+                        sub.match(flagReg)) {
+
+                        part    = part.substr(0, subInx[0] - 1) + part.substr(subInx[1] + 1);
+                        part    = part.trim();
+                    }
+                    else {
+                        sub     = null;
                     }
                 }
-                else {
-                    this.flags["returns"] = this.doc.normalizeType(content, this.file);
-                }
-                break;
-            case "constructor":
-                break;
+                else if (part.charAt(part.length - 1) != '}' &&
+                         part.replace(flagReg, "").trim() != "") {
 
-            default:
-                this.$super(flag, content);
-        }
-
-    }
-
-}, {
-
-    priority: 30,
-    stackable: true,
-    onePerComment: true,
-    parents: ["param", "property", "class", "interface", "mixin", "trait", "namespace", "root"]
-
-});
-
-
-
-cs.define({
-
-    $class: "item.Method",
-    $extends: "item.Function",
-    type: "method",
-
-
-    addFlag: function(flag, content) {
-
-        switch (flag) {
-            case "constructor":
-                this.flags[flag] = true;
-                break;
-            default:
-                this.$super(flag, content);
-                break;
-        }
-    }
-
-}, {
-
-    priority: 20,
-    stackable: true,
-    parents: ["class", "interface", "mixin", "trait"]
-
-});
-
-
-
-Item.$extend({
-
-    $class: "item.Namespace",
-    type: "namespace"
-
-}, {
-
-    priority: 10,
-    stackable: true,
-    parents: ["root"]
-
-});
-
-
-
-Item.$extend({
-
-    $class: "item.Var",
-    type: "var",
-
-    addFlag: function(flag, content) {
-        switch (flag) {
-            case "description":
-                if (!this.flags['type'] && !this.flags['description']) {
-                    this.processOwnFlag(content);
-                }
-                break;
-            default:
-                this.$super(flag, content);
-                break;
-        }
-    },
-
-    processOwnFlag: function(content) {
-
-        if (content.charAt(0) == '{') {
-            var curly = getCurly(content);
-            this.flags["type"] = this.doc.normalizeType(curly, this.file);
-            content = trim(content.replace('{' + curly + '}', ""));
-        }
-
-        var inx = content.indexOf(" ");
-        if (inx > -1) {
-            content = trim(content.substr(inx));
-
-            if (content) {
-                this.flags['description'] = content;
-            }
-        }
-
-    }
-
-}, {
-
-    priority: 50,
-    stackable: false,
-    parents: ["class", "interface", "mixin", "namespace", "root"],
-
-    getItemName: function(flagString, comment, doc, file, context, type) {
-
-        var left = 0,
-            right = 0,
-            name,
-            i, l,
-            char;
-
-        flagtype: while (typeof flagString != "string") {
-            for (i = 0, l = flagString.length; i < l; i++) {
-                if (flagString[i].type == "description") {
-                    flagString = flagString[i].content;
-                    continue flagtype;
-                }
-            }
-            break;
-        }
-
-        flagString = trim(flagString);
-
-        if (flagString.charAt(0) == '{') {
-
-            for (i = 0, l = flagString.length; i < l; i++) {
-                char = flagString.charAt(i);
-                if (char == '{') {
-                    left++;
-                }
-                else if (char == '}') {
-                    right++;
-                }
-                if (left > 0 && left == right) {
-                    flagString = trim(flagString.substr(i + 1));
-                    if (flagString) {
-                        name = flagString.split(" ").shift();
-                        return name;
+                    for (j = i + 1; j < l; j++) {
+                        if (lines[j].trim().substr(0, 1) != '@') {
+                            part += "\n" + lines[j];
+                            i = j;
+                        }
+                        else {
+                            break;
+                        }
                     }
                 }
+
+
+                if (sub) {
+                    sub = parseComment.call(this, sub, file);
+                }
+
+                part = part.replace(flagReg, function(match){
+                    flag = match.substr(1);
+                    return "";
+                });
+
+                part = part.trim();
+
+                while (aliases.hasOwnProperty(flag)) {
+                    flag = aliases[flag]
+                }
+
+                if (part == "") {
+                    part = null;
+                }
+
+                parts.push({flag: flag, content: part, sub: sub || []});
+            }
+            else if (part) {
+                if (description) {
+                    description += "\n"
+                }
+                description += line;
             }
         }
 
-        if (flagString) {
-            var tmp = flagString.split(" ");
-
-            switch (tmp.length) {
-                case 0:
-                    return null;
-                case 1:
-                    return tmp[0];
-                default:
-                    return tmp[1];
-            }
+        if (description) {
+            parts.push({flag: descrFlag, content: description, sub: []});
         }
 
-        var ext = doc.getExtension(file);
-        if (ext) {
-            var part = ext.getTypeAndName(file, comment.endIndex, context, type);
 
-            if (part) {
-                return part.name;
+        return parts;
+
+    };
+
+
+    return globalCache.add("*.parseComment",  parseComment);
+}());
+
+
+
+
+
+globalCache.add("*.removeAsterisk", function(text) {
+
+    text = text.replace("/**", '');
+    text = text.replace("*/", '');
+    //text = text.trim();
+
+    var lines   = text.split("\n"),
+        min     = 1000,
+        newLines= [],
+        aFound  = false,
+        line,
+        i, l,
+        j, jl;
+
+    for (i = 0, l = lines.length; i < l; i++) {
+
+        line = lines[i].trim();
+
+        if (line.charAt(0) == '*') {
+            aFound  = true;
+            line    = line.substr(1);
+            newLines.push(line);
+
+            for (j = 0, jl = line.length; j < jl; j++) {
+                if (line.charAt(j) != " ") {
+                    min = Math.min(min, j);
+                    break;
+                }
             }
         }
+        else {
+            newLines.push(null);
+        }
+    }
 
+    if (!aFound) {
+
+        newLines = [];
+
+        for (i = 0, l = lines.length; i < l; i++) {
+
+            line = lines[i];
+            newLines.push(line);
+
+            for (j = 0, jl = line.length; j < jl; j++) {
+                if (line.charAt(j) != " ") {
+                    min = Math.min(min, j);
+                    break;
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < l; i++) {
+        if (newLines[i] !== null) {
+            newLines[i] = newLines[i].substr(min);
+        }
+        else {
+            newLines[i] = lines[i];
+        }
+    }
+
+    return newLines.join("\n");
+});
+
+
+
+
+globalCache.add("*.requiredContext", {
+    "param": ["function", "method"],
+    "returns": ["function", "method"],
+    "constructor": ["method"]
+});
+
+
+
+
+
+globalCache.add("*.sortParts", function(parts, comment) {
+
+    var flagInx = {},
+        ext = comment.file.ext,
+        items = this.pget(ext + ".items");
+
+    if (!items) {
+        return parts;
+    }
+
+    var reqCtx = this.pget(ext + ".requiredContext") || {};
+
+    items.forEach(function(item, inx) {
+        flagInx[item.name] = inx;
+    });
+
+    // flags sorted by a simple rule:
+    // if flag has an item associated with it (class, method, var, etc) it goes higher
+    // if flag does not have an item, but requires an item, it goes below items
+    // the rest goes to the bottom
+    parts.sort(function(a, b){
+
+        // flag can be "constructor"
+        // so we must check hasOwnProperty
+        var aInx    = flagInx.hasOwnProperty(a.flag) ? flagInx[a.flag] : undefined,
+            bInx    = flagInx.hasOwnProperty(b.flag) ? flagInx[b.flag] : undefined,
+            aUndf   = typeof aInx == "undefined",
+            bUndf   = typeof bInx == "undefined",
+            aCtx    = reqCtx.hasOwnProperty(a.flag),
+            bCtx    = reqCtx.hasOwnProperty(b.flag);
+
+        if (aInx === bInx) {
+
+            // if both are simple flags
+            // we need to check if any of them
+            // requires a context;
+            // we put context aware flags above
+            if (aUndf) {
+                if (aCtx === bCtx) {
+                    return 0;
+                }
+                return aCtx ? -1 : 1;
+            }
+
+            return 0;
+        }
+        else if (aUndf != bUndf) {
+            return aUndf ? 1 : -1;
+        }
+        else {
+            return aInx < bInx ? -1 : 1;
+        }
+    });
+
+    return parts;
+});
+
+
+
+globalCache.add("js.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+
+    var content         = file.getContent(),
+        part            = content.substr(startIndex, 200),
+        lines           = part.split("\n"),
+        rVar            = /var\s+([^\s]+)\s*=\s*([^\s(;]+)/,
+        rProp           = /\s*(['"$a-zA-Z0-9\-_]+)\s*:\s*([^\s(;]+)/,
+        rFunc           = /(return|;|=)\s*function\s+([^(]+)/,
+        rNamedFunc      = /(['"$a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[$a-zA-Z0-9_]+)/,
+        isFunc          = typeof checkFunctions != "undefined" ? checkFunctions : null,
+        isVar           = typeof checkVars != "undefined" ? checkVars : null,
+        name, type,
+        match,
+        inx,
+        i, l;
+
+    inx = part.indexOf('/**');
+    if (inx > -1) {
+        part = part.substr(0, inx);
+    }
+
+    for (i = 0, l = lines.length; i < l; i++) {
+
+        part = lines.slice(0, i).join("\n");
+
+        if ((isFunc === null || isFunc === true) && (match = part.match(rFunc))) {
+            name = match[2].trim();
+            type = "function";
+        }
+        else if ((isFunc === null || isFunc === true) && (match = part.match(rNamedFunc))) {
+            name = match[2].trim();
+            if (name == '(') {
+                name = match[1].trim();
+                name = name.replace(/['"]/g, "");
+                var tmp = name.split(".");
+                name = tmp.pop();
+            }
+            type = "function";
+        }
+        else if ((isVar === null || isVar === true) && (match = part.match(rVar))) {
+            name = match[1].trim();
+            type = match[2].trim();
+        }
+        else if ((isVar === null || isVar === true) && (match = part.match(rProp))) {
+            name = match[1].trim();
+            type = match[2].trim();
+        }
+
+        if (type && name) {
+            return [type, name];
+        }
+    }
+});
+
+
+
+globalCache.add("js.item.*.getFullName", function(item) {
+
+    var parents = item.getParents().reverse(),
+        name = item.name,
+        fullName = "";
+
+    if (!name) {
         return null;
     }
 
-});
 
 
+    parents.push(item);
 
-cs.define({
-
-    $class: "item.Property",
-    $extends: "item.Var",
-    type: "property",
-
-    addFlag: function(flag, content) {
-
-        switch (flag) {
-            case "type":
-                this.processOwnFlag(content);
-                break;
+    var getPrefix = function(item) {
+        switch (item.type) {
+            case "param":
+                return '/';
+            case "event":
+                return "@";
             default:
-                this.$super(flag, content);
-                break;
+                return ".";
         }
+    };
+
+    parents.forEach(function(parent) {
+        if (parent.name) {
+            if (fullName) {
+                fullName += getPrefix(parent);
+            }
+            fullName += parent.name;
+        }
+    });
+
+    if (item.file.options.namePrefix) {
+        fullName = item.file.options.namePrefix + fullName;
     }
 
-}, {
-
-    priority: 40,
-    stackable: false,
-    parents: ["property", "param", "var", "class", "interface", "mixin", "trait"]
-
+    return fullName;
 });
 
 
 
 
-ns.add("renderer.json", Renderer.$extend({
+
+(function(){
+
+    var classes = function(name) {
+        return {
+            name: name,
+            children: ["method", "property", "const", "event", "!param"],
+            extendable: true,
+            transform: {
+                "function": "method",
+                "var":      "property"
+            }
+        };
+    };
+
+    var funcs = function(name) {
+        return {
+            name: name,
+            onePerComment: true,
+            multiple: name != "event",
+            children: ["param"],
+            transform: {}
+        }
+    };
+
+    var vars = function(name) {
+
+        var children = ["!param"];
+
+        if (name == "var" || name == "property") {
+            children.push("event");
+        }
+
+        return {
+            name: name,
+            stackable: false,
+            children: children,
+            transform: {
+                "var": "property"
+            }
+        };
+    };
+
+
+    return globalCache.add("js.items", [
+        {
+            name: "root",
+            namespace: true,
+            children: ["*", "!param"]
+        },
+        {
+            name: "namespace",
+            namespace: true,
+            children: ["*", "!namespace", "!param"],
+            transform: {
+                "method": "function"
+            }
+        },
+        {
+            name: "module",
+            namespace: true,
+            children: ["*", "!namespace", "!module", "!param"],
+            transform: {
+                "method": "function"
+            }
+        },
+        classes("class"),
+        classes("interface"),
+        classes("mixin"),
+        funcs("function"),
+        funcs("method"),
+        funcs("event"),
+        vars("param"),
+        vars("var"),
+        vars("property"),
+        vars("const")
+    ]);
+
+}());
+
+
+
+globalCache.add("js.resolveIncludes", function(file) {
+
+    var content     = file.getContent(),
+        base        = file.dir + "/",
+        rInclude    = /require\(['|"]([^)]+)['|"]\)/,
+        start       = 0,
+        list        = [],
+        required,
+        match;
+
+    while (match = rInclude.exec(content.substr(start))) {
+
+        required = match[1];
+        start += match.index + required.length;
+
+        if (required.indexOf(".js") == -1) {
+            continue;
+        }
+
+        required = path.normalize(base + required);
+        list.push(required);
+    }
+
+    return list;
+});
+
+
+
+
+globalCache.add("js.typeAliases", {
+
+    "{}": "object",
+    "Object": "object",
+
+    "[]": "array",
+    "Array": "array",
+
+    "bool": "boolean",
+    "Bool": "boolean",
+    "Boolean": "boolean",
+
+    "String": "string",
+
+    "Function": "function"
+});
+
+
+
+globalCache.add("renderer.json", Renderer.$extend({
 
     render: function() {
-        return JSON.stringify(this.doc.getData());
+        return JSON.stringify(this.doc.getData(), null, 2);
     }
 
 }, {
@@ -2998,230 +3394,14 @@ ns.add("renderer.json", Renderer.$extend({
 
 
 
-
-
-
-
-
-
-
-
-
-var Documentor = Base.$extend({
-
-    files: null,
-    ext: null,
-    types: null,
-    cs: null,
-    ns: null,
-    root: null,
-    argv: null,
-
-    itemPromises: null,
-
-    $init: function(){
-
-        this.files = {};
-        this.ext = {};
-        this.types = {};
-        this.cs = cs;
-        this.ns = ns;
-        this.itemPromises = {};
-        this.root = new Root({
-            doc: this
-        });
-
-        this.addExtension("js", JsExt);
-
-        this.addItemType("namespace", "item.Namespace");
-        this.addItemType("class", "item.Class");
-        this.addItemType("function", "item.Function");
-        this.addItemType("method", "item.Method");
-        this.addItemType("var", "item.Var");
-        this.addItemType("property", "item.Property");
-        this.addItemType("type", "item.Property");
-        this.addItemType("param", "item.Param");
-
-
-        this.$super();
-    },
-
-    available: function(type, name, item) {
-        var id = type +"-"+ name;
-
-        if (!this.itemPromises[id]) {
-            this.itemPromises[id] = new Promise;
-        }
-
-        this.itemPromises[id].resolve(item);
-    },
-
-    onAvailable: function(type, name, fn, context) {
-
-        var id = type +"-"+ name;
-
-        if (!this.itemPromises[id]) {
-            this.itemPromises[id] = new Promise;
-        }
-
-        this.itemPromises[id].done(fn, context);
-    },
-
-    getRenderer: function(name){
-        return ns.get("renderer." + name, true);
-    },
-
-    getExtension: function(ext) {
-        if (ext instanceof File) {
-            ext = ext.ext;
-        }
-        return this.ext[ext] || null;
-    },
-
-    addExtension: function(ext, pluginClass) {
-
-        this.ext[ext] = new pluginClass({
-            doc: this
-        });
-    },
-
-    getItemType: function(type) {
-        return this.types.hasOwnProperty(type) ? this.types[type] : null;
-    },
-
-    getItemTypes: function() {
-        return this.types;
-    },
-
-    addItemType: function(type, itemClass) {
-        this.types[type] = typeof itemClass == "string" ? ns.get(itemClass) : itemClass;
-    },
-
-    eat: function(directory, ext, priv) {
-
-        if (!ext) {
-            throw "Extension required";
-        }
-        if (!directory) {
-            throw "Directory or file required";
-        }
-
-        priv = priv === undf ? false : priv;
-
-        var self = this;
-
-        if (isFile(directory)) {
-            self.addFile(directory, priv);
-        }
-        else {
-            var list = getFileList(directory);
-            list.forEach(function(file) {
-                self.addFile(file, priv);
-            });
-        }
-    },
-
-    resolveIncludes: function(file, priv) {
-
-        var self = this,
-            plugin = self.getExtension(file.ext);
-
-        if (plugin) {
-            var includes = plugin.resolveIncludes(file);
-
-            includes.forEach(function(include){
-                self.addFile(include, priv);
-            });
-        }
-
-    },
-
-    addFile: function(filePath, priv) {
-
-        if (!this.files[filePath]) {
-
-            var file = File.get(filePath, this);
-            this.resolveIncludes(file, priv);
-            this.files[filePath] = file;
-
-            file.parse();
-        }
-    },
-
-    normalizeType: function(type, file) {
-
-        var ext = this.getExtension(file),
-            i, l;
-
-        if (type.indexOf("|") != -1) {
-            type = type.split("|");
-        }
-        else {
-            type = [type];
-        }
-
-        if (ext) {
-            for (i = 0, l = type.length; i < l; i++) {
-                type[i] = ext.normalizeType(type[i]);
-            }
-        }
-
-        return type;
-    },
-
-    getData: function() {
-        return this.root.getData();
-    },
-
-    render: function() {
-
-    },
-
-    clear: function() {
-        File.clear();
-    }
-}, {
-    RendererBase: Renderer
-});
-
-
-
-
-cs.define({
-
-    $class: "item.Param",
-    $extends: "item.Var",
-    type: "param"
-
-}, {
-
-    createRequiredContext: function(commentPart, comment, doc, file) {
-
-        var ext = doc.getExtension(file);
-
-        if (ext) {
-            return ext.getTypeAndName(file, comment.endIndex, file.getCurrentContext(), "function");
-        }
-
-        return null;
-    },
-
-    priority: 40,
-    stackable: false,
-    parents: ["method", "function"]
-
-});
-
-
-
-
-ns.add("renderer.plain", Renderer.$extend({
+globalCache.add("renderer.plain", Renderer.$extend({
 
     render: function() {
 
         var data = this.doc.getData(),
             html = "<ul>",
-            keys = ["param", "var", "function", "namespace", "class", "property", "method"];
+            keys = ["param", "var", "function", "namespace", "class", "property", "method"],
+            key, value;
 
         var renderItem = function(type, item) {
 
@@ -3251,14 +3431,22 @@ ns.add("renderer.plain", Renderer.$extend({
                 }
 
                 if (item.flags.returns) {
-                    html += ' : '+ (item.flags.returns.join(" | "));
+                    if (typeof item.flags.returns == "string") {
+                        html += ' : !!![' + (item.flags.returns) + ']';
+                    }
+                    else {
+                        html += ' : [' + (item.flags.returns.join(" | ")) + ']';
+                    }
+                    delete item.flags.returns;
                 }
             }
 
             html += '</p>';
 
             if (item.flags.description) {
+                html += '<p>';
                 html += item.flags.description;
+                html += '</p>';
                 delete item.flags.description;
             }
 
@@ -3274,6 +3462,15 @@ ns.add("renderer.plain", Renderer.$extend({
                     html += '</ul>';
                 }
             });
+
+            var flags = "";
+            for (key in item.flags) {
+                value = item.flags[key];
+                flags += '<li>'+key+' : '+value+'</li>';
+            }
+            if (flags) {
+                html += '<ul>' + flags + '</ul>';
+            }
 
             html += '</li>';
 
@@ -3295,7 +3492,7 @@ ns.add("renderer.plain", Renderer.$extend({
 
 
 
-ns.add("renderer.raw", Renderer.$extend({
+globalCache.add("renderer.raw", Renderer.$extend({
 
     render: function() {
         return this.doc.getData();
