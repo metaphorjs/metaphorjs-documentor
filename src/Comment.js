@@ -25,7 +25,16 @@ var Comment = Base.$extend({
     },
 
     hasFlag: function(name) {
-        return this.getFlag(name) !== null;
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].flag == name) {
+                return true;
+            }
+        }
+
+        return false;
     },
 
     getFlag: function(name) {
@@ -57,9 +66,9 @@ var Comment = Base.$extend({
 
     parse: function() {
 
-        var parts = this.pcall("parseComment", this.comment, this.file);
+        var parts = this.pcall("comment.parseComment", this.comment, this.file);
 
-        parts = this.pcall("sortParts", parts, this);
+        parts = this.pcall("comment.sortParts", parts, this);
 
         this.parts = parts || [];
     }

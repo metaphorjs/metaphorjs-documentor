@@ -17,8 +17,8 @@ module.exports = function resolveExtendableName(item, flag, content) {
         var ns = item.getParentNamespace(),
             refs = ns.findItem(content, find);
 
-        return refs.length ? refs[0].createRef(content) : content;
+        return refs.length ? refs[0].fullName : null;
     }
 
-    return content;
+    return null;
 };

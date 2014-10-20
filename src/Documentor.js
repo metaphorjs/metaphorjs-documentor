@@ -21,9 +21,10 @@ module.exports = Base.$extend({
 
     files: null,
     root: null,
-    cache: null,
+    hooks: null,
     id: null,
     map: null,
+    pages: null,
 
     $init: function(){
 
@@ -32,12 +33,17 @@ module.exports = Base.$extend({
         self.id = nextUid();
         self.files = {};
         self.map = {};
+        self.pages = {};
         self.root = new Item({
             doc: self,
-            type: "root"
+            type: "root",
+            file: new File({
+                ext: "*",
+                doc: self
+            })
         });
 
-        self.cache = new Cache(true);
+        self.hooks = new Cache(true);
 
 
         self.$super();
@@ -48,6 +54,13 @@ module.exports = Base.$extend({
 
     pcall: function(name) {
         var fn = this.pget(name),
+            args = Array.prototype.slice.call(arguments, 1);
+
+        return fn ? fn.apply(this, args) : null;
+    },
+
+    pcallExact: function(name) {
+        var fn = this.pget(name, false, null, true),
             args = Array.prototype.slice.call(arguments, 1);
 
         return fn ? fn.apply(this, args) : null;
@@ -66,7 +79,7 @@ module.exports = Base.$extend({
             names.length = 1;
         }
 
-        [self.cache, globalCache].forEach(function(cache){
+        [self.hooks, globalCache].forEach(function(cache){
             for (i = 0, l = names.length; i < l; i++) {
 
                 name = names[i];
@@ -117,7 +130,7 @@ module.exports = Base.$extend({
 
 
     getRenderer: function(name){
-        return this.cache.get("renderer." + name) ||
+        return this.hooks.get("renderer." + name) ||
                globalCache.get("renderer." + name);
     },
 
@@ -186,7 +199,7 @@ module.exports = Base.$extend({
     resolveIncludes: function(file, options) {
 
         var self = this,
-            includes = this.pcall(file.ext + ".resolveIncludes", file);
+            includes = file.pcall("resolveIncludes", file);
 
         if (includes) {
             includes.forEach(function(include){
@@ -196,17 +209,22 @@ module.exports = Base.$extend({
     },
 
 
+    addPage: function(file, options) {
+
+        if (!this.pages[file]) {
+            this.pages[file] = options;
+        }
+    },
+
     prepareItems: function() {
 
         var self = this;
-
 
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
     },
-
 
 
     eachItem: function(fn, context) {
@@ -219,9 +237,20 @@ module.exports = Base.$extend({
 
     clear: function() {
         File.clear();
+
+        this.map = {};
+        this.pages = {};
+
+        this.root.$destroy();
+
+        for (var f in this.files) {
+            if (this.files.hasOwnProperty(f)) {
+                this.files[f].$destroy();
+            }
+        }
+
         this.files = {};
         this.root = null;
-        this.map = {};
     }
 
 }, {
@@ -232,7 +261,7 @@ module.exports = Base.$extend({
     Comment: Comment,
 
 
-    cache: globalCache
+    hooks: globalCache
 
 
 });

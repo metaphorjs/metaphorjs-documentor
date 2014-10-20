@@ -12,6 +12,39 @@ module.exports = globalCache.add("renderer.plain", Renderer.$extend({
             keys = ["param", "var", "function", "namespace", "class", "property", "method"],
             key, value;
 
+        var renderFlags = function(flagName, flags, wrap, splitter) {
+
+            var html = "";
+
+            flags.forEach(function(f, i){
+
+                if (i > 0 && splitter) {
+                    html += splitter;
+                }
+
+                if (wrap) {
+                    html += '<' + wrap + '>';
+                }
+
+                if (f.contentType == "code") {
+                    html += '<pre><code>';
+                }
+
+                html += f.content;
+
+                if (f.contentType == "code") {
+                    html += '</code></pre>';
+                }
+
+                if (wrap) {
+                    html += '</' + wrap + '>';
+                }
+
+            });
+
+            return html;
+        };
+
         var renderItem = function(type, item) {
 
             html += '<li>';
@@ -23,7 +56,7 @@ module.exports = globalCache.add("renderer.plain", Renderer.$extend({
 
             if (item.name) {
                 if (item.flags.type) {
-                    html += '['+ (item.flags.type.join(" | ")) +'] ';
+                    html += '['+ (renderFlags(null, item.flags.type, null, ' | ')) +'] ';
                     delete item.flags.type;
                 }
                 html += '<b>' + item.name + '</b>';
@@ -40,22 +73,21 @@ module.exports = globalCache.add("renderer.plain", Renderer.$extend({
                 }
 
                 if (item.flags.returns) {
-                    if (typeof item.flags.returns == "string") {
-                        html += ' : !!![' + (item.flags.returns) + ']';
-                    }
-                    else {
-                        html += ' : [' + (item.flags.returns.join(" | ")) + ']';
-                    }
+                    html += ' : [' + (renderFlags(null, item.flags.returns, null, ' | ')) + ']';
                     delete item.flags.returns;
                 }
             }
 
             html += '</p>';
 
+            if (item.file && item.line) {
+                html += '<p><sub>';
+                html += item.file + " : " + item.line;
+                html += '</sub></p>';
+            }
+
             if (item.flags.description) {
-                html += '<p>';
-                html += item.flags.description;
-                html += '</p>';
+                html += renderFlags(null, item.flags.description, 'p');
                 delete item.flags.description;
             }
 
@@ -75,7 +107,10 @@ module.exports = globalCache.add("renderer.plain", Renderer.$extend({
             var flags = "";
             for (key in item.flags) {
                 value = item.flags[key];
-                flags += '<li>'+key+' : '+value+'</li>';
+                value.forEach(function(f){
+                    flags += '<li><p>'+key+' : '+ f.content +'</p></li>';
+                });
+
             }
             if (flags) {
                 html += '<ul>' + flags + '</ul>';

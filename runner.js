@@ -8,7 +8,7 @@ var Documentor = require("./dist/metaphorjs.documentor.js"),
 
 var doc = new Documentor;
 
-var loc = path.normalize(process.cwd() + "/../metaphorjs-namespace/src"),
+var loc = path.normalize(process.cwd() + "/../metaphorjs-promise/src"),
     base = path.normalize(loc + "/../../");
 
 //try {

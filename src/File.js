@@ -72,27 +72,30 @@ module.exports = function(){
 
             var self = this;
 
-            self.contextStack = [self.doc.root];
-            self.comments = [];
-            self.tmp = {};
-            self.dir = path.dirname(self.path);
-            self.ext = path.extname(self.path).substr(1);
+            if (self.ext != "*") {
 
-            if (self.options.basePath) {
-                self.exportPath = self.path.replace(self.options.basePath, "");
-            }
-            else {
-                self.exportPath = self.path;
+                self.contextStack = [self.doc.root];
+                self.comments = [];
+                self.tmp = {};
+                self.dir = path.dirname(self.path);
+                self.ext = path.extname(self.path).substr(1);
+
+                if (self.options.basePath) {
+                    self.exportPath = self.path.replace(self.options.basePath, "");
+                }
+                else {
+                    self.exportPath = self.path;
+                }
             }
         },
 
         pcall: function(name) {
-            arguments[0] = this.ext + "." + arguments[0];
+            arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pcall.apply(this.doc, arguments);
         },
 
         pget: function(name, collect, passthru) {
-            arguments[0] = this.ext + "." + arguments[0];
+            arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pget.apply(this.doc, arguments);
         },
 
@@ -244,6 +247,22 @@ module.exports = function(){
                 return null;
             }
 
+            // end current context
+            if (part.flag.indexOf("end-") === 0) {
+                var end = part.flag.replace("end-", ""),
+                    i;
+
+                for(i = cs.length - 1; i >= 0; i--) {
+                    if (cs[i].type == end) {
+                        cs.length = i;
+                        break;
+                    }
+                }
+
+                return null;
+            }
+
+            // simple flag or item without context
             if (!type) {
 
                 if (typeof type === "undefined" || type === null) {
@@ -255,7 +274,7 @@ module.exports = function(){
                     // if there is no acceptable context for the given part
                     // we try to create this context.
                     // function returns new comment part
-                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
+                    item = self.pcall("item.?." + part.flag + ".createContext", part, cmt);
 
                     // we return this new part
                     // and it will be processed as if it were
@@ -283,7 +302,7 @@ module.exports = function(){
                 item.addFlag(type, part.content);
                 context.addItem(item);
 
-                if (typeProps.children.length && typeProps.stackable !== false) {
+                if (typeProps.children.length && typeProps.stackable !== false && !fixedContext) {
                     cs.push(item);
                 }
 
@@ -317,7 +336,7 @@ module.exports = function(){
                 return this.pcall("getItemType", type, this) ? type : null;
             }
 
-            var requiredContext = this.pget("requiredContext", true, null, null, true);
+            var requiredContext = this.pget("item.?.requiredContext", true, null, null, true);
 
             if (requiredContext.hasOwnProperty(type)) {
                 requiredContext = requiredContext[type];
@@ -379,18 +398,40 @@ module.exports = function(){
 
         getItemName: function(type, part, comment) {
 
-            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
+            var res = this.pcall("item."+ type +"." + type + ".parse", type, part.content, comment);
 
             if (res && res.name) {
                 return res.name;
             }
 
             if (comment) {
-                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
+                res = this.pcall("item.extractTypeAndName", this, comment.endIndex, true, true);
                 return res ? res[1] : null;
             }
 
             return null;
+        },
+
+
+        resolveFlagFile: function(filePath) {
+
+            var self = this,
+                ret;
+
+            if (fs.existsSync(process.cwd() + "/" + filePath)) {
+                ret = process.cwd() + "/" + filePath;
+            }
+            else if (fs.existsSync(self.dir + '/' + filePath)) {
+                ret =  self.dir + '/' + filePath;
+            }
+            else if (self.basePath && fs.existsSync(self.basePath + "/" + filePath)) {
+                ret =  self.basePath + "/" + filePath;
+            }
+            else if (fs.existsSync(filePath)) {
+                ret =  filePath;
+            }
+
+            return ret ? path.normalize(ret) : false;
         },
 
         getContext: function(inx) {

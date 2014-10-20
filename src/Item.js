@@ -1,5 +1,6 @@
 
 var Base = require("./Base.js"),
+    Flag = require("./Flag.js"),
     isArray = require("../../metaphorjs/src/func/isArray.js"),
     emptyFn = require("../../metaphorjs/src/func/emptyFn.js");
 
@@ -37,9 +38,32 @@ module.exports = (function(){
             }
         },
 
+
+        pcall: function(name) {
+            arguments[0] = "item." + this.type + "." + arguments[0];
+            if (this.file) {
+                return this.file.pcall.apply(this.file, arguments);
+            }
+            else {
+                arguments[0] = "*." + arguments[0];
+                return this.doc.pcall.apply(this.doc, arguments);
+            }
+        },
+
+        pget: function(name, collect, passthru) {
+            arguments[0] = "item." + this.type + "." + arguments[0];
+            if (this.file) {
+                return this.file.pget.apply(this.file, arguments);
+            }
+            else {
+                arguments[0] = "*." + arguments[0];
+                return this.doc.pcall.apply(this.doc, arguments);
+            }
+        },
+
         getTypeProps: function() {
             if (!this.props) {
-                this.props = this.pcall("getItemType", this.type, this.file);
+                this.props = this.file.pcall("getItemType", this.type, this.file);
             }
             return this.props;
         },
@@ -89,41 +113,54 @@ module.exports = (function(){
 
             var self = this;
 
-            var prepared = this.pcall("flag." + flag + ".prepare", flag, content, this);
+            if (self.type == "root") {
+                return;
+            }
+
+            var prepared = self.pcall(flag + ".prepare", flag, content, self);
 
             if (prepared) {
                 content = prepared;
             }
 
-            this.pget("flag." + flag + ".add", false, function(fn){
-                return fn(flag, content, self);
+            var abort = false;
+
+            self.pget(flag + ".add", false, function(fn){
+                var res = fn(flag, content, self);
+                if (res !== true) {
+                    if (res === false) {
+                        abort = true;
+                    }
+                    return false;
+                }
             });
 
-            if (flag == this.type) {
+            if (abort || flag == self.type) {
                 return;
             }
 
-            switch (flag) {
-                case "md-tmp":
-                case "md-apply":
-                    break;
-                case "public":
-                case "protected":
-                case "private":
-                    this.addFlag("access", flag);
-                    break;
-                default:
-                    if (!this.flags.hasOwnProperty(flag)) {
-                        this.flags[flag] = [];
-                    }
-                    if (isArray(content)) {
-                        this.flags[flag] = this.flags[flag].concat(content);
-                    }
-                    else {
-                        this.flags[flag].push(content);
-                    }
-                    break;
+            var added = [],
+                f;
+
+            if (!self.flags.hasOwnProperty(flag)) {
+                self.flags[flag] = [];
             }
+            if (isArray(content)) {
+                content.forEach(function(content){
+                    f = content instanceof Flag ? content : new Flag(content);
+                    self.flags[flag].push(f);
+                    added.push(f);
+                });
+            }
+            else {
+                f = content instanceof Flag ? content : new Flag(content);
+                self.flags[flag].push(f);
+                added.push(f);
+            }
+
+            added.forEach(function(f) {
+                self.pcall(flag + ".added", f, self);
+            });
         },
 
         setName: function(name) {
@@ -191,11 +228,9 @@ module.exports = (function(){
             flags.forEach(function(flag){
 
                 if (self.flags.hasOwnProperty(flag)) {
-                    self.flags[flag].forEach(function(name){
+                    self.flags[flag].forEach(function(flagObj){
 
-                        name = typeof name == "string" ? name : name.ref;
-
-                        var item = doc.getItem(name);
+                        var item = doc.getItem(flagObj.getProperty("ref"));
 
                         if (item) {
                             parents.push(item);
@@ -223,7 +258,7 @@ module.exports = (function(){
         getParentNamespace: function() {
 
             var parents     = this.getParents(),
-                getProps    = this.pget("getItemType"),
+                getProps    = this.file.pget("getItemType"),
                 i, l,
                 props;
 
@@ -273,7 +308,7 @@ module.exports = (function(){
             }
 
             if (!self.fullName) {
-                self.setFullName(self.pcall("item." + self.type + ".getFullName", self));
+                self.setFullName(self.pcall("getFullName", self));
             }
         },
 
@@ -305,12 +340,13 @@ module.exports = (function(){
                 }
 
                 if (self.flags.hasOwnProperty(k)) {
-                    self.flags[k].forEach(function (flag, inx) {
+                    self.flags[k].forEach(function (flag) {
 
-                        var res = self.pcall("flag." + k + ".resolveName", self, k, flag);
+                        var res = self.pcall(k + ".resolveName", self, k, flag.content);
 
                         if (res) {
-                            self.flags[k][inx] = res;
+                            flag.setType("typeRef");
+                            flag.setProperty("ref", res);
                         }
                     });
                 }
@@ -346,41 +382,36 @@ module.exports = (function(){
 
 
 
-        importItem: function(item) {
 
-            var self = this;
 
-            for (var type in item.items) {
-                item.items[type].forEach(function (item) {
-                    self.addItem(item);
-                });
-            }
 
-            for (var key in item.flags) {
-                self.addFlag(key, item.flags[key]);
-            }
-        },
-
-        createRef: function(name) {
-            return {
-                name: name,
-                ref: this.fullName
-            };
-        },
 
         getData: function(currentParent) {
 
             var self = this,
-                exprt = self.type == "root" ? {} : {
+                k,
+                exprt =  {
                     name:  self.name,
                     fullName: self.fullName,
-                    flags: self.flags,
-                    file: self.file.exportPath,
-                    line: self.comment.line
+                    flags: {},
+                    file: self.file.exportPath
                 };
+
+            if (self.comment) {
+                exprt.line = self.comment.line;
+            }
 
             if (currentParent && currentParent !== self.parent) {
                 exprt.inheritedFrom = self.parent.fullName;
+            }
+
+            for (k in self.flags) {
+                if (self.flags.hasOwnProperty(k)) {
+                    exprt.flags[k] = [];
+                    self.flags[k].forEach(function(flag){
+                        exprt.flags[k].push(flag.getData());
+                    });
+                }
             }
 
             self.eachItem(function(child){
@@ -396,6 +427,25 @@ module.exports = (function(){
             }, null, true);
 
             return exprt;
+        },
+
+        destroy: function() {
+
+            var k, i, l, items, flags, self = this;
+
+            for (k in self.items) {
+                items = self.items[k];
+                for (i = 0, l = items.length; i < l; i++) {
+                    items[i].$destroy();
+                }
+            }
+
+            for (k in self.flags) {
+                flags = self.flags[k];
+                for (i = 0, l = flags.length; i < l; i++) {
+                    flags[i].$destroy();
+                }
+            }
         }
 
     });

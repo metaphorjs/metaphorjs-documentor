@@ -216,14 +216,7 @@ var Namespace = function(){
     /**
      * @param {Object} root optional; usually window or global
      * @param {String} rootName optional. If you want custom object to be root and
-     * this object itself if the first level of namespace:<br>
-     * <pre><code class="language-javascript">
-     * var ns = MetaphorJs.lib.Namespace(window);
-     * ns.register("My.Test", something); // -> window.My.Test
-     * var privateNs = {};
-     * var ns = new MetaphorJs.lib.Namespace(privateNs, "privateNs");
-     * ns.register("privateNs.Test", something); // -> privateNs.Test
-     * </code></pre>
+     * this object itself if the first level of namespace: {@code ../examples/main.js}
      * @param {Cache} cache optional
      * @constructor
      */
@@ -1227,7 +1220,16 @@ var Comment = Base.$extend({
     },
 
     hasFlag: function(name) {
-        return this.getFlag(name) !== null;
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].flag == name) {
+                return true;
+            }
+        }
+
+        return false;
     },
 
     getFlag: function(name) {
@@ -1259,9 +1261,9 @@ var Comment = Base.$extend({
 
     parse: function() {
 
-        var parts = this.pcall("parseComment", this.comment, this.file);
+        var parts = this.pcall("comment.parseComment", this.comment, this.file);
 
-        parts = this.pcall("sortParts", parts, this);
+        parts = this.pcall("comment.sortParts", parts, this);
 
         this.parts = parts || [];
     }
@@ -1332,6 +1334,65 @@ var getFileList = function(directory) {
 
 
 
+var Flag = Base.$extend({
+
+    type: null,
+    content: null,
+    props: null,
+
+    $init: function(content, type, props) {
+
+        var ct;
+
+        if (content && typeof content == "object") {
+            type = content.type;
+            ct = content.contentType;
+            content = content.content;
+        }
+
+        type = type || (typeof content);
+
+        this.props = props || {};
+
+        if (type == "file") {
+            this.props["fromFile"] = content;
+            this.props["fileType"] = path.extname(content).substr(1);
+            content = fs.readFileSync(content).toString();
+            type = ct || "string";
+        }
+
+        this.type = type;
+        this.content = content;
+    },
+
+    setType: function(type) {
+        this.type = type;
+    },
+
+    setContent: function(content) {
+        this.content = content;
+    },
+
+    setProperty: function(name, value){
+        this.props[name] = value;
+    },
+
+    getProperty: function(name) {
+        return this.props[name];
+    },
+
+    getData: function() {
+        return extend({}, {
+            contentType: this.type,
+            content: this.content
+        }, this.props);
+
+    }
+
+});
+
+
+
 
 var Item = (function(){
 
@@ -1366,9 +1427,32 @@ var Item = (function(){
             }
         },
 
+
+        pcall: function(name) {
+            arguments[0] = "item." + this.type + "." + arguments[0];
+            if (this.file) {
+                return this.file.pcall.apply(this.file, arguments);
+            }
+            else {
+                arguments[0] = "*." + arguments[0];
+                return this.doc.pcall.apply(this.doc, arguments);
+            }
+        },
+
+        pget: function(name, collect, passthru) {
+            arguments[0] = "item." + this.type + "." + arguments[0];
+            if (this.file) {
+                return this.file.pget.apply(this.file, arguments);
+            }
+            else {
+                arguments[0] = "*." + arguments[0];
+                return this.doc.pcall.apply(this.doc, arguments);
+            }
+        },
+
         getTypeProps: function() {
             if (!this.props) {
-                this.props = this.pcall("getItemType", this.type, this.file);
+                this.props = this.file.pcall("getItemType", this.type, this.file);
             }
             return this.props;
         },
@@ -1418,41 +1502,54 @@ var Item = (function(){
 
             var self = this;
 
-            var prepared = this.pcall("flag." + flag + ".prepare", flag, content, this);
+            if (self.type == "root") {
+                return;
+            }
+
+            var prepared = self.pcall(flag + ".prepare", flag, content, self);
 
             if (prepared) {
                 content = prepared;
             }
 
-            this.pget("flag." + flag + ".add", false, function(fn){
-                return fn(flag, content, self);
+            var abort = false;
+
+            self.pget(flag + ".add", false, function(fn){
+                var res = fn(flag, content, self);
+                if (res !== true) {
+                    if (res === false) {
+                        abort = true;
+                    }
+                    return false;
+                }
             });
 
-            if (flag == this.type) {
+            if (abort || flag == self.type) {
                 return;
             }
 
-            switch (flag) {
-                case "md-tmp":
-                case "md-apply":
-                    break;
-                case "public":
-                case "protected":
-                case "private":
-                    this.addFlag("access", flag);
-                    break;
-                default:
-                    if (!this.flags.hasOwnProperty(flag)) {
-                        this.flags[flag] = [];
-                    }
-                    if (isArray(content)) {
-                        this.flags[flag] = this.flags[flag].concat(content);
-                    }
-                    else {
-                        this.flags[flag].push(content);
-                    }
-                    break;
+            var added = [],
+                f;
+
+            if (!self.flags.hasOwnProperty(flag)) {
+                self.flags[flag] = [];
             }
+            if (isArray(content)) {
+                content.forEach(function(content){
+                    f = content instanceof Flag ? content : new Flag(content);
+                    self.flags[flag].push(f);
+                    added.push(f);
+                });
+            }
+            else {
+                f = content instanceof Flag ? content : new Flag(content);
+                self.flags[flag].push(f);
+                added.push(f);
+            }
+
+            added.forEach(function(f) {
+                self.pcall(flag + ".added", f, self);
+            });
         },
 
         setName: function(name) {
@@ -1520,11 +1617,9 @@ var Item = (function(){
             flags.forEach(function(flag){
 
                 if (self.flags.hasOwnProperty(flag)) {
-                    self.flags[flag].forEach(function(name){
+                    self.flags[flag].forEach(function(flagObj){
 
-                        name = typeof name == "string" ? name : name.ref;
-
-                        var item = doc.getItem(name);
+                        var item = doc.getItem(flagObj.getProperty("ref"));
 
                         if (item) {
                             parents.push(item);
@@ -1552,7 +1647,7 @@ var Item = (function(){
         getParentNamespace: function() {
 
             var parents     = this.getParents(),
-                getProps    = this.pget("getItemType"),
+                getProps    = this.file.pget("getItemType"),
                 i, l,
                 props;
 
@@ -1602,7 +1697,7 @@ var Item = (function(){
             }
 
             if (!self.fullName) {
-                self.setFullName(self.pcall("item." + self.type + ".getFullName", self));
+                self.setFullName(self.pcall("getFullName", self));
             }
         },
 
@@ -1634,12 +1729,13 @@ var Item = (function(){
                 }
 
                 if (self.flags.hasOwnProperty(k)) {
-                    self.flags[k].forEach(function (flag, inx) {
+                    self.flags[k].forEach(function (flag) {
 
-                        var res = self.pcall("flag." + k + ".resolveName", self, k, flag);
+                        var res = self.pcall(k + ".resolveName", self, k, flag.content);
 
                         if (res) {
-                            self.flags[k][inx] = res;
+                            flag.setType("typeRef");
+                            flag.setProperty("ref", res);
                         }
                     });
                 }
@@ -1675,41 +1771,36 @@ var Item = (function(){
 
 
 
-        importItem: function(item) {
 
-            var self = this;
 
-            for (var type in item.items) {
-                item.items[type].forEach(function (item) {
-                    self.addItem(item);
-                });
-            }
 
-            for (var key in item.flags) {
-                self.addFlag(key, item.flags[key]);
-            }
-        },
-
-        createRef: function(name) {
-            return {
-                name: name,
-                ref: this.fullName
-            };
-        },
 
         getData: function(currentParent) {
 
             var self = this,
-                exprt = self.type == "root" ? {} : {
+                k,
+                exprt =  {
                     name:  self.name,
                     fullName: self.fullName,
-                    flags: self.flags,
-                    file: self.file.exportPath,
-                    line: self.comment.line
+                    flags: {},
+                    file: self.file.exportPath
                 };
+
+            if (self.comment) {
+                exprt.line = self.comment.line;
+            }
 
             if (currentParent && currentParent !== self.parent) {
                 exprt.inheritedFrom = self.parent.fullName;
+            }
+
+            for (k in self.flags) {
+                if (self.flags.hasOwnProperty(k)) {
+                    exprt.flags[k] = [];
+                    self.flags[k].forEach(function(flag){
+                        exprt.flags[k].push(flag.getData());
+                    });
+                }
             }
 
             self.eachItem(function(child){
@@ -1725,6 +1816,25 @@ var Item = (function(){
             }, null, true);
 
             return exprt;
+        },
+
+        destroy: function() {
+
+            var k, i, l, items, flags, self = this;
+
+            for (k in self.items) {
+                items = self.items[k];
+                for (i = 0, l = items.length; i < l; i++) {
+                    items[i].$destroy();
+                }
+            }
+
+            for (k in self.flags) {
+                flags = self.flags[k];
+                for (i = 0, l = flags.length; i < l; i++) {
+                    flags[i].$destroy();
+                }
+            }
         }
 
     });
@@ -1738,7 +1848,7 @@ var Item = (function(){
 
 function hideLinks(comment) {
 
-    comment = comment.replace(/{\s*@(link|tutorial).+}/ig, function(match){
+    comment = comment.replace(/{\s*@(link|tutorial|code|page)[^{@]+}/ig, function(match){
         if (match.substr(match.length - 2) == '\\') {
             return match;
         }
@@ -1816,27 +1926,30 @@ var File = function(){
 
             var self = this;
 
-            self.contextStack = [self.doc.root];
-            self.comments = [];
-            self.tmp = {};
-            self.dir = path.dirname(self.path);
-            self.ext = path.extname(self.path).substr(1);
+            if (self.ext != "*") {
 
-            if (self.options.basePath) {
-                self.exportPath = self.path.replace(self.options.basePath, "");
-            }
-            else {
-                self.exportPath = self.path;
+                self.contextStack = [self.doc.root];
+                self.comments = [];
+                self.tmp = {};
+                self.dir = path.dirname(self.path);
+                self.ext = path.extname(self.path).substr(1);
+
+                if (self.options.basePath) {
+                    self.exportPath = self.path.replace(self.options.basePath, "");
+                }
+                else {
+                    self.exportPath = self.path;
+                }
             }
         },
 
         pcall: function(name) {
-            arguments[0] = this.ext + "." + arguments[0];
+            arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pcall.apply(this.doc, arguments);
         },
 
         pget: function(name, collect, passthru) {
-            arguments[0] = this.ext + "." + arguments[0];
+            arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pget.apply(this.doc, arguments);
         },
 
@@ -1988,6 +2101,22 @@ var File = function(){
                 return null;
             }
 
+            // end current context
+            if (part.flag.indexOf("end-") === 0) {
+                var end = part.flag.replace("end-", ""),
+                    i;
+
+                for(i = cs.length - 1; i >= 0; i--) {
+                    if (cs[i].type == end) {
+                        cs.length = i;
+                        break;
+                    }
+                }
+
+                return null;
+            }
+
+            // simple flag or item without context
             if (!type) {
 
                 if (typeof type === "undefined" || type === null) {
@@ -1999,7 +2128,7 @@ var File = function(){
                     // if there is no acceptable context for the given part
                     // we try to create this context.
                     // function returns new comment part
-                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
+                    item = self.pcall("item.?." + part.flag + ".createContext", part, cmt);
 
                     // we return this new part
                     // and it will be processed as if it were
@@ -2027,7 +2156,7 @@ var File = function(){
                 item.addFlag(type, part.content);
                 context.addItem(item);
 
-                if (typeProps.children.length && typeProps.stackable !== false) {
+                if (typeProps.children.length && typeProps.stackable !== false && !fixedContext) {
                     cs.push(item);
                 }
 
@@ -2061,7 +2190,7 @@ var File = function(){
                 return this.pcall("getItemType", type, this) ? type : null;
             }
 
-            var requiredContext = this.pget("requiredContext", true, null, null, true);
+            var requiredContext = this.pget("item.?.requiredContext", true, null, null, true);
 
             if (requiredContext.hasOwnProperty(type)) {
                 requiredContext = requiredContext[type];
@@ -2123,18 +2252,40 @@ var File = function(){
 
         getItemName: function(type, part, comment) {
 
-            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
+            var res = this.pcall("item."+ type +"." + type + ".parse", type, part.content, comment);
 
             if (res && res.name) {
                 return res.name;
             }
 
             if (comment) {
-                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
+                res = this.pcall("item.extractTypeAndName", this, comment.endIndex, true, true);
                 return res ? res[1] : null;
             }
 
             return null;
+        },
+
+
+        resolveFlagFile: function(filePath) {
+
+            var self = this,
+                ret;
+
+            if (fs.existsSync(process.cwd() + "/" + filePath)) {
+                ret = process.cwd() + "/" + filePath;
+            }
+            else if (fs.existsSync(self.dir + '/' + filePath)) {
+                ret =  self.dir + '/' + filePath;
+            }
+            else if (self.basePath && fs.existsSync(self.basePath + "/" + filePath)) {
+                ret =  self.basePath + "/" + filePath;
+            }
+            else if (fs.existsSync(filePath)) {
+                ret =  filePath;
+            }
+
+            return ret ? path.normalize(ret) : false;
         },
 
         getContext: function(inx) {
@@ -2191,25 +2342,40 @@ var globalCache = Cache.global();
 
 var generateNames = function(name) {
 
-    var list = [],
-        path = name.split("."),
-        tmp,
-        i,
-        max = Math.floor(path.length / 2),
-        last = path.length - 2,
-        j, z;
+    var list        = [],
+        path        = name.split("."),
+        strategy    = path[0];
 
-    list.push(name);
 
-    for (j = 1; j <= max; j++) {
+    if (strategy == "file") {
 
-        for (i = last; i >= 0 && i >= (j - 1) * 2; i-=2) {
+        var max         = path.length - 3,
+            last        = path.length - 2,
+            exts        = [path[1], '*'],
+            tmp, i, j, z, ext, e;
+
+        for (e = 0; e < 2; e++) {
+
+            ext = exts[e];
             tmp = path.slice();
-            for (z = 0; z < j; z++) {
-                tmp[i - (z * 2)] = "*";
-            }
+            tmp[1] = ext;
             list.push(tmp.join("."));
+
+            for (j = 1; j <= max; j++) {
+
+                for (i = last; i >= 3; i--) {
+                    tmp = path.slice();
+                    tmp[1] = ext;
+                    for (z = 0; z < j && i - z >= 3; z++) {
+                        tmp[i - z] = "*";
+                    }
+                    list.push(tmp.join("."));
+                }
+            }
         }
+    }
+    else {
+        list.push(name);
     }
 
     return list.filter(function(value, index, self){
@@ -2257,9 +2423,10 @@ var Documentor = Base.$extend({
 
     files: null,
     root: null,
-    cache: null,
+    hooks: null,
     id: null,
     map: null,
+    pages: null,
 
     $init: function(){
 
@@ -2268,12 +2435,17 @@ var Documentor = Base.$extend({
         self.id = nextUid();
         self.files = {};
         self.map = {};
+        self.pages = {};
         self.root = new Item({
             doc: self,
-            type: "root"
+            type: "root",
+            file: new File({
+                ext: "*",
+                doc: self
+            })
         });
 
-        self.cache = new Cache(true);
+        self.hooks = new Cache(true);
 
 
         self.$super();
@@ -2284,6 +2456,13 @@ var Documentor = Base.$extend({
 
     pcall: function(name) {
         var fn = this.pget(name),
+            args = Array.prototype.slice.call(arguments, 1);
+
+        return fn ? fn.apply(this, args) : null;
+    },
+
+    pcallExact: function(name) {
+        var fn = this.pget(name, false, null, true),
             args = Array.prototype.slice.call(arguments, 1);
 
         return fn ? fn.apply(this, args) : null;
@@ -2302,7 +2481,7 @@ var Documentor = Base.$extend({
             names.length = 1;
         }
 
-        [self.cache, globalCache].forEach(function(cache){
+        [self.hooks, globalCache].forEach(function(cache){
             for (i = 0, l = names.length; i < l; i++) {
 
                 name = names[i];
@@ -2353,7 +2532,7 @@ var Documentor = Base.$extend({
 
 
     getRenderer: function(name){
-        return this.cache.get("renderer." + name) ||
+        return this.hooks.get("renderer." + name) ||
                globalCache.get("renderer." + name);
     },
 
@@ -2422,7 +2601,7 @@ var Documentor = Base.$extend({
     resolveIncludes: function(file, options) {
 
         var self = this,
-            includes = this.pcall(file.ext + ".resolveIncludes", file);
+            includes = file.pcall("resolveIncludes", file);
 
         if (includes) {
             includes.forEach(function(include){
@@ -2432,17 +2611,22 @@ var Documentor = Base.$extend({
     },
 
 
+    addPage: function(file, options) {
+
+        if (!this.pages[file]) {
+            this.pages[file] = options;
+        }
+    },
+
     prepareItems: function() {
 
         var self = this;
-
 
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
     },
-
 
 
     eachItem: function(fn, context) {
@@ -2455,9 +2639,20 @@ var Documentor = Base.$extend({
 
     clear: function() {
         File.clear();
+
+        this.map = {};
+        this.pages = {};
+
+        this.root.$destroy();
+
+        for (var f in this.files) {
+            if (this.files.hasOwnProperty(f)) {
+                this.files[f].$destroy();
+            }
+        }
+
         this.files = {};
         this.root = null;
-        this.map = {};
     }
 
 }, {
@@ -2468,12 +2663,85 @@ var Documentor = Base.$extend({
     Comment: Comment,
 
 
-    cache: globalCache
+    hooks: globalCache
 
 
 });
 
 
+
+
+var addAccessFlag = function(flag, content, item) {
+    item.addFlag("access", flag);
+    return false;
+};
+
+var addVarFlag = function(flag, content, item) {
+
+    if (item.type == flag) {
+
+        var res = item.pcall(flag + ".parse", flag, content, item.comment, item);
+
+        if (res.name) {
+            item.name = res.name;
+        }
+        if (res.description) {
+            item.addFlag("description", res.description);
+        }
+        if (res.type) {
+            item.addFlag("type", res.type);
+        }
+
+        return false;
+    }
+};
+
+var parseVarFlag = function(flag, content, comment, item) {
+
+    var file = comment ? comment.file : (item ? item.file : null);
+
+    if (!file) {
+        return {};
+    }
+
+    var getCurly = file.pget("comment.getCurly"),
+        normalizeType = file.pget("normalizeType"),
+        type, name,
+        description,
+        inx;
+
+    if (content.charAt(0) == '{') {
+        var curly = getCurly.call(this, content);
+        type = normalizeType.call(this, curly, file);
+        content = content.replace('{' + curly + '}', "").trim();
+    }
+
+    inx = content.indexOf(" ", 0);
+
+    if (inx > -1) {
+        name = content.substr(0, inx).trim();
+        content = content.substr(inx).trim();
+
+        if (content) {
+            description = content;
+        }
+    }
+    else if (content) {
+        if (!type) {
+            type = content;
+        }
+        else {
+            name = content;
+        }
+    }
+
+
+    return {
+        name: name,
+        type: type,
+        description: description
+    };
+};
 
 function resolveExtendableName(item, flag, content) {
 
@@ -2493,13 +2761,17 @@ function resolveExtendableName(item, flag, content) {
         var ns = item.getParentNamespace(),
             refs = ns.findItem(content, find);
 
-        return refs.length ? refs[0].createRef(content) : content;
+        return refs.length ? refs[0].fullName : null;
     }
 
-    return content;
+    return null;
 };
 
 function resolveTypeName(item, flag, content) {
+
+    if (!content) {
+        return null;
+    }
 
     if (content.indexOf(".") != -1) {
         return content;
@@ -2512,201 +2784,22 @@ function resolveTypeName(item, flag, content) {
     var ns = item.getParentNamespace(),
         refs = ns ? ns.findItem(content) : [];
 
-    return refs.length ? refs[0].createRef(content) : content;
+    return refs.length ? refs[0].fullName : null;
+};
+
+function createFunctionContext(commentPart, comment) {
+
+    var res = comment.file.pcall("item.extractTypeAndName",
+        comment.file, comment.endIndex, true, false);
+
+    if (res) {
+        return {flag: res[0], content: res[1], sub: []};
+    }
 };
 
 
-globalCache.add("*.flag.*.add", function(flag, content, item) {
 
-    if (item.type == flag && typeof content == "string" && content) {
-        item.setName(content.trim());
-        // stop cycle
-        return false;
-    }
-});
-
-
-
-globalCache.add("*.flag.*.prepare", function(flag, content, item) {
-
-    if (content === null) {
-        return true;
-    }
-});
-
-
-
-globalCache.add("*.flag.emits.resolveName", function(item, flag, content){
-
-    var parents = item.getParents(),
-        items = [],
-        i, l,
-        trg;
-
-    parents.forEach(function(parent){
-        items.push(parent);
-        items = items.concat(parent.getInheritedParents());
-    });
-
-    items.unshift(item);
-
-    for (i = 0, l = items.length; i < l; i++) {
-
-        trg = items[i].findItem(content, "event", true);
-
-        if (trg.length) {
-            return trg[0].createRef(content);
-        }
-    }
-
-    return content;
-});
-
-
-
-globalCache.add("*.flag.extends.resolveName", resolveExtendableName);
-
-
-
-globalCache.add("*.flag.implements.resolveName", resolveExtendableName);
-
-
-
-globalCache.add("*.flag.mixes.resolveName", resolveExtendableName);
-
-
-
-globalCache.add("*.flag.returns.prepare", function(flag, content, item) {
-
-    if (!item.file) {
-        return content;
-    }
-
-    var ext = item.file.ext,
-        getCurly = this.pget(ext + ".getCurly"),
-        normalizeType = this.pget(ext + ".normalizeType");
-
-    if (content.charAt(0) == '{') {
-
-        var curly = getCurly(content);
-        content = content.replace('{' + curly + '}', '').trim();
-
-        if (content) {
-            item.addFlag("returnDescription", content);
-        }
-
-        return normalizeType(curly, ext);
-    }
-    else {
-        return normalizeType(content, ext);
-    }
-
-});
-
-
-
-globalCache.add("*.flag.returns.resolveName", resolveTypeName);
-
-
-
-globalCache.add("*.flag.throws.resolveName", resolveTypeName);
-
-
-
-globalCache.add("*.flag.type.resolveName", resolveTypeName);
-
-
-(function(){
-
-    var fn = function(flag, content, item) {
-
-        if (item.type == flag) {
-
-            var res = this.pcall(item.file.ext + ".flag." + flag + ".parse", flag, content, item.comment, item);
-
-            if (res.name) {
-                item.name = res.name;
-            }
-            if (res.description) {
-                item.addFlag("description", res.description);
-            }
-            if (res.type) {
-                item.addFlag("type", res.type);
-            }
-
-            return false;
-        }
-    };
-
-    globalCache.add("*.flag.var.add", fn);
-    globalCache.add("*.flag.property.add", fn);
-    globalCache.add("*.flag.param.add", fn);
-
-    return fn;
-
-}());
-
-
-
-(function(){
-
-    var fn = function(flag, content, comment, item) {
-
-        var ext = comment ? comment.file.ext : (item ? item.file.ext : null);
-
-        if (!ext) {
-            return {};
-        }
-
-        var getCurly = this.pget(ext + ".getCurly"),
-            normalizeType = this.pget(ext + ".normalizeType"),
-            type, name,
-            description,
-            inx;
-
-        if (content.charAt(0) == '{') {
-            var curly = getCurly.call(this, content);
-            type = normalizeType.call(this, curly, ext);
-            content = content.replace('{' + curly + '}', "").trim();
-        }
-
-        inx = content.indexOf(" ", 0);
-
-        if (inx > -1) {
-            name = content.substr(0, inx).trim();
-            content = content.substr(inx).trim();
-
-            if (content) {
-                description = content;
-            }
-        }
-        else if (content) {
-            if (!type) {
-                type = content;
-            }
-            else {
-                name = content;
-            }
-        }
-
-
-        return {
-            name: name,
-            type: type,
-            description: description
-        };
-    };
-
-    globalCache.add("*.flag.var.parse", fn);
-    globalCache.add("*.flag.property.parse", fn);
-    globalCache.add("*.flag.param.parse", fn);
-
-    return fn;
-}());
-
-
-
-globalCache.add("*.flagAliases", {
+globalCache.add("file.*.comment.flagAliases", {
 
     "type": "var",
     "return": "returns",
@@ -2719,7 +2812,7 @@ globalCache.add("*.flagAliases", {
 
 
 
-globalCache.add("*.getCurly", function(content, start, backwards, returnIndexes) {
+globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
 
     var left, right,
         i, l,
@@ -2796,9 +2889,9 @@ globalCache.add("*.getCurly", function(content, start, backwards, returnIndexes)
 
 
 
-globalCache.add("*.getFlagAliases", function(ext){
+globalCache.add("file.*.comment.getFlagAliases", function(file){
 
-    var all = this.pget(ext + ".flagAliases", true),
+    var all = file.pget("comment.flagAliases", true),
         aliases = {},
         i, l;
 
@@ -2811,92 +2904,20 @@ globalCache.add("*.getFlagAliases", function(ext){
 
 
 
-globalCache.add("*.getItemType", function(type, file) {
-
-    var ext = file ? file.ext : "*",
-        types = this.pget(ext + ".items"),
-        i, l;
-
-    if (types) {
-        for (i = 0, l = types.length; i < l; i++) {
-            if (types[i].name == type) {
-                return types[i];
-            }
-        }
-    }
-
-    return null;
-});
-
-
-
-(function(){
-
-    var createFunctionContext = function createFunctionContext(commentPart, comment) {
-
-        var res = this.pcall(comment.file.ext + ".extractTypeAndName",
-            comment.file, comment.endIndex, true, false);
-
-        if (res) {
-            return {flag: res[0], content: res[1], sub: []};
-        }
-    };
-
-
-    globalCache.add("*.item.param.createContext", createFunctionContext);
-    globalCache.add("*.item.returns.createContext", createFunctionContext);
-
-    return createFunctionContext;
-}());
-
-
-
-
-globalCache.add("*.items", [
-    {
-        name: "root",
-        children: ["*", "!param"]
-    }
-]);
-
-
-
-globalCache.add("*.normalizeType", function(type, ext){
-
-    if (!this.pget) {
-        console.trace();
-    }
-
-    var aliases = this.pget(ext + ".typeAliases"),
-        ret = [],
-        tmp = type.split("|");
-
-    if (aliases) {
-        tmp.forEach(function(type){
-            ret.push(aliases[type] || type);
-        });
-    }
-
-    return ret;
-});
-
-
-
 (function(){
 
 
     var parseComment = function(text, file) {
 
-        var ext = file.ext,
-            removeAsterisk = this.pget(ext + ".removeAsterisk"),
-            getCurly = this.pget(ext + ".getCurly");
+        var removeAsterisk = file.pget("comment.removeAsterisk"),
+            getCurly = file.pget("comment.getCurly");
 
 
         text = removeAsterisk(text);
 
         var lines       = text.split("\n"),
             flagReg     = /@[^\s]+/,
-            aliases     = file.pcall("getFlagAliases", file.ext),
+            aliases     = file.pcall("comment.getFlagAliases", file),
             descrFlag   = aliases["description"] || "description",
             line,
             i, l, j,
@@ -3004,14 +3025,14 @@ globalCache.add("*.normalizeType", function(type, ext){
     };
 
 
-    return globalCache.add("*.parseComment",  parseComment);
+    return globalCache.add("file.*.comment.parseComment",  parseComment);
 }());
 
 
 
 
 
-globalCache.add("*.removeAsterisk", function(text) {
+globalCache.add("file.*.comment.removeAsterisk", function(text) {
 
     text = text.replace("/**", '');
     text = text.replace("*/", '');
@@ -3079,27 +3100,17 @@ globalCache.add("*.removeAsterisk", function(text) {
 
 
 
-globalCache.add("*.requiredContext", {
-    "param": ["function", "method"],
-    "returns": ["function", "method"],
-    "constructor": ["method"]
-});
 
-
-
-
-
-globalCache.add("*.sortParts", function(parts, comment) {
+globalCache.add("file.*.comment.sortParts", function(parts, comment) {
 
     var flagInx = {},
-        ext = comment.file.ext,
-        items = this.pget(ext + ".items");
+        items = comment.file.pget("items");
 
     if (!items) {
         return parts;
     }
 
-    var reqCtx = this.pget(ext + ".requiredContext") || {};
+    var reqCtx = comment.file.pget("item.?.requiredContext") || {};
 
     items.forEach(function(item, inx) {
         flagInx[item.name] = inx;
@@ -3118,7 +3129,9 @@ globalCache.add("*.sortParts", function(parts, comment) {
             aUndf   = typeof aInx == "undefined",
             bUndf   = typeof bInx == "undefined",
             aCtx    = reqCtx.hasOwnProperty(a.flag),
-            bCtx    = reqCtx.hasOwnProperty(b.flag);
+            bCtx    = reqCtx.hasOwnProperty(b.flag),
+            aEnd    = a.flag.indexOf("end-") === 0,
+            bEnd    = a.flag.indexOf("end-") === 0;
 
         if (aInx === bInx) {
 
@@ -3127,6 +3140,10 @@ globalCache.add("*.sortParts", function(parts, comment) {
             // requires a context;
             // we put context aware flags above
             if (aUndf) {
+                // we put all end-* flags to the bottom
+                if ((aEnd || bEnd) && aEnd != bEnd) {
+                    return aEnd ? 1 : -1;
+                }
                 if (aCtx === bCtx) {
                     return 0;
                 }
@@ -3148,7 +3165,370 @@ globalCache.add("*.sortParts", function(parts, comment) {
 
 
 
-globalCache.add("js.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+globalCache.add("file.*.getItemType", function(type, file) {
+
+    var types = file.pget("items"),
+        i, l;
+
+    if (types) {
+        for (i = 0, l = types.length; i < l; i++) {
+            if (types[i].name == type) {
+                return types[i];
+            }
+        }
+    }
+
+    return null;
+});
+
+
+globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
+
+    if (item.type == flag && typeof content == "string" && content) {
+        item.setName(content.trim());
+        // stop cycle
+        return false;
+    }
+});
+
+
+
+globalCache.add("file.*.item.*.*.prepare", function(flag, content, item) {
+
+    if (content === null) {
+        return true;
+    }
+});
+
+
+
+globalCache.add("file.*.item.*.code.add", function(flag, content, item) {
+
+    var f = item.file.resolveFlagFile(content);
+
+    if (f === false) {
+        item.addFlag("description", {
+            type: "code",
+            content: content
+        });
+    }
+    else {
+        item.addFlag("description", {
+            type: "file",
+            contentType: "code",
+            content: f
+        });
+    }
+
+    return false;
+});
+
+
+
+globalCache.add("file.*.item.*.description.add", function(flag, content, item) {
+
+
+    if (typeof content == "string") {
+        content = {
+            type: "string",
+            content: content
+        };
+    }
+
+    if (content.type != "string") {
+        return;
+    }
+
+    var text = content.content,
+        files = [];
+
+    text = text.replace(/\[#code\s+([^\[]+)\]/, function(match, file){
+
+        var f = item.file.resolveFlagFile(file);
+
+        if (f === false) {
+            return match;
+        }
+
+        files.push(f);
+        return "--#--";
+    });
+
+    if (!files.length) {
+        return;
+    }
+
+    text = text.split('--#--');
+
+    var pushTextPart = function(inx) {
+        var txt = text[inx].trim();
+
+        if (txt) {
+            item.addFlag("description", {
+                type: "string",
+                content: txt
+            });
+        }
+    };
+
+    files.forEach(function(file, inx) {
+
+        pushTextPart(inx);
+
+        item.addFlag("description", {
+            type: "file",
+            content: file,
+            contentType: "code"
+        });
+    });
+
+    pushTextPart(text.length - 1);
+
+    return false;
+});
+
+
+
+globalCache.add("file.*.item.*.description.prepare", function(flag, content, item) {
+
+    if (typeof content != "string") {
+        return content;
+    }
+
+    var f = item.file.resolveFlagFile(content);
+
+    if (f === false) {
+        return {
+            type: "string",
+            content: content
+        }
+    }
+    else {
+        return {
+            type: "file",
+            content: f
+        };
+    }
+
+});
+
+
+
+globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content){
+
+    var parents = item.getParents(),
+        items = [],
+        i, l,
+        trg;
+
+    parents.forEach(function(parent){
+        items.push(parent);
+        items = items.concat(parent.getInheritedParents());
+    });
+
+    items.unshift(item);
+
+    for (i = 0, l = items.length; i < l; i++) {
+
+        trg = items[i].findItem(content, "event", true);
+
+        if (trg.length) {
+            return trg[0].fullName;
+        }
+    }
+
+    return null;
+});
+
+
+
+globalCache.add("file.*.item.*.extends.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("file.*.item.*.implements.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("file.*.item.*.mixes.resolveName", resolveExtendableName);
+
+
+
+globalCache.add("file.*.item.*.private.add", addAccessFlag);
+
+
+
+globalCache.add("file.*.item.*.protected.add", addAccessFlag);
+
+
+
+globalCache.add("file.*.item.*.public.add", addAccessFlag);
+
+
+
+globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
+
+    if (!item.file) {
+        return content;
+    }
+
+    var getCurly = item.file.pget("comment.getCurly"),
+        normalizeType = item.file.pget("normalizeType");
+
+    if (content.charAt(0) == '{') {
+
+        var curly = getCurly(content);
+        content = content.replace('{' + curly + '}', '').trim();
+
+        if (content) {
+            item.addFlag("returnDescription", content);
+        }
+
+        return normalizeType(curly, item.file);
+    }
+    else {
+        return normalizeType(content, item.file);
+    }
+
+});
+
+
+
+globalCache.add("file.*.item.*.returns.resolveName", resolveTypeName);
+
+
+
+globalCache.add("file.*.item.*.throws.resolveName", resolveTypeName);
+
+
+
+globalCache.add("file.*.item.*.type.resolveName", resolveTypeName);
+
+
+
+globalCache.add("file.*.item.?.param.createContext", createFunctionContext);
+
+
+
+
+globalCache.add("file.*.item.?.requiredContext", {
+    "param": ["function", "method"],
+    "returns": ["function", "method"],
+    "constructor": ["method"]
+});
+
+
+
+globalCache.add("*.item.?.returns.createContext", createFunctionContext);
+
+
+globalCache.add("file.*.item.param.param.add", addVarFlag);
+
+
+
+globalCache.add("file.*.item.param.param.parse", parseVarFlag);
+
+
+globalCache.add("file.*.item.property.property.add", addVarFlag);
+
+
+
+globalCache.add("file.*.item.property.property.parse", parseVarFlag);
+
+
+globalCache.add("file.*.item.var.var.add", addVarFlag);
+
+
+
+globalCache.add("file.*.item.var.var.parse", parseVarFlag);
+
+
+
+
+globalCache.add("file.*.items", [
+    {
+        name: "root",
+        children: ["*", "!param"]
+    }
+]);
+
+
+
+globalCache.add("file.*.normalizeType", function(type, file){
+
+    var aliases = file.pget("typeAliases"),
+        ret = [],
+        tmp = type.split("|");
+
+    if (aliases) {
+        tmp.forEach(function(type){
+            ret.push(aliases[type] || type);
+        });
+    }
+
+    return ret;
+});
+
+
+
+globalCache.add("file.js.item.*.description.added", function(flag, item){
+
+    var ft;
+
+    if (ft = flag.getProperty("fileType")) {
+        if (ft == "js") {
+            flag.setType("code");
+        }
+    }
+
+});
+
+
+
+globalCache.add("file.js.item.*.getFullName", function(item) {
+
+    var parents = item.getParents().reverse(),
+        name = item.name,
+        fullName = "";
+
+    if (!name) {
+        return null;
+    }
+
+
+
+    parents.push(item);
+
+    var getPrefix = function(item) {
+        switch (item.type) {
+            case "param":
+                return '/';
+            case "event":
+                return "@";
+            default:
+                return ".";
+        }
+    };
+
+    parents.forEach(function(parent) {
+        if (parent.name) {
+            if (fullName) {
+                fullName += getPrefix(parent);
+            }
+            fullName += parent.name;
+        }
+    });
+
+    if (item.file.options.namePrefix) {
+        fullName = item.file.options.namePrefix + fullName;
+    }
+
+    return fullName;
+});
+
+
+
+globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
 
     var content         = file.getContent(),
         part            = content.substr(startIndex, 200),
@@ -3204,49 +3584,6 @@ globalCache.add("js.extractTypeAndName", function(file, startIndex, checkFunctio
 
 
 
-globalCache.add("js.item.*.getFullName", function(item) {
-
-    var parents = item.getParents().reverse(),
-        name = item.name,
-        fullName = "";
-
-    if (!name) {
-        return null;
-    }
-
-
-
-    parents.push(item);
-
-    var getPrefix = function(item) {
-        switch (item.type) {
-            case "param":
-                return '/';
-            case "event":
-                return "@";
-            default:
-                return ".";
-        }
-    };
-
-    parents.forEach(function(parent) {
-        if (parent.name) {
-            if (fullName) {
-                fullName += getPrefix(parent);
-            }
-            fullName += parent.name;
-        }
-    });
-
-    if (item.file.options.namePrefix) {
-        fullName = item.file.options.namePrefix + fullName;
-    }
-
-    return fullName;
-});
-
-
-
 
 
 (function(){
@@ -3283,7 +3620,8 @@ globalCache.add("js.item.*.getFullName", function(item) {
 
         return {
             name: name,
-            stackable: false,
+            stackable: name != "param",
+            onePerComment: true,
             children: children,
             transform: {
                 "var": "property"
@@ -3292,7 +3630,7 @@ globalCache.add("js.item.*.getFullName", function(item) {
     };
 
 
-    return globalCache.add("js.items", [
+    return globalCache.add("file.js.items", [
         {
             name: "root",
             namespace: true,
@@ -3330,7 +3668,7 @@ globalCache.add("js.item.*.getFullName", function(item) {
 
 
 
-globalCache.add("js.resolveIncludes", function(file) {
+globalCache.add("file.js.resolveIncludes", function(file) {
 
     var content     = file.getContent(),
         base        = file.dir + "/",
@@ -3359,7 +3697,7 @@ globalCache.add("js.resolveIncludes", function(file) {
 
 
 
-globalCache.add("js.typeAliases", {
+globalCache.add("file.js.typeAliases", {
 
     "{}": "object",
     "Object": "object",
@@ -3403,6 +3741,39 @@ globalCache.add("renderer.plain", Renderer.$extend({
             keys = ["param", "var", "function", "namespace", "class", "property", "method"],
             key, value;
 
+        var renderFlags = function(flagName, flags, wrap, splitter) {
+
+            var html = "";
+
+            flags.forEach(function(f, i){
+
+                if (i > 0 && splitter) {
+                    html += splitter;
+                }
+
+                if (wrap) {
+                    html += '<' + wrap + '>';
+                }
+
+                if (f.contentType == "code") {
+                    html += '<pre><code>';
+                }
+
+                html += f.content;
+
+                if (f.contentType == "code") {
+                    html += '</code></pre>';
+                }
+
+                if (wrap) {
+                    html += '</' + wrap + '>';
+                }
+
+            });
+
+            return html;
+        };
+
         var renderItem = function(type, item) {
 
             html += '<li>';
@@ -3414,7 +3785,7 @@ globalCache.add("renderer.plain", Renderer.$extend({
 
             if (item.name) {
                 if (item.flags.type) {
-                    html += '['+ (item.flags.type.join(" | ")) +'] ';
+                    html += '['+ (renderFlags(null, item.flags.type, null, ' | ')) +'] ';
                     delete item.flags.type;
                 }
                 html += '<b>' + item.name + '</b>';
@@ -3431,22 +3802,21 @@ globalCache.add("renderer.plain", Renderer.$extend({
                 }
 
                 if (item.flags.returns) {
-                    if (typeof item.flags.returns == "string") {
-                        html += ' : !!![' + (item.flags.returns) + ']';
-                    }
-                    else {
-                        html += ' : [' + (item.flags.returns.join(" | ")) + ']';
-                    }
+                    html += ' : [' + (renderFlags(null, item.flags.returns, null, ' | ')) + ']';
                     delete item.flags.returns;
                 }
             }
 
             html += '</p>';
 
+            if (item.file && item.line) {
+                html += '<p><sub>';
+                html += item.file + " : " + item.line;
+                html += '</sub></p>';
+            }
+
             if (item.flags.description) {
-                html += '<p>';
-                html += item.flags.description;
-                html += '</p>';
+                html += renderFlags(null, item.flags.description, 'p');
                 delete item.flags.description;
             }
 
@@ -3466,7 +3836,10 @@ globalCache.add("renderer.plain", Renderer.$extend({
             var flags = "";
             for (key in item.flags) {
                 value = item.flags[key];
-                flags += '<li>'+key+' : '+value+'</li>';
+                value.forEach(function(f){
+                    flags += '<li><p>'+key+' : '+ f.content +'</p></li>';
+                });
+
             }
             if (flags) {
                 html += '<ul>' + flags + '</ul>';

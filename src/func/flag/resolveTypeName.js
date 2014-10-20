@@ -1,6 +1,10 @@
 
 module.exports = function resolveTypeName(item, flag, content) {
 
+    if (!content) {
+        return null;
+    }
+
     if (content.indexOf(".") != -1) {
         return content;
     }
@@ -12,5 +16,5 @@ module.exports = function resolveTypeName(item, flag, content) {
     var ns = item.getParentNamespace(),
         refs = ns ? ns.findItem(content) : [];
 
-    return refs.length ? refs[0].createRef(content) : content;
+    return refs.length ? refs[0].fullName : null;
 };
