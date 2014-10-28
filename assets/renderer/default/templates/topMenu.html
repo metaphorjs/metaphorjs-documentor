@@ -1,0 +1,36 @@
+
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">{{ .topMenuTitle || .title }}</a>
+        </div>
+        <mjs-if value=".topMenu.length > 1">
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li mjs-each="item in .topMenu" mjs-class="{dropdown: !!.item.sub}">
+                        <a href="#" mjs-class="{'dropdown-toggle': !!.item.sub}" data-toggle="dropdown">
+                            {{.item.name}}
+                            <span class="caret" mjs-if="!!.item.sub"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu" mjs-if="!!.item.sub">
+                            <li mjs-each="item in .item.sub">
+                                <a href="#{{.item.id}}">{{.item.name}}</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right" mjs-if="!!.topRightMenu">
+                    <li mjs-each="item in .topRightMenu">
+                        <a href="{{.item.href}}">{{.item.name}}</a>
+                    </li>
+                </ul>
+            </div><!--/.nav-collapse -->
+        </mjs-if>
+    </div>
+</div>

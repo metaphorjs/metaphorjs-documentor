@@ -3,19 +3,65 @@
     "push": [
         "github"
     ],
+
+
+    "mixin": {
+        "default": {
+            "files": [
+                "../metaphorjs/src/stubs/windowless.js",
+                ["../metaphorjs/metaphorjs.json", "core"],
+                [
+                    "../metaphorjs/src/func/run.js",
+                    {
+                        "as": "run"
+                    }
+                ],
+                "src/**",
+                ["src/DocumentorRunner.js", {"as": "*"}],
+                ["src/Documentor.js", {"as": "*"}]
+            ],
+            "omit": [
+                "../metaphorjs/src/bootstrap/apps.js"
+            ]
+        }
+    },
+
+    "docs": {
+        "": {
+            "target": "docs",
+            "src": [
+                "src/**"
+            ],
+            "includeExternal": false,
+            "renderer": "default",
+            "init": "assets/self-doc.js",
+            "data": {
+                "title": "MetaphorJs"
+            },
+            "options": {
+
+            }
+        }
+    },
+
     "build": {
         "npm": {
             "auto": true,
             "target": "dist/metaphorjs.documentor.js",
             "compile": false,
-            "files": [
-                "src/**",
-                ["src/Documentor.js", {"as": "Documentor"}]
-            ],
-            "omit": [
-                "../metaphorjs-namespace/src/var/ns.js"
-            ],
-            "exports": "Documentor"
+            "files": ["default"],
+            "exports": "Documentor",
+            "exposeIn": "Documentor",
+            "expose": [
+                "DocumentorRenderer",
+                "DocumentorItem",
+                "DocumentorBase",
+                "DocumentorFile",
+                "DocumentorComment",
+                "DocumentorRunner",
+                "MetaphorJs",
+                {"name": "globalCache", "as": "hooks"}
+            ]
         }
     }
 }

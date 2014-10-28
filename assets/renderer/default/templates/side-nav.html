@@ -1,0 +1,19 @@
+<ul mjs-each="ch in .item.children | toArray">
+    <li mjs-each="item in .ch.value"
+        mjs-init=".isFunction = .item.type == 'function' ||
+                        .item.type == 'method' ||
+                        (.item.plainFlags.hasOwnProperty('type') && .item.plainFlags.type.indexOf('function') != -1)">
+
+        <a href="#{{ .item.fullName }}">
+            <span class="sidenav-name">{{ .item.name }}</span>
+            <mjs-if value=".isFunction">
+                <mjs-if value=".item.children.hasOwnProperty('param')">
+                    <span class="sidenav-name-arguments">({{ .item.children.param | collect:"name" | join:"," }})</span>
+                </mjs-if>
+                <mjs-if value="!.item.children.hasOwnProperty('param')">
+                    <span class="sidenav-name-arguments">()</span>
+                </mjs-if>
+            </mjs-if>
+        </a>
+    </li>
+</ul>

@@ -1,15 +1,13 @@
 
-var Renderer = require("../Renderer.js"),
+var DocumentorRenderer = require("../DocumentorRenderer.js"),
     globalCache = require("../var/globalCache.js");
 
-module.exports = globalCache.add("renderer.json", Renderer.$extend({
+module.exports = globalCache.add("renderer.json", DocumentorRenderer.$extend({
 
     render: function() {
-        return JSON.stringify(this.doc.getData(), null, 2);
+        return JSON.stringify(this.doc.exportData(), null, 2);
     }
 
-}, {
-    mime: "application/json"
 }));
 
 

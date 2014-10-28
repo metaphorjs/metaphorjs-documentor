@@ -1,30 +1,32 @@
 
-var Base = require("./Base.js"),
+var DocumentorBase = require("./DocumentorBase.js"),
     isFile = require("../../metaphorjs/src/func/fs/isFile.js"),
     extend = require("../../metaphorjs/src/func/extend.js"),
     getFileList = require("../../metaphorjs/src/func/fs/getFileList.js"),
     undf = require("../../metaphorjs/src/var/undf.js"),
     path = require("path"),
     fs = require("fs"),
-    File = require("./File.js"),
-    Renderer = require("./Renderer.js"),
-    Item = require("./Item.js"),
-    Comment = require("./Comment.js"),
+    DocumentorFile = require("./DocumentorFile.js"),
+    DocumentorItem = require("./DocumentorItem.js"),
+    DocumentorContent = require("./DocumentorContent.js"),
     Cache = require("../../metaphorjs/src/lib/Cache.js"),
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
-    nextUid = require("../../metaphorjs/src/func/nextUid.js");
+    nextUid = require("../../metaphorjs/src/func/nextUid.js"),
+    Template = require("../../metaphorjs/src/class/Template.js");
 
 
+require("./func/getTemplate.js");
 
-module.exports = Base.$extend({
+
+module.exports = DocumentorBase.$extend({
 
     files: null,
     root: null,
     hooks: null,
     id: null,
     map: null,
-    pages: null,
+    content: null,
 
     $init: function(){
 
@@ -33,11 +35,11 @@ module.exports = Base.$extend({
         self.id = nextUid();
         self.files = {};
         self.map = {};
-        self.pages = {};
-        self.root = new Item({
+        self.content = [];
+        self.root = new DocumentorItem({
             doc: self,
             type: "root",
-            file: new File({
+            file: new DocumentorFile({
                 ext: "*",
                 doc: self
             })
@@ -166,12 +168,22 @@ module.exports = Base.$extend({
         var self = this;
 
         if (isFile(directory)) {
-            self.addFile(directory, options);
+            self.addFile(directory, extend({}, options, {
+                startDir: path.dirname(directory)
+            }));
         }
         else {
-            var list = getFileList(directory);
+            var list = getFileList(directory, "js");
+            var startDir = directory;
+            while (startDir.charAt(startDir.length - 1) == '/' ||
+                   startDir.charAt(startDir.length - 1) == '*') {
+                startDir = startDir.substring(0, startDir.length - 1);
+            }
+
             list.forEach(function(file) {
-                self.addFile(file, options);
+                self.addFile(file, extend({}, options, {
+                    startDir: startDir
+                }));
             });
         }
     },
@@ -182,9 +194,15 @@ module.exports = Base.$extend({
 
         options = options || {};
 
+        var hidden = options.startDir && !options.includeExternal &&
+                     filePath.indexOf(options.startDir) !== 0;
+
         if (!self.files[filePath]) {
 
-            var file = File.get(filePath, self, options);
+
+            var file = DocumentorFile.get(filePath, self, extend({}, options, {
+                hidden: hidden
+            }, true, false));
 
             if (!options.hideIncludes) {
                 self.resolveIncludes(file, options);
@@ -193,6 +211,13 @@ module.exports = Base.$extend({
             self.files[filePath] = file;
 
             file.parse();
+        }
+        else {
+            // if file it not created but retrieved,
+            // we reset hidden field
+            if (hidden === false) {
+                self.files[filePath].hidden = false;
+            }
         }
     },
 
@@ -208,22 +233,34 @@ module.exports = Base.$extend({
         }
     },
 
-
-    addPage: function(file, options) {
-
-        if (!this.pages[file]) {
-            this.pages[file] = options;
-        }
+    getFile: function(path) {
+        return this.files[path];
     },
 
-    prepareItems: function() {
+    addHooks: function(dir) {
+
+    },
+
+    addContent: function(id, content) {
+        this.content.push(new DocumentorContent(id, content));
+    },
+
+    prepare: function() {
 
         var self = this;
+
+        self.loadTemplates(path.normalize(__dirname + "/../assets/templates"));
 
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
+
+        self.pcall("prepareItems", self);
+        self.pcall("prepaceContent", self);
+
+        self.pcall("sortItems", self);
+        self.pcall("sortContent", self);
     },
 
 
@@ -231,38 +268,88 @@ module.exports = Base.$extend({
         this.root.eachItem(fn, context);
     },
 
-    getData: function() {
-        return this.root.getData();
+
+    loadTemplates: function(dir) {
+
+        var self = this;
+
+        self.eachHook(dir, "html", function(name, file){
+            Template.cache.add(name, fs.readFileSync(file).toString());
+        });
+    },
+
+    loadHooks: function(dir) {
+
+        var self = this,
+            r = require;
+
+        self.eachHook(dir, "js", function(name, file){
+            self.cache.add(name, r(file));
+        });
+    },
+
+    eachHook: function(dir, ext, fn, context) {
+
+        if (dir.substr(dir.length - 1) != '/') {
+            dir += '/';
+        }
+        dir += '**';
+
+        var list = getFileList(dir, ext);
+
+        dir = dir.replace("**", "");
+
+        list.forEach(function(file){
+
+            fn.call(
+                context,
+                file.replace(dir, "").replace("." + ext, "").replace(/\//g, '.'),
+                file
+            );
+        });
+
+    },
+
+    exportData: function() {
+
+        var self = this,
+            exportData = self.pget("export");
+
+        if (exportData) {
+            return exportData(self);
+        }
+        else {
+            return this.root.exportData();
+        }
+    },
+
+    destroy: function() {
+        this.clear();
     },
 
     clear: function() {
-        File.clear();
+        DocumentorFile.clear();
 
-        this.map = {};
-        this.pages = {};
+        var self = this;
 
-        this.root.$destroy();
+        self.map = {};
 
-        for (var f in this.files) {
-            if (this.files.hasOwnProperty(f)) {
-                this.files[f].$destroy();
+        self.root.$destroy();
+
+        for (var f in self.files) {
+            if (self.files.hasOwnProperty(f)) {
+                self.files[f].$destroy();
             }
         }
 
-        this.files = {};
-        this.root = null;
+        self.content.forEach(function(content){
+            content.$destroy();
+        });
+
+        self.content = [];
+        self.files = {};
+        self.root = null;
     }
-
-}, {
-    RendererBase: Renderer,
-    ItemBase: Item,
-    Base: Base,
-    File: File,
-    Comment: Comment,
-
-
-    hooks: globalCache
-
 
 });
 

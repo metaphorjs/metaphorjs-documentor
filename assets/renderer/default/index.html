@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html mjs-app>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>{{ .title }}</title>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+</head>
+<body>
+
+<mjs-include src="topMenu"></mjs-include>
+
+<div class="jumbotron">
+    <div class="container">
+        <h1>{{.title}}</h1>
+        <p mjs-if=".description">{{.description}}</p>
+        <p mjs-if=".version">{{.version}}</p>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="row" mjs-each="group in .items">
+        <mjs-include src="items"></mjs-include>
+    </div>
+
+</div>
+
+<div class="footer" mjs-if=".footer">
+    <div class="container" mjs-bind-html=".footer"></div>
+</div>
+</body>
+</html>

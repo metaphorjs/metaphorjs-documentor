@@ -1,0 +1,5 @@
+<mjs-include src=".item.fileType + '.item-header'"></mjs-include>
+<mjs-include src=".item.fileType + '.flag.description'"></mjs-include>
+<mjs-if value=".item.children.hasOwnProperty('param')">
+    <mjs-include src=".item.fileType + '.item-params'"></mjs-include>
+</mjs-if>

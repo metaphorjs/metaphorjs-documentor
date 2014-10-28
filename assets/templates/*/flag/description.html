@@ -1,0 +1,5 @@
+<mjs-if value=".item.hasOwnProperty('description')">
+    <div mjs-each="descr in .item.description">
+        <div mjs-if=".descr.contentType == 'string'" mjs-bind-html=".descr.content"></div>
+    </div>
+</mjs-if>

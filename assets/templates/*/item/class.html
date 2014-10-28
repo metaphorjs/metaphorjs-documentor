@@ -1,0 +1,14 @@
+<mjs-include src=".item.fileType + '.item-header'"></mjs-include>
+<div class="col-md-2">
+    <mjs-include src="side-nav"></mjs-include>
+</div>
+<div class="col-md-10">
+    <mjs-include src=".item.fileType + '.flag.description'"></mjs-include>
+    <mjs-if value=".item.children.hasOwnProperty('method')">
+        <ul>
+            <li mjs-each="item in .item.children.method">
+                <mjs-include src=".item.template"></mjs-include>
+            </li>
+        </ul>
+    </mjs-if>
+</div>

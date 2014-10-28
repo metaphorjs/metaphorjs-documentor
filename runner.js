@@ -22,7 +22,7 @@ var loc = path.normalize(process.cwd() + "/../metaphorjs-promise/src"),
 //}
 
 
-doc.prepareItems();
+doc.prepare();
 
 
 var args = minimist(process.argv.slice(2), {boolean: true});
@@ -31,8 +31,8 @@ var rndrCls = doc.getRenderer(args.renderer || "raw");
 
 if (rndrCls) {
 
-    var renderer = new rndrCls({
-        doc: doc
+    var renderer = new rndrCls(doc, {
+
     });
 
     console.log(renderer.render());

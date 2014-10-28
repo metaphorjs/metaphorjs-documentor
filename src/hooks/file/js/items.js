@@ -5,7 +5,7 @@ var globalCache = require("../../../var/globalCache.js");
 
 module.exports = (function(){
 
-    var classes = function(name) {
+    var classes = function(name, displayName, groupName) {
         return {
             name: name,
             children: ["method", "property", "const", "event", "!param"],
@@ -13,21 +13,25 @@ module.exports = (function(){
             transform: {
                 "function": "method",
                 "var":      "property"
-            }
+            },
+            displayName: displayName,
+            groupName: groupName
         };
     };
 
-    var funcs = function(name) {
+    var funcs = function(name, displayName, groupName) {
         return {
             name: name,
             onePerComment: true,
             multiple: name != "event",
             children: ["param"],
-            transform: {}
+            transform: {},
+            displayName: displayName,
+            groupName: groupName
         }
     };
 
-    var vars = function(name) {
+    var vars = function(name, displayName, groupName) {
 
         var children = ["!param"];
 
@@ -42,7 +46,9 @@ module.exports = (function(){
             children: children,
             transform: {
                 "var": "property"
-            }
+            },
+            displayName: displayName,
+            groupName: groupName
         };
     };
 
@@ -59,7 +65,9 @@ module.exports = (function(){
             children: ["*", "!namespace", "!param"],
             transform: {
                 "method": "function"
-            }
+            },
+            displayName: "Namespace",
+            groupName: "Namespaces"
         },
         {
             name: "module",
@@ -67,18 +75,20 @@ module.exports = (function(){
             children: ["*", "!namespace", "!module", "!param"],
             transform: {
                 "method": "function"
-            }
+            },
+            displayName: "Module",
+            groupName: "Modules"
         },
-        classes("class"),
-        classes("interface"),
-        classes("mixin"),
-        funcs("function"),
-        funcs("method"),
-        funcs("event"),
+        classes("class", "Class", "Classes"),
+        classes("interface", "Interface", "Interfaces"),
+        classes("mixin", "Mixin", "Mixins"),
+        funcs("function", "Function", "Functions"),
+        funcs("method", "Method", "Methods"),
+        funcs("event", "Event", "Events"),
         vars("param"),
-        vars("var"),
-        vars("property"),
-        vars("const")
+        vars("var", "Variable", "Variables"),
+        vars("property", "Property", "Properties"),
+        vars("const", "Constant", "Constants")
     ]);
 
 }());
