@@ -1,4 +1,4 @@
-var cs = require("../../metaphorjs-class/src/var/cs.js"),
+var cs = require("./var/cs.js"),
     extend = require("../../metaphorjs/src/func/extend.js");
 
 /**

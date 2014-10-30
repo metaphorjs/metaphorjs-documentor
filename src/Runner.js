@@ -1,14 +1,13 @@
 
-var DocumentorBase = require("./DocumentorBase.js"),
+var Base = require("./Base.js"),
     minimist = require("minimist"),
     fs = require("fs"),
     path = require("path"),
     Documentor = require("./Documentor.js"),
-    JsonFile = require("../../metaphorjs-build/lib/JsonFile.js"),
-    Build = require("../../metaphorjs-build/builder/Build.js"),
+    mjsBuild = require("metaphorjs-build"),
     extend = require("../../metaphorjs/src/func/extend.js");
 
-var DocumentorRunner = DocumentorBase.$extend({
+var Runner = Base.$extend({
 
     run: function(runCfg, runData, runOptions) {
 
@@ -16,7 +15,7 @@ var DocumentorRunner = DocumentorBase.$extend({
             args        = minimist(process.argv.slice(2), {boolean: true}),
             profileName = args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
-            jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
+            jsonFile    = fs.existsSync(json) ? new mjsBuild.JsonFile(json) : null,
             profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
                           jsonFile.docs[profileName] : {},
             data        = extend({}, profile.data, runData, true, false),
@@ -54,9 +53,9 @@ var DocumentorRunner = DocumentorBase.$extend({
             self.loadSrc(cfg, doc, jsonFile);
         }
 
-        if (cfg.templates) {
-            self.loadTemplates(cfg, doc, jsonFile);
-        }
+        //if (cfg.templates) {
+        //    self.loadTemplates(cfg, doc, jsonFile);
+        //}
 
 
         var rendererCls = doc.getRenderer(cfg.renderer || "default");
@@ -88,7 +87,7 @@ var DocumentorRunner = DocumentorBase.$extend({
     },
 
     loadFiles: function(cfg, doc, jsonFile) {
-        var build = new Build(jsonFile);
+        var build = new mjsBuild.Build(jsonFile);
         build.collectFiles(cfg);
         build.prepareBuildList();
 
@@ -141,7 +140,7 @@ var DocumentorRunner = DocumentorBase.$extend({
         });
     },
 
-    loadTemplates: function(cfg, doc, jsonFile) {
+    /*loadTemplates: function(cfg, doc, jsonFile) {
 
         if (typeof cfg.templates == "string") {
             cfg.templates = [cfg.templates];
@@ -157,7 +156,7 @@ var DocumentorRunner = DocumentorBase.$extend({
                 doc.loadTemplates(dir);
             }
         });
-    },
+    },*/
 
 
     prepareArgsData: function(args) {
@@ -236,11 +235,11 @@ var DocumentorRunner = DocumentorBase.$extend({
 
     run: function() {
 
-        var runner = new DocumentorRunner;
+        var runner = new Runner;
         runner.run();
 
     }
 
 });
 
-module.exports = DocumentorRunner;
+module.exports = Runner;

@@ -1,6 +1,6 @@
 
-var DocumentorBase = require("./DocumentorBase.js"),
-    DocumentorFlag = require("./DocumentorFlag.js"),
+var Base = require("./Base.js"),
+    Flag = require("./Flag.js"),
     isArray = require("../../metaphorjs/src/func/isArray.js"),
     emptyFn = require("../../metaphorjs/src/func/emptyFn.js");
 
@@ -8,7 +8,7 @@ var DocumentorBase = require("./DocumentorBase.js"),
 module.exports = (function(){
 
 
-    var DocumentorItem = DocumentorBase.$extend({
+    var Item = Base.$extend({
 
         doc: null,
         file: null,
@@ -21,6 +21,7 @@ module.exports = (function(){
         line: null,
         props: null,
         parent: null,
+        level: 0,
 
 
 
@@ -102,6 +103,8 @@ module.exports = (function(){
                 item.parent = self;
             }
 
+            item.level = self.level + 1;
+
             items[type].push(item);
         },
 
@@ -147,17 +150,17 @@ module.exports = (function(){
             }
             if (isArray(content)) {
                 content.forEach(function(content){
-                    f = content instanceof DocumentorFlag ?
+                    f = content instanceof Flag ?
                             content :
-                            new DocumentorFlag(flag, content, null, null, self.file);
+                            new Flag(flag, content, null, null, self.file);
                     self.flags[flag].push(f);
                     added.push(f);
                 });
             }
             else {
-                f = content instanceof DocumentorFlag ?
+                f = content instanceof Flag ?
                         content :
-                        new DocumentorFlag(flag, content, null, null, self.file);
+                        new Flag(flag, content, null, null, self.file);
                 self.flags[flag].push(f);
                 added.push(f);
             }
@@ -384,7 +387,7 @@ module.exports = (function(){
         },
 
 
-        exportData: function(currentParent, noChildren) {
+        exportData: function(currentParent, noChildren, noHelpers) {
 
             var exportData = this.pget("exportData");
 
@@ -403,10 +406,12 @@ module.exports = (function(){
                     originalFile: self.file.path,
                     fileType: self.file.ext,
                     template: self.file.ext + ".item." + self.type,
+                    level: self.level,
                     flags: {},
                     plainFlags: {},
                     booleanFlags: [],
-                    children: {}
+                    children: [],
+                    childTypes: []
                 };
 
             if (self.comment) {
@@ -420,7 +425,7 @@ module.exports = (function(){
             if (self.flags.description) {
                 exprt.description = [];
                 self.flags.description.forEach(function(flag){
-                    exprt.description.push(flag.exportData());
+                    exprt.description.push(flag.exportData(noHelpers));
                 });
             }
 
@@ -438,7 +443,7 @@ module.exports = (function(){
                             if (!exprt.plainFlags[k]) {
                                 exprt.plainFlags[k] = [];
                             }
-                            exprt.flags[k].push(flag.exportData());
+                            exprt.flags[k].push(flag.exportData(noHelpers));
                             exprt.plainFlags[k].push(flag.content);
                         }
                     });
@@ -448,6 +453,20 @@ module.exports = (function(){
 
             if (!noChildren) {
 
+                if (!noHelpers) {
+                    exprt.getChildren = function(type) {
+                        var i, l;
+                        for (i = 0, l = this.children.length; i < l; i++) {
+                            if (this.children[i].type == type) {
+                                return this.children[i].items;
+                            }
+                        }
+                    };
+                }
+
+                var chGroups = {},
+                    typeProps;
+
                 self.eachItem(function (child) {
 
                     if (child.file.hidden) {
@@ -456,11 +475,22 @@ module.exports = (function(){
 
                     var type = child.type;
 
-                    if (!exprt.children.hasOwnProperty(type)) {
-                        exprt.children[type] = [];
+                    if (!chGroups[type]) {
+
+                        typeProps = child.getTypeProps();
+
+                        chGroups[type] = {
+                            type: type,
+                            name: typeProps.displayName,
+                            groupName: typeProps.groupName,
+                            items: []
+                        };
+                        exprt.children.push(chGroups[type]);
+                        exprt.childTypes.push(type);
                     }
 
-                    exprt.children[type].push(child.exportData(self));
+
+                    chGroups[type].items.push(child.exportData(self, false, noHelpers));
 
                 }, null, true);
             }
@@ -490,7 +520,7 @@ module.exports = (function(){
     });
 
 
-    return DocumentorItem;
+    return Item;
 
 
 }());

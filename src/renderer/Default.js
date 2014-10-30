@@ -1,18 +1,15 @@
 
-var DocumentorRenderer = require("../DocumentorRenderer.js"),
+var Renderer = require("../Renderer.js"),
     globalCache = require("../var/globalCache.js"),
     path = require("path"),
     fs = require("fs"),
     fse = require("fs.extra"),
     jsdom = require("jsdom"),
-    MetaphorJs = require("../../../metaphorjs/src/MetaphorJs.js"),
-    select = require("../../../metaphorjs-select/src/metaphorjs.select.js"),
     extend = require("../../../metaphorjs/src/func/extend.js"),
-    initApp = require("../../../metaphorjs/src/func/initApp.js"),
-    getAttr = require("../../../metaphorjs/src/func/dom/getAttr.js");
+    initMetaphorTemplates = require("../func/initMetaphorTemplates.js");
 
 
-module.exports = globalCache.add("renderer.default", DocumentorRenderer.$extend({
+module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
     data: null,
     templateDir: null,
@@ -36,101 +33,14 @@ module.exports = globalCache.add("renderer.default", DocumentorRenderer.$extend(
         extend(self.data, globalCache.get("renderer.default").defaultData, false, false);
 
         if (!self.templateDir) {
+            // path relative to dist/
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
-        self.doc.loadTemplates(self.templateDir + "/templates");
-
-        self.types = {};
-
-        self.data.items = [];
-
-        if (!self.data.topMenu) {
-            self.data.topMenu = [];
-            self.prepareTopMenu();
-        }
-
-        self.prepareSections();
+        self.data.sourceTree = self.doc.root.exportData().children;
     },
 
-    getType: function(type, file) {
 
-        var self = this,
-            ext = file.ext;
-
-        if (!self.types[ext + ":" + type]) {
-            self.types[ext + ":" + type] = file.pcall("getItemType", type, file);
-        }
-
-        return self.types[ext + ":" + type];
-    },
-
-    prepareTopMenu: function() {
-
-        var self = this,
-            rootItems = self.doc.root.items,
-            k,
-            type,
-            navItem,
-            added = false;
-
-        for (k in rootItems) {
-
-            type = self.getType(k, rootItems[k][0].file);
-            added = false;
-
-            navItem = {
-                id: k,
-                name: type.groupName,
-                sub: []
-            };
-
-            rootItems[k].forEach(function(item){
-
-                if (item.file.hidden) {
-                    return;
-                }
-
-                if (!added) {
-                    self.data.items.push({
-                        type: k,
-                        name: type.groupName,
-                        items: []
-                    });
-                    added = true;
-                }
-
-                navItem.sub.push({
-                    id: item.fullName,
-                    name: item.name
-                });
-            });
-
-            if (navItem.sub.length) {
-                self.data.topMenu.push(navItem);
-            }
-        }
-    },
-
-    prepareSections: function() {
-
-        var self = this,
-            root = self.doc.root,
-            type,
-            items;
-
-        self.data.items.forEach(function(section, inx){
-            type = section.type;
-            items = root.items[type];
-
-            items.forEach(function(item){
-                if (!item.file.hidden) {
-                    self.data.items[inx].items.push(item.exportData());
-                }
-            });
-        });
-
-    },
 
     render: function() {
 
@@ -139,20 +49,23 @@ module.exports = globalCache.add("renderer.default", DocumentorRenderer.$extend(
             index = tplDir + "/index.html",
             tpl = fs.readFileSync(index).toString();
 
+        var util = require('util');
+
         var doc = jsdom.jsdom(tpl);
+        var MetaphorJs = require("metaphorjs")(doc.parentWindow);
 
-        MetaphorJs.setWindow(doc.parentWindow);
+        initMetaphorTemplates(MetaphorJs);
 
-        var appNodes    = select("[mjs-app]", doc),
-            i, l, el;
+        // path relative to dist/
+        self.loadTemplates(MetaphorJs, path.normalize(__dirname + "/../assets/templates"));
+        self.loadTemplates(MetaphorJs, self.templateDir + "/templates");
+        self.runMetaphor(MetaphorJs, doc, self.data);
 
-        for (i = -1, l = appNodes.length; ++i < l;){
-            el = appNodes[i];
-            initApp(el, getAttr(el, "mjs-app"), self.data, true);
-        }
+        var html = jsdom.serializeDocument(doc);
 
-        return jsdom.serializeDocument(doc);
+        MetaphorJs.destroy();
 
+        return html;
     },
 
     writeOut: function(out) {
@@ -164,12 +77,12 @@ module.exports = globalCache.add("renderer.default", DocumentorRenderer.$extend(
             fse.rmrfSync(outDir + "/bower_components");
         }
 
-        if (fs.existsSync(outDir + "/style.css")) {
-            fse.rmrfSync(outDir + "/style.css");
+        if (fs.existsSync(outDir + "/assets")) {
+            fse.rmrfSync(outDir + "/assets");
         }
 
         fse.copyRecursive(tplDir + "/bower_components", outDir + "/bower_components", function(){
-            fse.copy(tplDir + "/style.css", outDir + "/style.css", function(){
+            fse.copyRecursive(tplDir + "/assets", outDir + "/assets", function(){
                 fs.writeFileSync(outDir + "/index.html", out);
             });
         });
@@ -177,10 +90,5 @@ module.exports = globalCache.add("renderer.default", DocumentorRenderer.$extend(
 
 
 }, {
-    defaultData: {
-        title: "",
-        description: "",
-        footer: "",
-        topRightMenu: null
-    }
+    defaultData: {}
 }));

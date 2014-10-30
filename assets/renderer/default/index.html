@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <title>{{ .title }}</title>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assets/style.css">
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
 </head>
 <body>
 
-<mjs-include src="topMenu"></mjs-include>
+<mjs-include src="top-menu"></mjs-include>
 
 <div class="jumbotron">
     <div class="container">
@@ -21,11 +21,14 @@
 </div>
 
 <div class="container">
-
-    <div class="row" mjs-each="group in .items">
-        <mjs-include src="items"></mjs-include>
+    <div class="row item-group" mjs-each="group in .sourceTree">
+        <div class="col-md-12 item-group-name" mjs-if=".$root.sourceTree.length > 1">
+            <h2>{{.group.name}}</h2>
+        </div>
+        <div mjs-each="item in .group.items" class="col-md-12 item-group-items item-group-type-{{.item.type}}">
+            <mjs-include src=".item.template"></mjs-include>
+        </div>
     </div>
-
 </div>
 
 <div class="footer" mjs-if=".footer">

@@ -1,25 +1,24 @@
 
-var DocumentorBase = require("./DocumentorBase.js"),
+var Base = require("./Base.js"),
     isFile = require("../../metaphorjs/src/func/fs/isFile.js"),
     extend = require("../../metaphorjs/src/func/extend.js"),
     getFileList = require("../../metaphorjs/src/func/fs/getFileList.js"),
     undf = require("../../metaphorjs/src/var/undf.js"),
     path = require("path"),
     fs = require("fs"),
-    DocumentorFile = require("./DocumentorFile.js"),
-    DocumentorItem = require("./DocumentorItem.js"),
-    DocumentorContent = require("./DocumentorContent.js"),
+    SourceFile = require("./SourceFile.js"),
+    Item = require("./Item.js"),
+    Content = require("./Content.js"),
     Cache = require("../../metaphorjs/src/lib/Cache.js"),
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
-    nextUid = require("../../metaphorjs/src/func/nextUid.js"),
-    Template = require("../../metaphorjs/src/class/Template.js");
+    nextUid = require("../../metaphorjs/src/func/nextUid.js");
 
 
-require("./func/getTemplate.js");
 
 
-module.exports = DocumentorBase.$extend({
+
+module.exports = Base.$extend({
 
     files: null,
     root: null,
@@ -36,10 +35,10 @@ module.exports = DocumentorBase.$extend({
         self.files = {};
         self.map = {};
         self.content = [];
-        self.root = new DocumentorItem({
+        self.root = new Item({
             doc: self,
             type: "root",
-            file: new DocumentorFile({
+            file: new SourceFile({
                 ext: "*",
                 doc: self
             })
@@ -200,7 +199,7 @@ module.exports = DocumentorBase.$extend({
         if (!self.files[filePath]) {
 
 
-            var file = DocumentorFile.get(filePath, self, extend({}, options, {
+            var file = SourceFile.get(filePath, self, extend({}, options, {
                 hidden: hidden
             }, true, false));
 
@@ -237,19 +236,13 @@ module.exports = DocumentorBase.$extend({
         return this.files[path];
     },
 
-    addHooks: function(dir) {
-
-    },
-
     addContent: function(id, content) {
-        this.content.push(new DocumentorContent(id, content));
+        this.content.push(new Content(id, content));
     },
 
     prepare: function() {
 
         var self = this;
-
-        self.loadTemplates(path.normalize(__dirname + "/../assets/templates"));
 
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
@@ -269,14 +262,6 @@ module.exports = DocumentorBase.$extend({
     },
 
 
-    loadTemplates: function(dir) {
-
-        var self = this;
-
-        self.eachHook(dir, "html", function(name, file){
-            Template.cache.add(name, fs.readFileSync(file).toString());
-        });
-    },
 
     loadHooks: function(dir) {
 
@@ -328,7 +313,7 @@ module.exports = DocumentorBase.$extend({
     },
 
     clear: function() {
-        DocumentorFile.clear();
+        SourceFile.clear();
 
         var self = this;
 

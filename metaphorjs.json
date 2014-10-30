@@ -8,20 +8,10 @@
     "mixin": {
         "default": {
             "files": [
-                "../metaphorjs/src/stubs/windowless.js",
-                ["../metaphorjs/metaphorjs.json", "core"],
-                [
-                    "../metaphorjs/src/func/run.js",
-                    {
-                        "as": "run"
-                    }
-                ],
-                "src/**",
-                ["src/DocumentorRunner.js", {"as": "*"}],
-                ["src/Documentor.js", {"as": "*"}]
-            ],
-            "omit": [
-                "../metaphorjs/src/bootstrap/apps.js"
+                ["src/func/**", {"as": "*"}],
+                ["src/Runner.js", {"as": "*"}],
+                ["src/Documentor.js", {"as": "*"}],
+                "src/**"
             ]
         }
     },
@@ -47,19 +37,18 @@
     "build": {
         "npm": {
             "auto": true,
-            "target": "dist/metaphorjs.documentor.js",
+            "target": "dist/metaphorjs.documentor.npm.js",
             "compile": false,
             "files": ["default"],
             "exports": "Documentor",
             "exposeIn": "Documentor",
             "expose": [
-                "DocumentorRenderer",
-                "DocumentorItem",
-                "DocumentorBase",
-                "DocumentorFile",
-                "DocumentorComment",
-                "DocumentorRunner",
-                "MetaphorJs",
+                "Renderer",
+                "Item",
+                "Base",
+                "SourceFile",
+                "Comment",
+                "Runner",
                 {"name": "globalCache", "as": "hooks"}
             ]
         }

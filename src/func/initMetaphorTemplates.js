@@ -1,12 +1,11 @@
 
 
-var Template = require("../../../metaphorjs/src/class/Template.js"),
-    undf = require("../../../metaphorjs/src/var/undf.js"),
+var undf = require("../../../metaphorjs/src/var/undf.js"),
     generateTemplateNames = require("./generateTemplateNames.js");
 
-module.exports = (function(){
+module.exports = function(MetaphorJs){
 
-    var cache = Template.cache,
+    var cache = MetaphorJs.Template.cache,
         origGet = cache.get;
 
     cache.get = function(id){
@@ -25,4 +24,4 @@ module.exports = (function(){
         return undf;
     };
 
-}());
+};

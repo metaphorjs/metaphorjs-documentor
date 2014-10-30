@@ -1,16 +1,24 @@
 {
   "name": "metaphorjs-documentor",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "",
-  "main": "cli.js",
+  "main": "dist/metaphorjs.documentor.npm.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "mjs-doc": "bin/cli.js"
   },
   "author": "kuindji",
   "license": "MIT",
   "dependencies": {
     "fs.extra": "^1.2.1",
     "jsdom": "^1.0.3",
-    "minimist": "^1.1.0"
+    "minimist": "^1.1.0",
+    "metaphorjs-build": "*",
+    "metaphorjs-namespace": "*",
+    "metaphorjs-class": "*",
+    "metaphorjs-select": "*",
+    "metaphorjs": "*"
   }
 }

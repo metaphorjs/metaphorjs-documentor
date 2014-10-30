@@ -1,11 +1,11 @@
 
-var DocumentorBase = require("./DocumentorBase.js");
+var Base = require("./Base.js");
 
 
 /**
  * @class Comment
  */
-var DocumentorComment = DocumentorBase.$extend({
+var Comment = Base.$extend({
 
     comment: null,
     doc: null,
@@ -75,4 +75,4 @@ var DocumentorComment = DocumentorBase.$extend({
 
 });
 
-module.exports = DocumentorComment;
+module.exports = Comment;

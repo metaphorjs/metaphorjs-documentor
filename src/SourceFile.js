@@ -1,9 +1,9 @@
 
-var DocumentorBase = require("./DocumentorBase.js"),
+var Base = require("./Base.js"),
     fs = require("fs"),
     path = require("path"),
-    DocumentorItem = require("./DocumentorItem.js"),
-    DocumentorComment = require("./DocumentorComment.js"),
+    Item = require("./Item.js"),
+    Comment = require("./Comment.js"),
     extend = require("../../metaphorjs/src/func/extend.js"),
     hideLinks = require("./func/hideLinks.js");
 
@@ -15,7 +15,7 @@ module.exports = function(){
      * @class
      * @extends Base
      */
-    var DocumentorFile = DocumentorBase.$extend({
+    var SourceFile = Base.$extend({
 
 
         /**
@@ -157,7 +157,7 @@ module.exports = function(){
 
                     comment = hideLinks(comment);
 
-                    cmtObj = new DocumentorComment({
+                    cmtObj = new Comment({
                         comment: comment,
                         doc: this.doc,
                         file: this,
@@ -196,7 +196,7 @@ module.exports = function(){
                 // but not a new item
                 // (this can happen if current part does not
                 // have an acceptable context)
-                if (item && !(item instanceof DocumentorItem)) {
+                if (item && !(item instanceof Item)) {
                     // process it as usual
                     item = commentPart(item, cmt);
                     // if it worked, process the original part
@@ -298,7 +298,7 @@ module.exports = function(){
                         context.getItem(type, name, true) :
                         null) ||
 
-                        new DocumentorItem({
+                        new Item({
                             doc: self.doc,
                             file: self,
                             comment: cmt,
@@ -458,7 +458,7 @@ module.exports = function(){
 
         get: function(filePath, doc, options) {
             if (!all[filePath]) {
-                all[filePath] = new DocumentorFile({
+                all[filePath] = new SourceFile({
                     path: filePath,
                     doc: doc,
                     options: extend({}, options)
@@ -473,6 +473,6 @@ module.exports = function(){
 
     });
 
-    return DocumentorFile;
+    return SourceFile;
 
 }();

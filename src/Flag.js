@@ -1,10 +1,10 @@
 
-var DocumentorBase = require("./DocumentorBase.js"),
+var Base = require("./Base.js"),
     extend = require("../../metaphorjs/src/func/extend.js"),
     fs = require("fs"),
     path = require("path");
 
-module.exports = DocumentorBase.$extend({
+module.exports = Base.$extend({
 
     name: null,
     type: null,

@@ -8,7 +8,7 @@ module.exports = (function(){
     var classes = function(name, displayName, groupName) {
         return {
             name: name,
-            children: ["method", "property", "const", "event", "!param"],
+            children: ["property", "const", "method", "event", "!param"],
             extendable: true,
             transform: {
                 "function": "method",
