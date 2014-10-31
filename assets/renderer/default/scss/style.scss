@@ -1,0 +1,129 @@
+
+.jumbotron {
+    margin-bottom: 0;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    margin-top: 28px;
+}
+
+.source-container {
+    ul {
+        list-style: none;
+    }
+}
+
+
+.item-group-items {
+    border-top: 1px solid #d0d0d0;
+
+    &:first-child {
+        border-top: 0;
+    }
+}
+
+.col-md-2, .col-md-10 {
+    margin-top: 20px;
+}
+
+.level-0 .col-md-2 {
+    padding-left: 0;
+}
+
+.level-0 .col-md-10 {
+    border-left: 1px solid #d0d0d0;
+    padding-right: 0;
+}
+
+.item-properties {
+
+    & > li {
+        border-top: 1px dotted #d0d0d0;
+        padding: 5px 0;
+        &:first-child {
+            border-top: 0;
+            padding-top: 0;
+        }
+    }
+
+    &.level-0 {
+        padding: 0;
+    }
+
+    &.level-0 > li,
+    &.level-1 > li {
+        padding: 10px 0;
+        &:first-child {
+            padding-top: 5px;
+        }
+    }
+}
+
+
+.item-property-group-name,
+ul.level-0 > li.item-property-group-name {
+    background-color: #d0d0d0;
+    color: #fff;
+    text-transform: uppercase;
+    padding: 5px;
+}
+
+
+
+.item-header {
+    $h1Size: 36px;
+    $hStep: 4px;
+    h1, h2, h3, h4, h5, h6{
+        font-size: 0;
+    }
+    h1 span {
+        font-size: $h1Size - ($hStep * 0);
+    }
+    h2 span {
+        font-size: $h1Size - ($hStep * 1);;
+    }
+    h3 span {
+        font-size: $h1Size - ($hStep * 2);
+    }
+    h4 span {
+        font-size: $h1Size - ($hStep * 3);
+    }
+    h5 span {
+        font-size: $h1Size - ($hStep * 4);
+    }
+    h6 span {
+        font-size: $h1Size - ($hStep * 5);
+    }
+    .item-name-returns {
+        color: #999;
+    }
+    .item-name-return-descr {
+        color: #999;
+    }
+    .item-type {
+        color: #999;
+    }
+}
+
+.item-nav {
+    padding: 0;
+    text-overflow: ellipsis;
+    overflow: hidden;
+
+    a {
+        font-size: 0;
+        white-space: nowrap;
+
+        span {
+            font-size: 14px;
+        }
+    }
+}
+
+.item-flags {
+    padding: 0;
+    margin: 0;
+}
+
+.item-flags + .item-description {
+    margin-top: 10px;
+}

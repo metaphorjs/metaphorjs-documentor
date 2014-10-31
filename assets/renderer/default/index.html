@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <title>{{ .title }}</title>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/prism/themes/prism.css">
     <link rel="stylesheet" href="assets/style.css">
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="bower_components/prism/prism.js"></script>
 </head>
 <body>
 
@@ -20,12 +22,12 @@
     </div>
 </div>
 
-<div class="container">
-    <div class="row item-group" mjs-each="group in .sourceTree">
+<div class="container source-container">
+    <div class="row item-group level-0" mjs-each="group in .sourceTree">
         <div class="col-md-12 item-group-name" mjs-if=".$root.sourceTree.length > 1">
             <h2>{{.group.name}}</h2>
         </div>
-        <div mjs-each="item in .group.items" class="col-md-12 item-group-items item-group-type-{{.item.type}}">
+        <div mjs-each="item in .group.items" class="col-md-12 item-group-items item-group-type-{{.item.type}} level-0">
             <mjs-include src=".item.template"></mjs-include>
         </div>
     </div>
@@ -34,5 +36,6 @@
 <div class="footer" mjs-if=".footer">
     <div class="container" mjs-bind-html=".footer"></div>
 </div>
+
 </body>
 </html>

@@ -1,7 +1,8 @@
 <!DOCTYPE html><html><head lang="en">
     <meta charset="UTF-8">
-    <title>MetaphorJs</title>
+    <title>MetaphorJs.Documentor</title>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/style.css">
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
 </head>
@@ -17,58 +18,623 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="#">MetaphorJs</a>
+            <a class="navbar-brand" href="#">MetaphorJs.Documentor</a>
         </div>
+
+
         <div class="navbar-collapse collapse">
-            <ul class="nav navbar-nav">
-                <li class=" dropdown">
-                    <a href="#" data-toggle="dropdown" class=" dropdown-toggle">
-                        Classes
-                        <span class="caret"></span>
-                    </a>
-                    <ul class="dropdown-menu" role="menu">
-                        <li>
-                            <a href="#Base">Base</a>
-                        </li><li>
-                            <a href="#Comment">Comment</a>
-                        </li><li>
-                            <a href="#DocumentorFile">DocumentorFile</a>
-                        </li>
-                    </ul>
-                </li>
-            </ul>
+
+            
+                <ul class="nav navbar-nav">
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                            Class
+                            <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li>
+                                <a href="#">Base</a>
+                            </li><li>
+                                <a href="#">Comment</a>
+                            </li><li>
+                                <a href="#">SourceFile</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            
+
             
         </div><!--/.nav-collapse -->
+
     </div>
 </div>
 
 <div class="jumbotron">
     <div class="container">
-        <h1>MetaphorJs</h1>
+        <h1>MetaphorJs.Documentor</h1>
+        <p></p>
         <p></p>
     </div>
 </div>
 
-<div class="container">
-
-    <div class="row">
-        <div class="col-md-12">
-    <h2>Classes</h2>
+<div class="container source-container">
+    <div class="row item-group level-0">
+        
+        <div class="col-md-12 item-group-items item-group-type-class level-0">
+            <div class="item-header" id="Base">
+    
+        
+    
+    <h3>
+        
+        <span class="item-name">Base</span>
+        
+    </h3>
 </div>
-<div class="col-md-12">
-    <h3>Base</h3>
 
-</div><div class="col-md-12">
-    <h3>Comment</h3>
 
-</div><div class="col-md-12">
-    <h3>DocumentorFile</h3>
 
+
+    <div class="col-md-2 nopadding item-nav-container">
+        <ul class="item-nav">
+    <li class="item-nav-group-name">Methods</li>
+    <li class="item-nav-property item-nav-property-method">
+
+        <a href="#Base.pcall">
+            <span class="item-nav-item-name">pcall</span>
+            
+                
+                    <span class="item-nav-item-arguments">(name)</span>
+                
+                
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-method">
+
+        <a href="#Base.pget">
+            <span class="item-nav-item-name">pget</span>
+            
+                
+                    <span class="item-nav-item-arguments">(name, collect, passthru, merge)</span>
+                
+                
+            
+        </a>
+    </li>
+</ul>
+    </div>
+    <div class="col-md-10 nopadding item-properties-container">
+        <ul class="item-properties level-0">
+    <li class="item-property-group-name">Methods</li>
+    <li class="item-property item-property-method">
+        <div class="item-header" id="Base.pcall">
+    
+        
+    
+    <h4>
+        
+        <span class="item-name">pcall</span>
+        
+            
+                <span class="item-name-arguments">(name)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt; * </span>
+            
+            
+        
+    </h4>
 </div>
+
+
+
+
+
+
+    <ul class="item-properties level-1">
+    
+    <li class="item-property item-property-param">
+        <div class="item-header" id="Base.pcall/name">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">name</span>
+        
+    </h5>
+</div>
+
+
+
+
+
+
+    
+
+    </li>
+</ul>
+
+    </li><li class="item-property item-property-method">
+        <div class="item-header" id="Base.pget">
+    
+        
+    
+    <h4>
+        
+        <span class="item-name">pget</span>
+        
+            
+                <span class="item-name-arguments">(name, collect, passthru, merge)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt; * </span>
+            
+            
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    <ul class="item-properties level-1">
+    
+    <li class="item-property item-property-param">
+        <div class="item-header" id="Base.pget/name">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">name</span>
+        
+    </h5>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-param">
+        <div class="item-header" id="Base.pget/collect">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">boolean </span>
+        
+        <span class="item-name">collect</span>
+        
+    </h5>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-param">
+        <div class="item-header" id="Base.pget/passthru">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">function </span>
+        
+        <span class="item-name">passthru</span>
+        
+            
+            
+            
+            
+        
+    </h5>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-param">
+        <div class="item-header" id="Base.pget/merge">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">boolean </span>
+        
+        <span class="item-name">merge</span>
+        
+    </h5>
+</div>
+
+
+
+
+
+
+    
+
+    </li>
+</ul>
+
+    </li>
+</ul>
     </div>
 
+
+
+        </div><div class="col-md-12 item-group-items item-group-type-class level-0">
+            <div class="item-header" id="Comment">
+    
+        
+    
+    <h3>
+        
+        <span class="item-name">Comment</span>
+        
+    </h3>
 </div>
 
 
+
+
+
+
+        </div><div class="col-md-12 item-group-items item-group-type-class level-0">
+            <div class="item-header" id="SourceFile">
+    
+        
+    
+    <h3>
+        
+        <span class="item-name">SourceFile</span>
+        
+    </h3>
+</div>
+
+
+
+
+    <div class="col-md-2 nopadding item-nav-container">
+        <ul class="item-nav">
+    <li class="item-nav-group-name">Properties</li>
+    <li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.path">
+            <span class="item-nav-item-name">path</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.exportPath">
+            <span class="item-nav-item-name">exportPath</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.dir">
+            <span class="item-nav-item-name">dir</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.ext">
+            <span class="item-nav-item-name">ext</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.doc">
+            <span class="item-nav-item-name">doc</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.contextStack">
+            <span class="item-nav-item-name">contextStack</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.comments">
+            <span class="item-nav-item-name">comments</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.content">
+            <span class="item-nav-item-name">content</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.tmp">
+            <span class="item-nav-item-name">tmp</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.options">
+            <span class="item-nav-item-name">options</span>
+            
+        </a>
+    </li><li class="item-nav-property item-nav-property-property">
+
+        <a href="#SourceFile.hidden">
+            <span class="item-nav-item-name">hidden</span>
+            
+        </a>
+    </li>
+</ul>
+    </div>
+    <div class="col-md-10 nopadding item-properties-container">
+        <ul class="item-properties level-0">
+    <li class="item-property-group-name">Properties</li>
+    <li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.path">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">path</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.exportPath">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">exportPath</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.dir">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">dir</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.ext">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">ext</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.doc">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Documentor </span>
+        
+        <span class="item-name">doc</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.contextStack">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">array </span>
+        
+        <span class="item-name">contextStack</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.comments">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">array </span>
+        
+        <span class="item-name">comments</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.content">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string </span>
+        
+        <span class="item-name">content</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.tmp">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object </span>
+        
+        <span class="item-name">tmp</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.options">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object </span>
+        
+        <span class="item-name">options</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li><li class="item-property item-property-property">
+        <div class="item-header" id="SourceFile.hidden">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">boolean </span>
+        
+        <span class="item-name">hidden</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+    
+
+    </li>
+</ul>
+    </div>
+
+
+
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="container"></div>
+</div>
 
 </body></html>

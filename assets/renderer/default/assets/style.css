@@ -1,15 +1,137 @@
-
-.doc-item li {
-    border-bottom: 1px solid #f0f0f0;
-}
-.doc-item li:last-child {
-    border-bottom: 0;
-}
-
-.doc-item li h3 {
-    font-size: 20px;
+/* line 2, ../scss/style.scss */
+.jumbotron {
+  margin-bottom: 0;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  margin-top: 28px;
 }
 
-.doc-item li li h3 {
-    font-size: 16px;
+/* line 10, ../scss/style.scss */
+.source-container ul {
+  list-style: none;
+}
+
+/* line 16, ../scss/style.scss */
+.item-group-items {
+  border-top: 1px solid #d0d0d0;
+}
+/* line 19, ../scss/style.scss */
+.item-group-items:first-child {
+  border-top: 0;
+}
+
+/* line 24, ../scss/style.scss */
+.col-md-2, .col-md-10 {
+  margin-top: 20px;
+}
+
+/* line 28, ../scss/style.scss */
+.level-0 .col-md-2 {
+  padding-left: 0;
+}
+
+/* line 32, ../scss/style.scss */
+.level-0 .col-md-10 {
+  border-left: 1px solid #d0d0d0;
+  padding-right: 0;
+}
+
+/* line 39, ../scss/style.scss */
+.item-properties > li {
+  border-top: 1px dotted #d0d0d0;
+  padding: 5px 0;
+}
+/* line 42, ../scss/style.scss */
+.item-properties > li:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+/* line 48, ../scss/style.scss */
+.item-properties.level-0 {
+  padding: 0;
+}
+/* line 53, ../scss/style.scss */
+.item-properties.level-0 > li, .item-properties.level-1 > li {
+  padding: 10px 0;
+}
+/* line 55, ../scss/style.scss */
+.item-properties.level-0 > li:first-child, .item-properties.level-1 > li:first-child {
+  padding-top: 5px;
+}
+
+/* line 63, ../scss/style.scss */
+.item-property-group-name,
+ul.level-0 > li.item-property-group-name {
+  background-color: #d0d0d0;
+  color: #fff;
+  text-transform: uppercase;
+  padding: 5px;
+}
+
+/* line 75, ../scss/style.scss */
+.item-header h1, .item-header h2, .item-header h3, .item-header h4, .item-header h5, .item-header h6 {
+  font-size: 0;
+}
+/* line 78, ../scss/style.scss */
+.item-header h1 span {
+  font-size: 36px;
+}
+/* line 81, ../scss/style.scss */
+.item-header h2 span {
+  font-size: 32px;
+}
+/* line 84, ../scss/style.scss */
+.item-header h3 span {
+  font-size: 28px;
+}
+/* line 87, ../scss/style.scss */
+.item-header h4 span {
+  font-size: 24px;
+}
+/* line 90, ../scss/style.scss */
+.item-header h5 span {
+  font-size: 20px;
+}
+/* line 93, ../scss/style.scss */
+.item-header h6 span {
+  font-size: 16px;
+}
+/* line 96, ../scss/style.scss */
+.item-header .item-name-returns {
+  color: #999;
+}
+/* line 99, ../scss/style.scss */
+.item-header .item-name-return-descr {
+  color: #999;
+}
+/* line 102, ../scss/style.scss */
+.item-header .item-type {
+  color: #999;
+}
+
+/* line 107, ../scss/style.scss */
+.item-nav {
+  padding: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+/* line 112, ../scss/style.scss */
+.item-nav a {
+  font-size: 0;
+  white-space: nowrap;
+}
+/* line 116, ../scss/style.scss */
+.item-nav a span {
+  font-size: 14px;
+}
+
+/* line 122, ../scss/style.scss */
+.item-flags {
+  padding: 0;
+  margin: 0;
+}
+
+/* line 127, ../scss/style.scss */
+.item-flags + .item-description {
+  margin-top: 10px;
 }

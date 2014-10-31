@@ -1,0 +1,10 @@
+<ul mjs-each="flags in .item.flags | toArray"
+     mjs-if=".flags.key != 'returns' && .flags.key != 'returnDescription' && .flags.key != 'type'"
+    class="item-flags">
+    <li mjs-each="flag in .flags.value">
+        <code>@{{ .$parent.flags.key }}</code>
+        <mjs-if value=".flag.contentType == 'string'">
+            <span>{{ .flag.content }}</span>
+        </mjs-if>
+    </li>
+</ul>

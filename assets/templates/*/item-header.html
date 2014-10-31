@@ -7,18 +7,18 @@
     </mjs-if>
     <mjs-tag value=".item.level + 2 > 6 ? 'h6' : 'h' + (.item.level + 2)">
         <mjs-if value=".item.plainFlags.hasOwnProperty('type')">
-            <span class="item-type">[{{ .item.plainFlags.type.join("|") }}]</span>
+            <span class="item-type">{{ .item.plainFlags.type.join("|") }} </span>
         </mjs-if>
         <span class="item-name">{{ .item.name }}</span>
         <mjs-if value=".isFunction">
             <mjs-if value=".item.childTypes.indexOf('param') != -1">
-                <span class="item-name-arguments">({{ .item.getChildren('param') | collect:"name" | join:"," }})</span>
+                <span class="item-name-arguments">({{ .item.getChildren('param') | collect:"name" | join:", " }})</span>
             </mjs-if>
-            <mjs-if value=".item.childTypes.indexOf('param') == 1">
+            <mjs-if value=".item.childTypes.indexOf('param') == -1">
                 <span class="item-name-arguments">()</span>
             </mjs-if>
             <mjs-if value=".item.plainFlags.hasOwnProperty('returns')">
-                <span class="item-name-returns">-> [{{ .item.plainFlags.returns.join("|") }}]</span>
+                <span class="item-name-returns">&nbsp;-> {{ .item.plainFlags.returns.join("|") }} </span>
             </mjs-if>
             <mjs-if value=".item.plainFlags.hasOwnProperty('returnDescription')">
                 <span class="item-name-return-descr" mjs-bind=".item.plainFlags.returnDescription[0]"></span>

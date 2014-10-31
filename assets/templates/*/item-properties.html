@@ -1,5 +1,5 @@
-<ul mjs-each="group in .item.children" class="item-properties">
-    <li mjs-if=".group.type != 'param'" class="item-property-group-name">{{.group.groupName}}</li>
+<ul mjs-each="group in .item.children" class="item-properties level-{{ .item.level - 1 }}">
+    <li mjs-if=".group.type != 'param' && .item.level == 1" class="item-property-group-name">{{.group.groupName}}</li>
     <li mjs-each="item in .group.items" class="item-property item-property-{{ .item.type }}">
         <mjs-include src=".item.template"></mjs-include>
     </li>
