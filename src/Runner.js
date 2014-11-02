@@ -21,7 +21,7 @@ var Runner = Base.$extend({
             data        = extend({}, profile.data, runData, true, false),
             cfg         = extend({}, profile, runCfg, true, false),
             options     = extend({}, profile.options, runOptions, true, false),
-            doc         = new Documentor;
+            doc;//         = new Documentor;
 
         delete cfg.data;
         delete cfg.options;
@@ -29,6 +29,12 @@ var Runner = Base.$extend({
         extend(data, self.prepareArgsData(args), true, false);
         extend(options, self.prepareArgsOptions(args), true, false);
         extend(cfg, self.prepareArgsCfg(args), true, false);
+
+        doc = new Documentor({
+            itemSortCfg: cfg.itemSort,
+            typeSortCfg: cfg.typeSort,
+            contentSortCfg: cfg.contentSort
+        });
 
         if (cfg.init) {
             self.runInit(cfg, doc, jsonFile);

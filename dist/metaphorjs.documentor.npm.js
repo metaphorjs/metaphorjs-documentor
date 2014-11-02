@@ -1932,26 +1932,30 @@ var Documentor = Base.$extend({
     id: null,
     map: null,
     content: null,
+    typeSortCfg: null,
+    itemSortCfg: null,
+    contentSortCfg: null,
 
-    $init: function(){
+    $init: function(cfg){
 
         var self = this;
 
-        self.id = nextUid();
-        self.files = {};
-        self.map = {};
-        self.content = [];
-        self.root = new Item({
-            doc: self,
-            type: "root",
-            file: new SourceFile({
-                ext: "*",
-                doc: self
+        self.id         = nextUid();
+        self.files      = {};
+        self.map        = {};
+        self.content    = [];
+        self.root       = new Item({
+            doc:        self,
+            type:       "root",
+            file:       new SourceFile({
+                ext:    "*",
+                doc:    self
             })
         });
 
-        self.hooks = new Cache(true);
+        extend(self, cfg, true, false);
 
+        self.hooks      = new Cache(true);
 
         self.$super();
     },
@@ -2158,8 +2162,9 @@ var Documentor = Base.$extend({
         self.pcall("prepareItems", self);
         self.pcall("prepaceContent", self);
 
-        self.pcall("sortItems", self);
-        self.pcall("sortContent", self);
+        self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
+        self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
+        self.pcall("sortContent", self, self.contentSortCfg);
     },
 
 
@@ -2266,7 +2271,7 @@ var Runner = Base.$extend({
             data        = extend({}, profile.data, runData, true, false),
             cfg         = extend({}, profile, runCfg, true, false),
             options     = extend({}, profile.options, runOptions, true, false),
-            doc         = new Documentor;
+            doc;//         = new Documentor;
 
         delete cfg.data;
         delete cfg.options;
@@ -2274,6 +2279,12 @@ var Runner = Base.$extend({
         extend(data, self.prepareArgsData(args), true, false);
         extend(options, self.prepareArgsOptions(args), true, false);
         extend(cfg, self.prepareArgsCfg(args), true, false);
+
+        doc = new Documentor({
+            itemSortCfg: cfg.itemSort,
+            typeSortCfg: cfg.typeSort,
+            contentSortCfg: cfg.contentSort
+        });
 
         if (cfg.init) {
             self.runInit(cfg, doc, jsonFile);
@@ -2505,6 +2516,10 @@ var Renderer = Base.$extend({
         self.doc = doc;
     },
 
+    initMetaphor: function(MetaphorJs) {
+
+        MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
+    },
 
     loadTemplates: function(MetaphorJs, dir) {
 
@@ -3224,6 +3239,84 @@ globalCache.add("file.*.normalizeType", function(type, file){
     return ret;
 });
 
+function isFunction(value) {
+    return typeof value == 'function';
+};
+
+
+
+function sortArray(arr, by, dir) {
+
+    if (!dir) {
+        dir = "asc";
+    }
+
+    var ret = arr.slice();
+
+    ret.sort(function(a, b) {
+        var typeA = typeof a,
+            typeB = typeof b,
+            valueA  = a,
+            valueB  = b;
+
+        if (typeA != typeB) {
+            return 0;
+        }
+
+        if (typeA == "object") {
+            if (isFunction(by)) {
+                valueA = by(a);
+                valueB = by(b);
+            }
+            else {
+                valueA = a[by];
+                valueB = b[by];
+            }
+        }
+
+        if (typeof valueA == "number") {
+            return valueA - valueB;
+        }
+        else {
+            valueA = ("" + valueA).toLowerCase();
+            valueB = ("" + valueB).toLowerCase();
+
+            if (valueA === valueB) return 0;
+            return valueA > valueB ? 1 : -1;
+        }
+    });
+
+    return dir == "desc" ? ret.reverse() : ret;
+
+};
+
+
+
+
+globalCache.add("file.*.sortItems", function(item, cfg){
+
+    if (!cfg) {
+        return;
+    }
+
+    var by = cfg.by,
+        dir = cfg.direction || "asc",
+        key;
+
+    for (key in item.items) {
+
+        if (key != "param") {
+
+            item.items[key] = sortArray(item.items[key], by, dir);
+
+            item.items[key].forEach(function (item) {
+                item.file.pcall("sortItems", item, cfg);
+            });
+        }
+    }
+
+});
+
 
 
 globalCache.add("file.js.item.*.description.added", function(flag, item){
@@ -3479,6 +3572,19 @@ globalCache.add("file.js.typeAliases", {
     "Function": "function"
 });
 
+var marked = require("marked");
+
+
+
+globalCache.add("markdown", function(content){
+
+    return marked(content, {
+        gfm: true,
+        breaks: false,
+        tables: true
+    });
+});
+
 var fse = require("fs.extra"),
     jsdom = require("jsdom");
 
@@ -3527,6 +3633,8 @@ globalCache.add("renderer.default", Renderer.$extend({
 
         var doc = jsdom.jsdom(tpl);
         var MetaphorJs = require("metaphorjs")(doc.parentWindow);
+
+        self.initMetaphor(MetaphorJs);
 
         initMetaphorTemplates(MetaphorJs);
 

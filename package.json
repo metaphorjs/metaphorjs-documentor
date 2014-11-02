@@ -14,11 +14,12 @@
   "dependencies": {
     "fs.extra": "^1.2.1",
     "jsdom": "^1.0.3",
-    "minimist": "^1.1.0",
+    "marked": "^0.3.2",
+    "metaphorjs": "*",
     "metaphorjs-build": "*",
-    "metaphorjs-namespace": "*",
     "metaphorjs-class": "*",
+    "metaphorjs-namespace": "*",
     "metaphorjs-select": "*",
-    "metaphorjs": "*"
+    "minimist": "^1.1.0"
   }
 }

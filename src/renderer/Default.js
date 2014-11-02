@@ -54,6 +54,8 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         var doc = jsdom.jsdom(tpl);
         var MetaphorJs = require("metaphorjs")(doc.parentWindow);
 
+        self.initMetaphor(MetaphorJs);
+
         initMetaphorTemplates(MetaphorJs);
 
         // path relative to dist/

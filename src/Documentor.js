@@ -26,26 +26,30 @@ module.exports = Base.$extend({
     id: null,
     map: null,
     content: null,
+    typeSortCfg: null,
+    itemSortCfg: null,
+    contentSortCfg: null,
 
-    $init: function(){
+    $init: function(cfg){
 
         var self = this;
 
-        self.id = nextUid();
-        self.files = {};
-        self.map = {};
-        self.content = [];
-        self.root = new Item({
-            doc: self,
-            type: "root",
-            file: new SourceFile({
-                ext: "*",
-                doc: self
+        self.id         = nextUid();
+        self.files      = {};
+        self.map        = {};
+        self.content    = [];
+        self.root       = new Item({
+            doc:        self,
+            type:       "root",
+            file:       new SourceFile({
+                ext:    "*",
+                doc:    self
             })
         });
 
-        self.hooks = new Cache(true);
+        extend(self, cfg, true, false);
 
+        self.hooks      = new Cache(true);
 
         self.$super();
     },
@@ -252,8 +256,9 @@ module.exports = Base.$extend({
         self.pcall("prepareItems", self);
         self.pcall("prepaceContent", self);
 
-        self.pcall("sortItems", self);
-        self.pcall("sortContent", self);
+        self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
+        self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
+        self.pcall("sortContent", self, self.contentSortCfg);
     },
 
 

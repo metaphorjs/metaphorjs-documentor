@@ -17,6 +17,10 @@ module.exports = Base.$extend({
         self.doc = doc;
     },
 
+    initMetaphor: function(MetaphorJs) {
+
+        MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
+    },
 
     loadTemplates: function(MetaphorJs, dir) {
 

@@ -11,6 +11,6 @@
     </div>
 </mjs-if>
 
-<mjs-if value=".item.level > 1">
+<mjs-if value=".item.level > 1 || .item.type == 'function'">
     <mjs-include src=".item.fileType + '.item-properties'"></mjs-include>
 </mjs-if>
