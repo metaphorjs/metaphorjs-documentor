@@ -3,5 +3,8 @@
         <mjs-if value=".descr.contentType == 'string'">
             <mjs-bind-html value=".descr.content | markdown"></mjs-bind-html>
         </mjs-if>
+        <mjs-if value=".descr.contentType == 'code'">
+            <pre><code class="language-{{ .descr.fileType | prismClass }}">{{ .descr.content }}</code></pre>
+        </mjs-if>
     </div>
 </mjs-if>

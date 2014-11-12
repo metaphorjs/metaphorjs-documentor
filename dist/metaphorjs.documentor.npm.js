@@ -527,6 +527,10 @@ var Item = (function(){
             }
         },
 
+        isRoot: function() {
+            return this.level == 0;
+        },
+
 
         pcall: function(name) {
             arguments[0] = "item." + this.type + "." + arguments[0];
@@ -600,7 +604,7 @@ var Item = (function(){
             return this.flags.hasOwnProperty(flag);
         },
 
-        addFlag: function(flag, content) {
+        addFlag: function(flag, content, type, props) {
 
             var self = this;
 
@@ -640,7 +644,7 @@ var Item = (function(){
                 content.forEach(function(content){
                     f = content instanceof Flag ?
                             content :
-                            new Flag(flag, content, null, null, self.file);
+                            new Flag(flag, content, type, props, self.file);
                     self.flags[flag].push(f);
                     added.push(f);
                 });
@@ -648,7 +652,7 @@ var Item = (function(){
             else {
                 f = content instanceof Flag ?
                         content :
-                        new Flag(flag, content, null, null, self.file);
+                        new Flag(flag, content, type, props, self.file);
                 self.flags[flag].push(f);
                 added.push(f);
             }
@@ -656,6 +660,8 @@ var Item = (function(){
             added.forEach(function(f) {
                 self.pcall(flag + ".added", f, self);
             });
+
+            return added;
         },
 
         setName: function(name) {
@@ -1136,7 +1142,7 @@ var SourceFile = function(){
             return this.doc.pcall.apply(this.doc, arguments);
         },
 
-        pget: function(name, collect, passthru) {
+        pget: function(name, collect, passthru, exact, merge) {
             arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pget.apply(this.doc, arguments);
         },
@@ -1837,6 +1843,8 @@ var Documentor = Base.$extend({
                             };
                         }(value);
                         value[id] = true;
+
+                        cache.add(name, value);
                     }
 
                     if (value !== undf) {
@@ -1991,7 +1999,7 @@ var Documentor = Base.$extend({
         self.eachItem("resolveOtherNames");
 
         self.pcall("prepareItems", self);
-        self.pcall("prepaceContent", self);
+        self.pcall("prepareContent", self);
 
         self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
         self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
@@ -2011,7 +2019,7 @@ var Documentor = Base.$extend({
             r = require;
 
         self.eachHook(dir, "js", function(name, file){
-            self.cache.add(name, r(file));
+            self.hooks.add(name, r(file));
         });
     },
 
@@ -2083,430 +2091,6 @@ var Documentor = Base.$extend({
 
 
 
-
-var File = function(){
-
-    var all = {};
-
-    /**
-     * @class
-     * @extends Base
-     */
-    var File = Base.$extend({
-
-
-        /**
-         * @type string
-         */
-        path: null,
-
-        /**
-         * @type string
-         */
-        exportPath: null,
-
-        /**
-         * @type string
-         */
-        dir: null,
-
-        /**
-         * @type string
-         */
-        ext: null,
-
-        /**
-         * @type {Documentor}
-         */
-        doc: null,
-
-        /**
-         * @type {[]}
-         */
-        contextStack: null,
-
-        /**
-         * @type {[]}
-         */
-        comments: null,
-
-        /**
-         * @type {string}
-         */
-        content: null,
-
-        /**
-         * @type {object}
-         */
-        tmp: null,
-
-        /**
-         * @type {object}
-         */
-        options: null,
-
-        $init: function() {
-
-            var self = this;
-
-            self.contextStack = [self.doc.root];
-            self.comments = [];
-            self.tmp = {};
-            self.dir = path.dirname(self.path);
-            self.ext = path.extname(self.path).substr(1);
-
-            if (self.options.basePath) {
-                self.exportPath = self.path.replace(self.options.basePath, "");
-            }
-            else {
-                self.exportPath = self.path;
-            }
-        },
-
-        pcall: function(name) {
-            arguments[0] = this.ext + "." + arguments[0];
-            return this.doc.pcall.apply(this.doc, arguments);
-        },
-
-        pget: function(name, collect, passthru) {
-            arguments[0] = this.ext + "." + arguments[0];
-            return this.doc.pget.apply(this.doc, arguments);
-        },
-
-
-        getContent: function () {
-            if (!this.content) {
-                this.content = fs.readFileSync(this.path).toString();
-            }
-            return this.content;
-        },
-
-        parse: function () {
-            this.parseComments();
-            this.processComments();
-            this.content = '';
-        },
-
-        parseComments: function() {
-
-            var self = this,
-                content = self.getContent(),
-                i = 0,
-                l = content.length,
-                comment,
-                cmtObj,
-                nexti,
-                line,
-                lineNo = 1;
-
-            while (i < l) {
-
-                nexti = content.indexOf("\n", i);
-
-                if (nexti == -1) {
-                    break;
-                }
-
-                line    = content.substring(i, nexti);
-                i       = nexti + 1;
-                lineNo++;
-
-                if (line.trim().substr(0, 3) == '/**') {
-                    nexti = content.indexOf('*/', i);
-
-                    if (nexti == -1) {
-                        continue;
-                    }
-
-                    comment = content.substring(i, nexti);
-
-                    lineNo += comment.split("\n").length - 1;
-
-                    comment = hideLinks(comment);
-
-                    cmtObj = new Comment({
-                        comment: comment,
-                        doc: this.doc,
-                        file: this,
-                        line: lineNo + 1,
-                        startIndex: i - 2,
-                        endIndex: nexti + 2
-                    });
-
-                    cmtObj.parse();
-
-                    if (!cmtObj.hasFlag("ignore")) {
-                        this.comments.push(cmtObj);
-                    }
-
-                    i = nexti;
-                }
-            }
-        },
-
-        processComments: function(cmts, fixedContext) {
-
-            var self = this,
-                cs = self.contextStack,
-                csl,
-                item,
-                last,
-                lastCsl;
-
-            cmts = cmts || self.comments;
-
-            var commentPart = function(part, cmt) {
-                csl     = cs.length;
-                item    = self.processCommentPart(part, cmt, fixedContext);
-
-                // if returned value is a new part of the comment
-                // but not a new item
-                // (this can happen if current part does not
-                // have an acceptable context)
-                if (item && !(item instanceof Item)) {
-                    // process it as usual
-                    item = commentPart(item, cmt);
-                    // if it worked, process the original part
-                    if (item !== null) {
-                        item = commentPart(part, cmt);
-                    }
-                    return item;
-                }
-
-                if (item && item.getTypeProps().onePerComment && lastCsl === null) {
-                    last    = item;
-                    lastCsl = csl;
-                }
-
-                return item;
-            };
-
-            cmts.forEach(function(cmt){
-
-                if (cmt.isTemporary()) {
-                    self.tmp[cmt.getFlag("md-tmp")] = cmt;
-                    cmt.removeFlag("md-tmp");
-                    return;
-                }
-
-                lastCsl = null;
-                last = null;
-
-                cmt.parts.forEach(function(part){
-                    commentPart(part, cmt);
-                });
-
-                if (last && !fixedContext) {
-                    cs.length = lastCsl;
-                }
-            });
-        },
-
-        processCommentPart: function(part, cmt, fixedContext) {
-
-            var self = this,
-                cs = self.contextStack,
-                type = self.getPartType(part, fixedContext),
-                typeProps,
-                context,
-                item,
-                name;
-
-            if (part.flag == "md-apply") {
-                context = fixedContext || self.getCurrentContext();
-                var tmp = self.tmp[part.content];
-                if (tmp) {
-                    self.processComments([tmp], context);
-                }
-                return null;
-            }
-
-            if (!type) {
-
-                if (typeof type === "undefined" || type === null) {
-                    context = fixedContext || self.getCurrentContext();
-                    context.addFlag(part.flag, part.content);
-                }
-                else if (type === false) {
-
-                    // if there is no acceptable context for the given part
-                    // we try to create this context.
-                    // function returns new comment part
-                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
-
-                    // we return this new part
-                    // and it will be processed as if it were
-                    // in the comment
-                    return item === false ? null : item;
-                }
-            }
-            else {
-                typeProps   = self.pcall("getItemType", type, self);
-                context     = fixedContext || self.getCurrentContext();
-                name        = self.getItemName(type, part, cmt);
-
-                item = (!typeProps.multiple && name ?
-                        context.getItem(type, name, true) :
-                        null) ||
-
-                        new Item({
-                            doc: self.doc,
-                            file: self,
-                            comment: cmt,
-                            type: type,
-                            name: name
-                        });
-
-                item.addFlag(type, part.content);
-                context.addItem(item);
-
-                if (typeProps.children.length && typeProps.stackable !== false) {
-                    cs.push(item);
-                }
-
-                if (part.sub.length) {
-                    part.sub.forEach(function (part) {
-                        self.processCommentPart(part, null, item);
-                    });
-                }
-
-                return item;
-            }
-        },
-
-
-
-        getPartType: function(part, fixedContext) {
-
-            var type = part.flag,
-                stack = this.contextStack,
-                context,
-                children,
-                transform,
-                i,
-                isItem;
-
-
-            if (fixedContext) {
-                transform   = fixedContext.getTypeProps().transform;
-                type        = transform && transform.hasOwnProperty(type) ? transform[type] : type;
-
-                return this.pcall("getItemType", type, this) ? type : null;
-            }
-
-            var requiredContext = this.pget("requiredContext", true, null, null, true);
-
-            if (requiredContext.hasOwnProperty(type)) {
-                requiredContext = requiredContext[type];
-            }
-            else {
-                requiredContext = null;
-            }
-
-            // we go backwards through current context stack
-            // and see which parent can accept given comment item
-            for (i = stack.length - 1; i >= 0; i--) {
-                context = stack[i];
-
-                children = context.getTypeProps().children;
-                transform = context.getTypeProps().transform;
-
-                // if current context supports given type
-                // via transform
-                if (transform && transform.hasOwnProperty(type)) {
-                    type = transform[type];
-                }
-
-                isItem = !!this.pcall("getItemType", type, this);
-
-                if (!isItem && requiredContext && requiredContext.indexOf(context.type) != -1) {
-                    return null;
-                }
-
-                // if current context supports given type
-                // as is
-                if (children &&
-                         (children.indexOf(type) != -1 ||
-                          children.indexOf("*") != -1) &&
-                            children.indexOf("!" + type) == -1) {
-
-                    // make this context last in stack
-                    if (isItem) {
-                        this.contextStack.length = i + 1;
-                        return type;
-                    }
-                }
-            }
-
-            // there is no acceptable context found
-
-            // if there is no such class,
-            // we return null which means
-            // this is just a flag
-            if (!this.pcall("getItemType", type, this)) {
-                return requiredContext ? false : null;
-            }
-            // if class exists but there is no context
-            // for it we return false which means
-            // that the context must be created
-            else {
-                return false;
-            }
-        },
-
-        getItemName: function(type, part, comment) {
-
-            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
-
-            if (res && res.name) {
-                return res.name;
-            }
-
-            if (comment) {
-                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
-                return res ? res[1] : null;
-            }
-
-            return null;
-        },
-
-        getContext: function(inx) {
-            return this.contextStack[inx];
-        },
-
-        getCurrentContext: function() {
-            return this.contextStack[this.contextStack.length - 1];
-        },
-
-        getContextStack: function() {
-            return this.contextStack.slice();
-        }
-
-
-    }, {
-
-        get: function(filePath, doc, options) {
-            if (!all[filePath]) {
-                all[filePath] = new File({
-                    path: filePath,
-                    doc: doc,
-                    options: extend({}, options)
-                });
-            }
-            return all[filePath];
-        },
-
-        clear: function() {
-            all = {};
-        }
-
-    });
-
-    return File;
-
-}();
-
-
 var rUrl = /^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
 
 
@@ -2523,10 +2107,16 @@ var eachLink = function(str, cmtItem, cb, context) {
 
             var name, url, item;
 
-            if ((item = cmtItem.doc.getItem(content)) ||
-                (item = cmtItem.findItem(content, null, true).shift())) {
-                name = item.name;
 
+            if ((item = cmtItem.doc.getItem(content)) ||
+                (item = cmtItem.findItem(content, null, true).shift()) ||
+                (cmtItem.parent && (item = cmtItem.parent.findItem(content, null, true).shift()))) {
+
+                if (item.file.hidden) {
+                    return content;
+                }
+
+                name = item.name;
                 url = '#' + item.fullName;
             }
             else {
@@ -2559,6 +2149,8 @@ var Renderer = Base.$extend({
         extend(self, cfg, true, false);
 
         self.doc = doc;
+
+        self.resolveLinks();
     },
 
     initMetaphor: function(MetaphorJs) {
@@ -2570,7 +2162,7 @@ var Renderer = Base.$extend({
         MetaphorJs.ns.add("filter.typeRef", function(type) {
 
             var item;
-            if (item = self.doc.getItem(type)) {
+            if ((item = self.doc.getItem(type)) && !item.file.hidden) {
                 return '['+ item.name +'](#'+ item.fullName + ')';
             }
             else {
@@ -2583,6 +2175,15 @@ var Renderer = Base.$extend({
             return str.replace(/\[([^\]]+)\]\(([^\)]+)\)/i, function(match, name, url){
                 return '<a href="'+ url +'">'+ name +'</a>';
             });
+        });
+
+        MetaphorJs.ns.add("filter.prismClass", function(fileType){
+            switch (fileType) {
+                case "js":
+                    return "javascript";
+                default:
+                    return fileType;
+            }
         });
     },
 
@@ -3496,6 +3097,8 @@ globalCache.add("file.*.item.*.code.add", function(flag, content, item) {
         item.addFlag("description", {
             type: "code",
             content: content
+        }, null, {
+            fileType: item.file.ext
         });
     }
     else {
@@ -3811,19 +3414,24 @@ function sortArray(arr, by, dir) {
 
 var sortItems = globalCache.add("file.*.sortItems", function(item, cfg){
 
-    if (!cfg) {
-        return;
-    }
-
-    var by = cfg.by,
-        dir = cfg.direction || "asc",
+    var by = cfg ? cfg.by : null,
+        dir = cfg ? (cfg.direction || null) : "asc",
+        hook,
         key;
 
     for (key in item.items) {
 
         if (key != "param") {
 
-            item.items[key] = sortArray(item.items[key], by, dir);
+            hook = item.isRoot() ? item.items[key][0].file.pget("sort-" + key) :
+                                    item.file.pget("sort-" + key);
+
+            if (hook) {
+                hook(item.items[key], item, cfg);
+            }
+            else if (cfg) {
+                item.items[key] = sortArray(item.items[key], by, dir);
+            }
 
             item.items[key].forEach(function (item) {
                 item.file.pcall("sortItems", item, cfg);
@@ -4994,7 +4602,6 @@ var Default = globalCache.add("renderer.default", Renderer.$extend({
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
-        self.resolveLinks();
         self.data.sourceTree = self.doc.root.exportData().children;
     },
 

@@ -100,6 +100,8 @@ module.exports = Base.$extend({
                             };
                         }(value);
                         value[id] = true;
+
+                        cache.add(name, value);
                     }
 
                     if (value !== undf) {
@@ -254,7 +256,7 @@ module.exports = Base.$extend({
         self.eachItem("resolveOtherNames");
 
         self.pcall("prepareItems", self);
-        self.pcall("prepaceContent", self);
+        self.pcall("prepareContent", self);
 
         self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
         self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
@@ -274,7 +276,7 @@ module.exports = Base.$extend({
             r = require;
 
         self.eachHook(dir, "js", function(name, file){
-            self.cache.add(name, r(file));
+            self.hooks.add(name, r(file));
         });
     },
 

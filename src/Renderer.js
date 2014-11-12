@@ -16,6 +16,8 @@ module.exports = Base.$extend({
         extend(self, cfg, true, false);
 
         self.doc = doc;
+
+        self.resolveLinks();
     },
 
     initMetaphor: function(MetaphorJs) {
@@ -27,7 +29,7 @@ module.exports = Base.$extend({
         MetaphorJs.ns.add("filter.typeRef", function(type) {
 
             var item;
-            if (item = self.doc.getItem(type)) {
+            if ((item = self.doc.getItem(type)) && !item.file.hidden) {
                 return '['+ item.name +'](#'+ item.fullName + ')';
             }
             else {
@@ -40,6 +42,15 @@ module.exports = Base.$extend({
             return str.replace(/\[([^\]]+)\]\(([^\)]+)\)/i, function(match, name, url){
                 return '<a href="'+ url +'">'+ name +'</a>';
             });
+        });
+
+        MetaphorJs.ns.add("filter.prismClass", function(fileType){
+            switch (fileType) {
+                case "js":
+                    return "javascript";
+                default:
+                    return fileType;
+            }
         });
     },
 

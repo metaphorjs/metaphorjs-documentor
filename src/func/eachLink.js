@@ -13,10 +13,16 @@ module.exports = function(str, cmtItem, cb, context) {
 
             var name, url, item;
 
-            if ((item = cmtItem.doc.getItem(content)) ||
-                (item = cmtItem.findItem(content, null, true).shift())) {
-                name = item.name;
 
+            if ((item = cmtItem.doc.getItem(content)) ||
+                (item = cmtItem.findItem(content, null, true).shift()) ||
+                (cmtItem.parent && (item = cmtItem.parent.findItem(content, null, true).shift()))) {
+
+                if (item.file.hidden) {
+                    return content;
+                }
+
+                name = item.name;
                 url = '#' + item.fullName;
             }
             else {

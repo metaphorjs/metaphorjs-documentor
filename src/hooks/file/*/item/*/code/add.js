@@ -9,6 +9,8 @@ globalCache.add("file.*.item.*.code.add", function(flag, content, item) {
         item.addFlag("description", {
             type: "code",
             content: content
+        }, null, {
+            fileType: item.file.ext
         });
     }
     else {

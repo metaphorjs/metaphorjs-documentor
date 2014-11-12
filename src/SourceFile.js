@@ -101,7 +101,7 @@ module.exports = function(){
             return this.doc.pcall.apply(this.doc, arguments);
         },
 
-        pget: function(name, collect, passthru) {
+        pget: function(name, collect, passthru, exact, merge) {
             arguments[0] = "file." + this.ext + "." + arguments[0];
             return this.doc.pget.apply(this.doc, arguments);
         },

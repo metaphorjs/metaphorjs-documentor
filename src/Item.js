@@ -39,6 +39,10 @@ module.exports = (function(){
             }
         },
 
+        isRoot: function() {
+            return this.level == 0;
+        },
+
 
         pcall: function(name) {
             arguments[0] = "item." + this.type + "." + arguments[0];
@@ -112,7 +116,7 @@ module.exports = (function(){
             return this.flags.hasOwnProperty(flag);
         },
 
-        addFlag: function(flag, content) {
+        addFlag: function(flag, content, type, props) {
 
             var self = this;
 
@@ -152,7 +156,7 @@ module.exports = (function(){
                 content.forEach(function(content){
                     f = content instanceof Flag ?
                             content :
-                            new Flag(flag, content, null, null, self.file);
+                            new Flag(flag, content, type, props, self.file);
                     self.flags[flag].push(f);
                     added.push(f);
                 });
@@ -160,7 +164,7 @@ module.exports = (function(){
             else {
                 f = content instanceof Flag ?
                         content :
-                        new Flag(flag, content, null, null, self.file);
+                        new Flag(flag, content, type, props, self.file);
                 self.flags[flag].push(f);
                 added.push(f);
             }
@@ -168,6 +172,8 @@ module.exports = (function(){
             added.forEach(function(f) {
                 self.pcall(flag + ".added", f, self);
             });
+
+            return added;
         },
 
         setName: function(name) {

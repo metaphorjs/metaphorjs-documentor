@@ -8,9 +8,8 @@
     </mjs-if>
     <mjs-tag value=".item.level + 2 > 6 ? 'h6' : 'h' + (.item.level + 2)">
         <mjs-if value=".item.plainFlags.hasOwnProperty('type')">
-            <span class="item-type">{{
-                .item.plainFlags.type | map:"filter.typeRef" | join:" | " | markdownLinks
-            }} </span>
+            <span class="item-type"
+                  mjs-bind-html=".item.plainFlags.type | map:'filter.typeRef' | join:' | ' | markdownLinks"></span>
         </mjs-if>
         <span class="item-name">{{ .item.name }}</span>
         <mjs-if value=".isFunction">

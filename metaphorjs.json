@@ -1,4 +1,7 @@
 {
+    "version": "0.1",
+    "description": "MetaphorJs Documentor",
+
     "npm": false,
     "push": [
         "github"

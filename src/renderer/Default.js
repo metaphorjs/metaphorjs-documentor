@@ -37,7 +37,6 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
-        self.resolveLinks();
         self.data.sourceTree = self.doc.root.exportData().children;
     },
 
