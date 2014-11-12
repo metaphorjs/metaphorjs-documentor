@@ -1,246 +1,5 @@
 
 
-var addAccessFlag = function(flag, content, item) {
-    item.addFlag("access", flag);
-    return false;
-};
-
-var addVarFlag = function(flag, content, item) {
-
-    if (item.type == flag) {
-
-        var res = item.pcall(flag + ".parse", flag, content, item.comment, item);
-
-        if (res.name) {
-            item.name = res.name;
-        }
-        if (res.description) {
-            item.addFlag("description", res.description);
-        }
-        if (res.type) {
-            item.addFlag("type", res.type);
-        }
-
-        return false;
-    }
-};
-
-var parseVarFlag = function(flag, content, comment, item) {
-
-    var file = comment ? comment.file : (item ? item.file : null);
-
-    if (!file) {
-        return {};
-    }
-
-    var getCurly = file.pget("comment.getCurly"),
-        normalizeType = file.pget("normalizeType"),
-        type, name,
-        description,
-        inx;
-
-    if (content.charAt(0) == '{') {
-        var curly = getCurly.call(this, content);
-        type = normalizeType.call(this, curly, file);
-        content = content.replace('{' + curly + '}', "").trim();
-    }
-
-    inx = content.indexOf(" ", 0);
-
-    if (inx > -1) {
-        name = content.substr(0, inx).trim();
-        content = content.substr(inx).trim();
-
-        if (content) {
-            description = content;
-        }
-    }
-    else if (content) {
-        if (!type) {
-            type = content;
-        }
-        else {
-            name = content;
-        }
-    }
-
-
-    return {
-        name: name,
-        type: type,
-        description: description
-    };
-};
-
-function resolveExtendableName(item, flag, content) {
-
-    if (content.indexOf(".") != -1) {
-        return content;
-    }
-
-    var find = {
-        "extends": "class",
-        "implements": "interface",
-        "mixes": ["mixin", "trait"]
-    };
-
-    find = find.hasOwnProperty(flag) ? find[flag] : null;
-
-    if (find) {
-        var ns = item.getParentNamespace(),
-            refs = ns.findItem(content, find);
-
-        return refs.length ? refs[0].fullName : null;
-    }
-
-    return null;
-};
-
-function resolveTypeName(item, flag, content) {
-
-    if (!content) {
-        return null;
-    }
-
-    if (content.indexOf(".") != -1) {
-        return content;
-    }
-
-    if (content == item.name) {
-        return item.fullName;
-    }
-
-    var ns = item.getParentNamespace(),
-        refs = ns ? ns.findItem(content) : [];
-
-    return refs.length ? refs[0].fullName : null;
-};
-
-var generateNames = function(name) {
-
-    var list        = [],
-        path        = name.split("."),
-        strategy    = path[0];
-
-
-    if (strategy == "file") {
-
-        var max         = path.length - 3,
-            last        = path.length - 2,
-            exts        = [path[1], '*'],
-            tmp, i, j, z, ext, e;
-
-        for (e = 0; e < 2; e++) {
-
-            ext = exts[e];
-            tmp = path.slice();
-            tmp[1] = ext;
-            list.push(tmp.join("."));
-
-            for (j = 1; j <= max; j++) {
-
-                for (i = last; i >= 3; i--) {
-                    tmp = path.slice();
-                    tmp[1] = ext;
-                    for (z = 0; z < j && i - z >= 3; z++) {
-                        tmp[i - z] = "*";
-                    }
-                    list.push(tmp.join("."));
-                }
-            }
-        }
-    }
-    else {
-        list.push(name);
-    }
-
-    return list.filter(function(value, index, self){
-        return self.indexOf(value) === index;
-    });
-};
-
-var generateTemplateNames = function(name){
-
-    var list        = [],
-        path        = name.split("."),
-        max         = path.length - 2,
-        last        = path.length - 1,
-        exts        = [path[0], '*'],
-        tmp, i, j, ext, e;
-
-    for (e = 0; e < 2; e++) {
-
-        ext = exts[e];
-        tmp = path.slice();
-        tmp[0] = ext;
-        list.push(tmp.join("."));
-
-        for (j = 1; j <= max; j++) {
-
-            for (i = last; i > last - j; i--) {
-                tmp[i] = "*";
-                list.push(tmp.join("."));
-            }
-        }
-    }
-
-    return list.filter(function(value, index, self){
-        return self.indexOf(value) === index;
-    });
-};
-
-function hideLinks(comment) {
-
-    comment = comment.replace(/{\s*@(link|tutorial|code|page)[^{@]+}/ig, function(match){
-        if (match.substr(match.length - 2) == '\\') {
-            return match;
-        }
-        return '[#' + match.substring(2, match.length - 1) + ']';
-    });
-
-    return comment;
-
-};
-
-var undf = undefined;
-
-
-
-
-var initMetaphorTemplates = function(MetaphorJs){
-
-    var cache = MetaphorJs.Template.cache,
-        origGet = cache.get;
-
-    cache.get = function(id){
-
-        var names = generateTemplateNames(id),
-            i, l,
-            tpl;
-
-        for (i = 0, l = names.length; i < l; i++) {
-
-            if ((tpl = origGet(names[i])) !== undf) {
-                return tpl;
-            }
-        }
-
-        return undf;
-    };
-
-};
-
-function createFunctionContext(commentPart, comment) {
-
-    var res = comment.file.pcall("item.extractTypeAndName",
-        comment.file, comment.endIndex, true, false);
-
-    if (res) {
-        return {flag: res[0], content: res[1], sub: []};
-    }
-};
-
-
 var MetaphorJs = {
 
 
@@ -259,6 +18,8 @@ var cs = new Class(ns);
 var slice = Array.prototype.slice;
 
 var toString = Object.prototype.toString;
+
+var undf = undefined;
 
 
 
@@ -456,7 +217,125 @@ var Base = cs.define({
     }
 });
 
-var fs = require("fs");
+
+
+
+/**
+ * @class Comment
+ */
+var Comment = Base.$extend({
+
+    comment: null,
+    doc: null,
+    file: null,
+    line: null,
+    startIndex: null,
+    endIndex: null,
+    parts: null,
+
+    $init: function() {
+        this.parts = [];
+        this.$super();
+    },
+
+    isTemporary: function() {
+        return this.hasFlag("md-tmp");
+    },
+
+    hasFlag: function(name) {
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].flag == name) {
+                return true;
+            }
+        }
+
+        return false;
+    },
+
+    getFlag: function(name) {
+
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].flag == name) {
+                return parts[i].content;
+            }
+        }
+
+        return null;
+    },
+
+    removeFlag: function(name) {
+
+        var parts = this.parts,
+            i, l;
+
+        for (i = 0, l = parts.length; i < l; i++) {
+            if (parts[i].flag == name) {
+                parts.splice(i, 1);
+                break;
+            }
+        }
+    },
+
+    parse: function() {
+
+        var parts = this.pcall("comment.parseComment", this.comment, this.file);
+
+        parts = this.pcall("comment.sortParts", parts, this);
+
+        this.parts = parts || [];
+    }
+
+});
+
+
+
+var fs = require("fs"),
+    path = require("path");
+
+var Content = Base.$extend({
+
+    id: null,
+    group: null,
+    content: null,
+    title: null,
+    description: null,
+    file: null,
+    fileType: null,
+
+    $init: function(id, content) {
+
+        var self = this;
+
+        if (typeof id != "object") {
+            self.id = id;
+            self.content = content;
+        }
+        else {
+            extend(self, id, true, false);
+        }
+
+        self.$super();
+    },
+
+    getContent: function() {
+
+        if (this.file) {
+            return fs.readFileSync(this.file).toString();
+        }
+        else {
+            return this.content;
+        }
+    }
+
+});
+
+
 
 var isFile = function(filePath) {
     return fs.existsSync(filePath) && fs.lstatSync(filePath).isFile();
@@ -469,7 +348,7 @@ var isDir = function(dirPath) {
     return fs.existsSync(dirPath) && fs.lstatSync(dirPath).isDirectory();
 };
 
-var path = require("path");
+
 
 var getFileList = function(directory, ext) {
 
@@ -995,6 +874,19 @@ var Item = (function(){
             }
         },
 
+        eachFlag: function(cb, context, only) {
+            var self = this,
+                name;
+
+            for (name in self.flags) {
+                if (!only || name == only) {
+                    self.flags[name].forEach(function(flag){
+                        return cb.call(context, name, flag);
+                    });
+                }
+            }
+        },
+
 
         exportData: function(currentParent, noChildren, noHelpers) {
 
@@ -1135,83 +1027,18 @@ var Item = (function(){
 }());
 
 
+function hideLinks(comment) {
 
-
-
-/**
- * @class Comment
- */
-var Comment = Base.$extend({
-
-    comment: null,
-    doc: null,
-    file: null,
-    line: null,
-    startIndex: null,
-    endIndex: null,
-    parts: null,
-
-    $init: function() {
-        this.parts = [];
-        this.$super();
-    },
-
-    isTemporary: function() {
-        return this.hasFlag("md-tmp");
-    },
-
-    hasFlag: function(name) {
-        var parts = this.parts,
-            i, l;
-
-        for (i = 0, l = parts.length; i < l; i++) {
-            if (parts[i].flag == name) {
-                return true;
-            }
+    comment = comment.replace(/{\s*@(link|tutorial|code|page)[^{@]+}/ig, function(match){
+        if (match.substr(match.length - 2) == '\\') {
+            return match;
         }
+        return '[#' + match.substring(2, match.length - 1) + ']';
+    });
 
-        return false;
-    },
+    return comment;
 
-    getFlag: function(name) {
-
-        var parts = this.parts,
-            i, l;
-
-        for (i = 0, l = parts.length; i < l; i++) {
-            if (parts[i].flag == name) {
-                return parts[i].content;
-            }
-        }
-
-        return null;
-    },
-
-    removeFlag: function(name) {
-
-        var parts = this.parts,
-            i, l;
-
-        for (i = 0, l = parts.length; i < l; i++) {
-            if (parts[i].flag == name) {
-                parts.splice(i, 1);
-                break;
-            }
-        }
-    },
-
-    parse: function() {
-
-        var parts = this.pcall("comment.parseComment", this.comment, this.file);
-
-        parts = this.pcall("comment.sortParts", parts, this);
-
-        this.parts = parts || [];
-    }
-
-});
-
-
+};
 
 
 
@@ -1685,45 +1512,6 @@ var SourceFile = function(){
 
 }();
 
-
-
-var Content = Base.$extend({
-
-    id: null,
-    group: null,
-    content: null,
-    title: null,
-    description: null,
-    file: null,
-    fileType: null,
-
-    $init: function(id, content) {
-
-        var self = this;
-
-        if (typeof id != "object") {
-            self.id = id;
-            self.content = content;
-        }
-        else {
-            extend(self, id, true, false);
-        }
-
-        self.$super();
-    },
-
-    getContent: function() {
-
-        if (this.file) {
-            return fs.readFileSync(this.file).toString();
-        }
-        else {
-            return this.content;
-        }
-    }
-
-});
-
 var strUndef = "undefined";
 
 
@@ -1885,6 +1673,49 @@ var Cache = function(){
 
 
 var globalCache = Cache.global();
+
+var generateNames = function(name) {
+
+    var list        = [],
+        path        = name.split("."),
+        strategy    = path[0];
+
+
+    if (strategy == "file") {
+
+        var max         = path.length - 3,
+            last        = path.length - 2,
+            exts        = [path[1], '*'],
+            tmp, i, j, z, ext, e;
+
+        for (e = 0; e < 2; e++) {
+
+            ext = exts[e];
+            tmp = path.slice();
+            tmp[1] = ext;
+            list.push(tmp.join("."));
+
+            for (j = 1; j <= max; j++) {
+
+                for (i = last; i >= 3; i--) {
+                    tmp = path.slice();
+                    tmp[1] = ext;
+                    for (z = 0; z < j && i - z >= 3; z++) {
+                        tmp[i - z] = "*";
+                    }
+                    list.push(tmp.join("."));
+                }
+            }
+        }
+    }
+    else {
+        list.push(name);
+    }
+
+    return list.filter(function(value, index, self){
+        return self.indexOf(value) === index;
+    });
+};
 
 
 var nextUid = function(){
@@ -2251,6 +2082,575 @@ var Documentor = Base.$extend({
 
 
 
+
+
+var File = function(){
+
+    var all = {};
+
+    /**
+     * @class
+     * @extends Base
+     */
+    var File = Base.$extend({
+
+
+        /**
+         * @type string
+         */
+        path: null,
+
+        /**
+         * @type string
+         */
+        exportPath: null,
+
+        /**
+         * @type string
+         */
+        dir: null,
+
+        /**
+         * @type string
+         */
+        ext: null,
+
+        /**
+         * @type {Documentor}
+         */
+        doc: null,
+
+        /**
+         * @type {[]}
+         */
+        contextStack: null,
+
+        /**
+         * @type {[]}
+         */
+        comments: null,
+
+        /**
+         * @type {string}
+         */
+        content: null,
+
+        /**
+         * @type {object}
+         */
+        tmp: null,
+
+        /**
+         * @type {object}
+         */
+        options: null,
+
+        $init: function() {
+
+            var self = this;
+
+            self.contextStack = [self.doc.root];
+            self.comments = [];
+            self.tmp = {};
+            self.dir = path.dirname(self.path);
+            self.ext = path.extname(self.path).substr(1);
+
+            if (self.options.basePath) {
+                self.exportPath = self.path.replace(self.options.basePath, "");
+            }
+            else {
+                self.exportPath = self.path;
+            }
+        },
+
+        pcall: function(name) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        },
+
+        pget: function(name, collect, passthru) {
+            arguments[0] = this.ext + "." + arguments[0];
+            return this.doc.pget.apply(this.doc, arguments);
+        },
+
+
+        getContent: function () {
+            if (!this.content) {
+                this.content = fs.readFileSync(this.path).toString();
+            }
+            return this.content;
+        },
+
+        parse: function () {
+            this.parseComments();
+            this.processComments();
+            this.content = '';
+        },
+
+        parseComments: function() {
+
+            var self = this,
+                content = self.getContent(),
+                i = 0,
+                l = content.length,
+                comment,
+                cmtObj,
+                nexti,
+                line,
+                lineNo = 1;
+
+            while (i < l) {
+
+                nexti = content.indexOf("\n", i);
+
+                if (nexti == -1) {
+                    break;
+                }
+
+                line    = content.substring(i, nexti);
+                i       = nexti + 1;
+                lineNo++;
+
+                if (line.trim().substr(0, 3) == '/**') {
+                    nexti = content.indexOf('*/', i);
+
+                    if (nexti == -1) {
+                        continue;
+                    }
+
+                    comment = content.substring(i, nexti);
+
+                    lineNo += comment.split("\n").length - 1;
+
+                    comment = hideLinks(comment);
+
+                    cmtObj = new Comment({
+                        comment: comment,
+                        doc: this.doc,
+                        file: this,
+                        line: lineNo + 1,
+                        startIndex: i - 2,
+                        endIndex: nexti + 2
+                    });
+
+                    cmtObj.parse();
+
+                    if (!cmtObj.hasFlag("ignore")) {
+                        this.comments.push(cmtObj);
+                    }
+
+                    i = nexti;
+                }
+            }
+        },
+
+        processComments: function(cmts, fixedContext) {
+
+            var self = this,
+                cs = self.contextStack,
+                csl,
+                item,
+                last,
+                lastCsl;
+
+            cmts = cmts || self.comments;
+
+            var commentPart = function(part, cmt) {
+                csl     = cs.length;
+                item    = self.processCommentPart(part, cmt, fixedContext);
+
+                // if returned value is a new part of the comment
+                // but not a new item
+                // (this can happen if current part does not
+                // have an acceptable context)
+                if (item && !(item instanceof Item)) {
+                    // process it as usual
+                    item = commentPart(item, cmt);
+                    // if it worked, process the original part
+                    if (item !== null) {
+                        item = commentPart(part, cmt);
+                    }
+                    return item;
+                }
+
+                if (item && item.getTypeProps().onePerComment && lastCsl === null) {
+                    last    = item;
+                    lastCsl = csl;
+                }
+
+                return item;
+            };
+
+            cmts.forEach(function(cmt){
+
+                if (cmt.isTemporary()) {
+                    self.tmp[cmt.getFlag("md-tmp")] = cmt;
+                    cmt.removeFlag("md-tmp");
+                    return;
+                }
+
+                lastCsl = null;
+                last = null;
+
+                cmt.parts.forEach(function(part){
+                    commentPart(part, cmt);
+                });
+
+                if (last && !fixedContext) {
+                    cs.length = lastCsl;
+                }
+            });
+        },
+
+        processCommentPart: function(part, cmt, fixedContext) {
+
+            var self = this,
+                cs = self.contextStack,
+                type = self.getPartType(part, fixedContext),
+                typeProps,
+                context,
+                item,
+                name;
+
+            if (part.flag == "md-apply") {
+                context = fixedContext || self.getCurrentContext();
+                var tmp = self.tmp[part.content];
+                if (tmp) {
+                    self.processComments([tmp], context);
+                }
+                return null;
+            }
+
+            if (!type) {
+
+                if (typeof type === "undefined" || type === null) {
+                    context = fixedContext || self.getCurrentContext();
+                    context.addFlag(part.flag, part.content);
+                }
+                else if (type === false) {
+
+                    // if there is no acceptable context for the given part
+                    // we try to create this context.
+                    // function returns new comment part
+                    item = self.pcall("item." + part.flag + ".createContext", part, cmt);
+
+                    // we return this new part
+                    // and it will be processed as if it were
+                    // in the comment
+                    return item === false ? null : item;
+                }
+            }
+            else {
+                typeProps   = self.pcall("getItemType", type, self);
+                context     = fixedContext || self.getCurrentContext();
+                name        = self.getItemName(type, part, cmt);
+
+                item = (!typeProps.multiple && name ?
+                        context.getItem(type, name, true) :
+                        null) ||
+
+                        new Item({
+                            doc: self.doc,
+                            file: self,
+                            comment: cmt,
+                            type: type,
+                            name: name
+                        });
+
+                item.addFlag(type, part.content);
+                context.addItem(item);
+
+                if (typeProps.children.length && typeProps.stackable !== false) {
+                    cs.push(item);
+                }
+
+                if (part.sub.length) {
+                    part.sub.forEach(function (part) {
+                        self.processCommentPart(part, null, item);
+                    });
+                }
+
+                return item;
+            }
+        },
+
+
+
+        getPartType: function(part, fixedContext) {
+
+            var type = part.flag,
+                stack = this.contextStack,
+                context,
+                children,
+                transform,
+                i,
+                isItem;
+
+
+            if (fixedContext) {
+                transform   = fixedContext.getTypeProps().transform;
+                type        = transform && transform.hasOwnProperty(type) ? transform[type] : type;
+
+                return this.pcall("getItemType", type, this) ? type : null;
+            }
+
+            var requiredContext = this.pget("requiredContext", true, null, null, true);
+
+            if (requiredContext.hasOwnProperty(type)) {
+                requiredContext = requiredContext[type];
+            }
+            else {
+                requiredContext = null;
+            }
+
+            // we go backwards through current context stack
+            // and see which parent can accept given comment item
+            for (i = stack.length - 1; i >= 0; i--) {
+                context = stack[i];
+
+                children = context.getTypeProps().children;
+                transform = context.getTypeProps().transform;
+
+                // if current context supports given type
+                // via transform
+                if (transform && transform.hasOwnProperty(type)) {
+                    type = transform[type];
+                }
+
+                isItem = !!this.pcall("getItemType", type, this);
+
+                if (!isItem && requiredContext && requiredContext.indexOf(context.type) != -1) {
+                    return null;
+                }
+
+                // if current context supports given type
+                // as is
+                if (children &&
+                         (children.indexOf(type) != -1 ||
+                          children.indexOf("*") != -1) &&
+                            children.indexOf("!" + type) == -1) {
+
+                    // make this context last in stack
+                    if (isItem) {
+                        this.contextStack.length = i + 1;
+                        return type;
+                    }
+                }
+            }
+
+            // there is no acceptable context found
+
+            // if there is no such class,
+            // we return null which means
+            // this is just a flag
+            if (!this.pcall("getItemType", type, this)) {
+                return requiredContext ? false : null;
+            }
+            // if class exists but there is no context
+            // for it we return false which means
+            // that the context must be created
+            else {
+                return false;
+            }
+        },
+
+        getItemName: function(type, part, comment) {
+
+            var res = this.pcall("flag." + type + ".parse", type, part.content, comment);
+
+            if (res && res.name) {
+                return res.name;
+            }
+
+            if (comment) {
+                res = this.pcall("extractTypeAndName", this, comment.endIndex, true, true);
+                return res ? res[1] : null;
+            }
+
+            return null;
+        },
+
+        getContext: function(inx) {
+            return this.contextStack[inx];
+        },
+
+        getCurrentContext: function() {
+            return this.contextStack[this.contextStack.length - 1];
+        },
+
+        getContextStack: function() {
+            return this.contextStack.slice();
+        }
+
+
+    }, {
+
+        get: function(filePath, doc, options) {
+            if (!all[filePath]) {
+                all[filePath] = new File({
+                    path: filePath,
+                    doc: doc,
+                    options: extend({}, options)
+                });
+            }
+            return all[filePath];
+        },
+
+        clear: function() {
+            all = {};
+        }
+
+    });
+
+    return File;
+
+}();
+
+
+var rUrl = /^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
+
+
+
+var eachLink = function(str, cmtItem, cb, context) {
+
+    return str.replace(/\[#(link|tutorial|code|page)\s+([^\]]+)\]/ig,
+
+        function(match, type, content){
+
+            if (match.substr(match.length - 2) == '\\') {
+                return match;
+            }
+
+            var name, url, item;
+
+            if ((item = cmtItem.doc.getItem(content)) ||
+                (item = cmtItem.findItem(content, null, true).shift())) {
+                name = item.name;
+
+                url = '#' + item.fullName;
+            }
+            else {
+                name = content.replace(rUrl, function(urlMatch){
+                    url = urlMatch;
+                    return "";
+                });
+
+                if (!name && url) {
+                    name = url;
+                }
+            }
+
+            return cb.call(context, type, name, url, match);
+    });
+
+};
+
+
+
+var Renderer = Base.$extend({
+
+    doc: null,
+    outDir: null,
+
+    $init: function(doc, cfg) {
+
+        var self = this;
+
+        extend(self, cfg, true, false);
+
+        self.doc = doc;
+    },
+
+    initMetaphor: function(MetaphorJs) {
+
+        MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
+
+        var self = this;
+
+        MetaphorJs.ns.add("filter.typeRef", function(type) {
+
+            var item;
+            if (item = self.doc.getItem(type)) {
+                return '['+ item.name +'](#'+ item.fullName + ')';
+            }
+            else {
+                return type;
+            }
+        });
+
+        MetaphorJs.ns.add("filter.markdownLinks", function(str){
+
+            return str.replace(/\[([^\]]+)\]\(([^\)]+)\)/i, function(match, name, url){
+                return '<a href="'+ url +'">'+ name +'</a>';
+            });
+        });
+    },
+
+    loadTemplates: function(MetaphorJs, dir) {
+
+        var self = this;
+
+        self.doc.eachHook(dir, "html", function(name, file){
+            MetaphorJs.Template.cache.add(name, fs.readFileSync(file).toString());
+        });
+    },
+
+    runMetaphor: function(MetaphorJs, doc, data) {
+
+        var select = require("metaphorjs-select")(doc.parentWindow),
+            appNodes    = select("[mjs-app]", doc),
+            i, l, el;
+
+        for (i = -1, l = appNodes.length; ++i < l;){
+            el = appNodes[i];
+            MetaphorJs.initApp(el, MetaphorJs.getAttr(el, "mjs-app"), data, true);
+        }
+    },
+
+
+    resolveLinks: function() {
+
+        var self = this;
+
+        self.doc.eachItem(function(item) {
+            item.eachFlag(function(name, flag){
+                if (flag.type == "typeRef") {
+                    return '['+ flag.content +'](#'+ flag.ref +')';
+                }
+                if (typeof flag.content == "string") {
+                    flag.content = eachLink(flag.content, item, function(type, name, url) {
+                        return '['+ (name || url) +']('+ (url || name) +')';
+                    });
+                }
+            });
+        });
+
+    },
+
+    cleanupOutDir: function() {
+
+    },
+
+    copyToOut: function() {
+
+    },
+
+    writeOut: function(out) {
+        if  (this.out) {
+            fs.writeFileSync(this.out, out);
+        }
+        else {
+            process.stdout.write(out);
+        }
+    },
+
+
+    render: function() {
+
+    }
+
+});
+
 var minimist = require("minimist"),
     
     
@@ -2501,75 +2901,191 @@ var Runner = Base.$extend({
 
 
 
+var addAccessFlag = function(flag, content, item) {
+    item.addFlag("access", flag);
+    return false;
+};
 
-var Renderer = Base.$extend({
+var addVarFlag = function(flag, content, item) {
 
-    doc: null,
-    outDir: null,
+    if (item.type == flag) {
 
-    $init: function(doc, cfg) {
-        
-        var self = this;
+        var res = item.pcall(flag + ".parse", flag, content, item.comment, item);
 
-        extend(self, cfg, true, false);
-
-        self.doc = doc;
-    },
-
-    initMetaphor: function(MetaphorJs) {
-
-        MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
-    },
-
-    loadTemplates: function(MetaphorJs, dir) {
-
-        var self = this;
-
-        self.doc.eachHook(dir, "html", function(name, file){
-            MetaphorJs.Template.cache.add(name, fs.readFileSync(file).toString());
-        });
-    },
-
-    runMetaphor: function(MetaphorJs, doc, data) {
-
-        var select = require("metaphorjs-select")(doc.parentWindow),
-            appNodes    = select("[mjs-app]", doc),
-            i, l, el;
-
-        for (i = -1, l = appNodes.length; ++i < l;){
-            el = appNodes[i];
-            MetaphorJs.initApp(el, MetaphorJs.getAttr(el, "mjs-app"), data, true);
+        if (res.name) {
+            item.name = res.name;
         }
-    },
-
-
-    cleanupOutDir: function() {
-
-    },
-
-    copyToOut: function() {
-
-    },
-
-    writeOut: function(out) {
-        if  (this.out) {
-            fs.writeFileSync(this.out, out);
+        if (res.description) {
+            item.addFlag("description", res.description);
         }
-        else {
-            process.stdout.write(out);
+        if (res.type) {
+            item.addFlag("type", res.type);
         }
-    },
 
+        return false;
+    }
+};
 
-    render: function() {
+var parseVarFlag = function(flag, content, comment, item) {
 
+    var file = comment ? comment.file : (item ? item.file : null);
+
+    if (!file) {
+        return {};
     }
 
-});
+    var getCurly = file.pget("comment.getCurly"),
+        normalizeType = file.pget("normalizeType"),
+        type, name,
+        description,
+        inx;
+
+    if (content.charAt(0) == '{') {
+        var curly = getCurly.call(this, content);
+        type = normalizeType.call(this, curly, file);
+        content = content.replace('{' + curly + '}', "").trim();
+    }
+
+    inx = content.indexOf(" ", 0);
+
+    if (inx > -1) {
+        name = content.substr(0, inx).trim();
+        content = content.substr(inx).trim();
+
+        if (content) {
+            description = content;
+        }
+    }
+    else if (content) {
+        if (!type) {
+            type = content;
+        }
+        else {
+            name = content;
+        }
+    }
+
+
+    return {
+        name: name,
+        type: type,
+        description: description
+    };
+};
+
+function resolveExtendableName(item, flag, content) {
+
+    if (content.indexOf(".") != -1) {
+        return content;
+    }
+
+    var find = {
+        "extends": "class",
+        "implements": "interface",
+        "mixes": ["mixin", "trait"]
+    };
+
+    find = find.hasOwnProperty(flag) ? find[flag] : null;
+
+    if (find) {
+        var ns = item.getParentNamespace(),
+            refs = ns.findItem(content, find);
+
+        return refs.length ? refs[0].fullName : null;
+    }
+
+    return null;
+};
+
+function resolveTypeName(item, flag, content) {
+
+    if (!content) {
+        return null;
+    }
+
+    if (content.indexOf(".") != -1) {
+        return content;
+    }
+
+    if (content == item.name) {
+        return item.fullName;
+    }
+
+    var ns = item.getParentNamespace(),
+        refs = ns ? ns.findItem(content) : [];
+
+    return refs.length ? refs[0].fullName : null;
+};
+
+var generateTemplateNames = function(name){
+
+    var list        = [],
+        path        = name.split("."),
+        max         = path.length - 2,
+        last        = path.length - 1,
+        exts        = [path[0], '*'],
+        tmp, i, j, ext, e;
+
+    for (e = 0; e < 2; e++) {
+
+        ext = exts[e];
+        tmp = path.slice();
+        tmp[0] = ext;
+        list.push(tmp.join("."));
+
+        for (j = 1; j <= max; j++) {
+
+            for (i = last; i > last - j; i--) {
+                tmp[i] = "*";
+                list.push(tmp.join("."));
+            }
+        }
+    }
+
+    return list.filter(function(value, index, self){
+        return self.indexOf(value) === index;
+    });
+};
 
 
 
-globalCache.add("file.*.comment.flagAliases", {
+
+var initMetaphorTemplates = function(MetaphorJs){
+
+    var cache = MetaphorJs.Template.cache,
+        origGet = cache.get;
+
+    cache.get = function(id){
+
+        var names = generateTemplateNames(id),
+            i, l,
+            tpl;
+
+        for (i = 0, l = names.length; i < l; i++) {
+
+            if ((tpl = origGet(names[i])) !== undf) {
+                return tpl;
+            }
+        }
+
+        return undf;
+    };
+
+};
+
+function createFunctionContext(commentPart, comment) {
+
+    var res = comment.file.pcall("item.extractTypeAndName",
+        comment.file, comment.endIndex, true, false);
+
+    if (res) {
+        return {flag: res[0], content: res[1], sub: []};
+    }
+};
+
+
+
+var flagAliases = globalCache.add("file.*.comment.flagAliases", {
 
     "type": "var",
     "return": "returns",
@@ -2582,7 +3098,7 @@ globalCache.add("file.*.comment.flagAliases", {
 
 
 
-globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
+var getCurly = globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
 
     var left, right,
         i, l,
@@ -2659,7 +3175,7 @@ globalCache.add("file.*.comment.getCurly", function(content, start, backwards, r
 
 
 
-globalCache.add("file.*.comment.getFlagAliases", function(file){
+var getFlagAliases = globalCache.add("file.*.comment.getFlagAliases", function(file){
 
     var all = file.pget("comment.flagAliases", true),
         aliases = {},
@@ -2674,7 +3190,7 @@ globalCache.add("file.*.comment.getFlagAliases", function(file){
 
 
 
-(function(){
+var parseComment = (function(){
 
 
     var parseComment = function(text, file) {
@@ -2802,7 +3318,7 @@ globalCache.add("file.*.comment.getFlagAliases", function(file){
 
 
 
-globalCache.add("file.*.comment.removeAsterisk", function(text) {
+var removeAsterisk = globalCache.add("file.*.comment.removeAsterisk", function(text) {
 
     text = text.replace("/**", '');
     text = text.replace("*/", '');
@@ -2871,7 +3387,7 @@ globalCache.add("file.*.comment.removeAsterisk", function(text) {
 
 
 
-globalCache.add("file.*.comment.sortParts", function(parts, comment) {
+var sortParts = globalCache.add("file.*.comment.sortParts", function(parts, comment) {
 
     var flagInx = {},
         items = comment.file.pget("items");
@@ -2935,7 +3451,7 @@ globalCache.add("file.*.comment.sortParts", function(parts, comment) {
 
 
 
-globalCache.add("file.*.getItemType", function(type, file) {
+var getItemType = globalCache.add("file.*.getItemType", function(type, file) {
 
     var types = file.pget("items"),
         i, l;
@@ -2952,7 +3468,7 @@ globalCache.add("file.*.getItemType", function(type, file) {
 });
 
 
-globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
+var add = globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
 
     if (item.type == flag && typeof content == "string" && content) {
         item.setName(content.trim());
@@ -2963,7 +3479,7 @@ globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
 
 
 
-globalCache.add("file.*.item.*.*.prepare", function(flag, content, item) {
+var prepare = globalCache.add("file.*.item.*.*.prepare", function(flag, content, item) {
 
     if (content === null) {
         return true;
@@ -3084,7 +3600,7 @@ globalCache.add("file.*.item.*.description.prepare", function(flag, content, ite
 
 
 
-globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content){
+var resolveName = globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content){
 
     var parents = item.getParents(),
         items = [],
@@ -3112,31 +3628,31 @@ globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content)
 
 
 
-globalCache.add("file.*.item.*.extends.resolveName", resolveExtendableName);
+var resolveName = globalCache.add("file.*.item.*.extends.resolveName", resolveExtendableName);
 
 
 
-globalCache.add("file.*.item.*.implements.resolveName", resolveExtendableName);
+var resolveName = globalCache.add("file.*.item.*.implements.resolveName", resolveExtendableName);
 
 
 
-globalCache.add("file.*.item.*.mixes.resolveName", resolveExtendableName);
+var resolveName = globalCache.add("file.*.item.*.mixes.resolveName", resolveExtendableName);
 
 
 
-globalCache.add("file.*.item.*.private.add", addAccessFlag);
+var add = globalCache.add("file.*.item.*.private.add", addAccessFlag);
 
 
 
-globalCache.add("file.*.item.*.protected.add", addAccessFlag);
+var add = globalCache.add("file.*.item.*.protected.add", addAccessFlag);
 
 
 
-globalCache.add("file.*.item.*.public.add", addAccessFlag);
+var add = globalCache.add("file.*.item.*.public.add", addAccessFlag);
 
 
 
-globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
+var prepare = globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
 
     if (!item.file) {
         return content;
@@ -3164,24 +3680,24 @@ globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
 
 
 
-globalCache.add("file.*.item.*.returns.resolveName", resolveTypeName);
+var resolveName = globalCache.add("file.*.item.*.returns.resolveName", resolveTypeName);
 
 
 
-globalCache.add("file.*.item.*.throws.resolveName", resolveTypeName);
+var resolveName = globalCache.add("file.*.item.*.throws.resolveName", resolveTypeName);
 
 
 
-globalCache.add("file.*.item.*.type.resolveName", resolveTypeName);
+var resolveName = globalCache.add("file.*.item.*.type.resolveName", resolveTypeName);
 
 
 
-globalCache.add("file.*.item.?.param.createContext", createFunctionContext);
+var createContext = globalCache.add("file.*.item.?.param.createContext", createFunctionContext);
 
 
 
 
-globalCache.add("file.*.item.?.requiredContext", {
+var requiredContext = globalCache.add("file.*.item.?.requiredContext", {
     "param": ["function", "method"],
     "returns": ["function", "method"],
     "constructor": ["method"]
@@ -3189,33 +3705,33 @@ globalCache.add("file.*.item.?.requiredContext", {
 
 
 
-globalCache.add("*.item.?.returns.createContext", createFunctionContext);
+var createContext = globalCache.add("*.item.?.returns.createContext", createFunctionContext);
 
 
-globalCache.add("file.*.item.param.param.add", addVarFlag);
-
-
-
-globalCache.add("file.*.item.param.param.parse", parseVarFlag);
-
-
-globalCache.add("file.*.item.property.property.add", addVarFlag);
+var add = globalCache.add("file.*.item.param.param.add", addVarFlag);
 
 
 
-globalCache.add("file.*.item.property.property.parse", parseVarFlag);
+var parse = globalCache.add("file.*.item.param.param.parse", parseVarFlag);
 
 
-globalCache.add("file.*.item.var.var.add", addVarFlag);
-
-
-
-globalCache.add("file.*.item.var.var.parse", parseVarFlag);
+var add = globalCache.add("file.*.item.property.property.add", addVarFlag);
 
 
 
+var parse = globalCache.add("file.*.item.property.property.parse", parseVarFlag);
 
-globalCache.add("file.*.items", [
+
+var add = globalCache.add("file.*.item.var.var.add", addVarFlag);
+
+
+
+var parse = globalCache.add("file.*.item.var.var.parse", parseVarFlag);
+
+
+
+
+var items = globalCache.add("file.*.items", [
     {
         name: "root",
         children: ["*", "!param"]
@@ -3224,7 +3740,7 @@ globalCache.add("file.*.items", [
 
 
 
-globalCache.add("file.*.normalizeType", function(type, file){
+var normalizeType = globalCache.add("file.*.normalizeType", function(type, file){
 
     var aliases = file.pget("typeAliases"),
         ret = [],
@@ -3293,7 +3809,7 @@ function sortArray(arr, by, dir) {
 
 
 
-globalCache.add("file.*.sortItems", function(item, cfg){
+var sortItems = globalCache.add("file.*.sortItems", function(item, cfg){
 
     if (!cfg) {
         return;
@@ -3319,7 +3835,7 @@ globalCache.add("file.*.sortItems", function(item, cfg){
 
 
 
-globalCache.add("file.js.item.*.description.added", function(flag, item){
+var added = globalCache.add("file.js.item.*.description.added", function(flag, item){
 
     var ft;
 
@@ -3333,7 +3849,7 @@ globalCache.add("file.js.item.*.description.added", function(flag, item){
 
 
 
-globalCache.add("file.js.item.*.getFullName", function(item) {
+var getFullName = globalCache.add("file.js.item.*.getFullName", function(item) {
 
     var parents = item.getParents().reverse(),
         name = item.name,
@@ -3376,7 +3892,7 @@ globalCache.add("file.js.item.*.getFullName", function(item) {
 
 
 
-globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+var extractTypeAndName = globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
 
     var content         = file.getContent(),
         part            = content.substr(startIndex, 200),
@@ -3434,7 +3950,7 @@ globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, ch
 
 
 
-(function(){
+var items = (function(){
 
     var classes = function(name, displayName, groupName) {
         return {
@@ -3526,7 +4042,7 @@ globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, ch
 
 
 
-globalCache.add("file.js.resolveIncludes", function(file) {
+var resolveIncludes = globalCache.add("file.js.resolveIncludes", function(file) {
 
     var content     = file.getContent(),
         base        = file.dir + "/",
@@ -3555,7 +4071,7 @@ globalCache.add("file.js.resolveIncludes", function(file) {
 
 
 
-globalCache.add("file.js.typeAliases", {
+var typeAliases = globalCache.add("file.js.typeAliases", {
 
     "{}": "object",
     "Object": "object",
@@ -3576,7 +4092,7 @@ var marked = require("marked");
 
 
 
-globalCache.add("markdown", function(content){
+var markdown = globalCache.add("markdown", function(content){
 
     return marked(content, {
         gfm: true,
@@ -3585,11 +4101,872 @@ globalCache.add("markdown", function(content){
     });
 });
 
+
+var add = globalCache.add("*.flag.*.add", function(flag, content, item) {
+
+    if (item.type == flag && typeof content == "string" && content) {
+        item.setName(content.trim());
+        // stop cycle
+        return false;
+    }
+});
+
+
+
+var prepare = globalCache.add("*.flag.*.prepare", function(flag, content, item) {
+
+    if (content === null) {
+        return true;
+    }
+});
+
+
+
+var resolveName = globalCache.add("*.flag.emits.resolveName", function(item, flag, content){
+
+    var parents = item.getParents(),
+        items = [],
+        i, l,
+        trg;
+
+    parents.forEach(function(parent){
+        items.push(parent);
+        items = items.concat(parent.getInheritedParents());
+    });
+
+    items.unshift(item);
+
+    for (i = 0, l = items.length; i < l; i++) {
+
+        trg = items[i].findItem(content, "event", true);
+
+        if (trg.length) {
+            return trg[0].createRef(content);
+        }
+    }
+
+    return content;
+});
+
+
+
+var resolveName = globalCache.add("*.flag.extends.resolveName", resolveExtendableName);
+
+
+
+var resolveName = globalCache.add("*.flag.implements.resolveName", resolveExtendableName);
+
+
+
+var resolveName = globalCache.add("*.flag.mixes.resolveName", resolveExtendableName);
+
+
+
+var prepare = globalCache.add("*.flag.returns.prepare", function(flag, content, item) {
+
+    if (!item.file) {
+        return content;
+    }
+
+    var ext = item.file.ext,
+        getCurly = this.pget(ext + ".getCurly"),
+        normalizeType = this.pget(ext + ".normalizeType");
+
+    if (content.charAt(0) == '{') {
+
+        var curly = getCurly(content);
+        content = content.replace('{' + curly + '}', '').trim();
+
+        if (content) {
+            item.addFlag("returnDescription", content);
+        }
+
+        return normalizeType(curly, ext);
+    }
+    else {
+        return normalizeType(content, ext);
+    }
+
+});
+
+
+
+var resolveName = globalCache.add("*.flag.returns.resolveName", resolveTypeName);
+
+
+
+var resolveName = globalCache.add("*.flag.throws.resolveName", resolveTypeName);
+
+
+
+var resolveName = globalCache.add("*.flag.type.resolveName", resolveTypeName);
+
+
+var add = (function(){
+
+    var fn = function(flag, content, item) {
+
+        if (item.type == flag) {
+
+            var res = this.pcall(item.file.ext + ".flag." + flag + ".parse", flag, content, item.comment, item);
+
+            if (res.name) {
+                item.name = res.name;
+            }
+            if (res.description) {
+                item.addFlag("description", res.description);
+            }
+            if (res.type) {
+                item.addFlag("type", res.type);
+            }
+
+            return false;
+        }
+    };
+
+    globalCache.add("*.flag.var.add", fn);
+    globalCache.add("*.flag.property.add", fn);
+    globalCache.add("*.flag.param.add", fn);
+
+    return fn;
+
+}());
+
+
+
+var parse = (function(){
+
+    var fn = function(flag, content, comment, item) {
+
+        var ext = comment ? comment.file.ext : (item ? item.file.ext : null);
+
+        if (!ext) {
+            return {};
+        }
+
+        var getCurly = this.pget(ext + ".getCurly"),
+            normalizeType = this.pget(ext + ".normalizeType"),
+            type, name,
+            description,
+            inx;
+
+        if (content.charAt(0) == '{') {
+            var curly = getCurly.call(this, content);
+            type = normalizeType.call(this, curly, ext);
+            content = content.replace('{' + curly + '}', "").trim();
+        }
+
+        inx = content.indexOf(" ", 0);
+
+        if (inx > -1) {
+            name = content.substr(0, inx).trim();
+            content = content.substr(inx).trim();
+
+            if (content) {
+                description = content;
+            }
+        }
+        else if (content) {
+            if (!type) {
+                type = content;
+            }
+            else {
+                name = content;
+            }
+        }
+
+
+        return {
+            name: name,
+            type: type,
+            description: description
+        };
+    };
+
+    globalCache.add("*.flag.var.parse", fn);
+    globalCache.add("*.flag.property.parse", fn);
+    globalCache.add("*.flag.param.parse", fn);
+
+    return fn;
+}());
+
+
+
+var flagAliases = globalCache.add("*.flagAliases", {
+
+    "type": "var",
+    "return": "returns",
+    "extend": "extends",
+    "implement": "implements",
+    "emit": "emits",
+    "throw": "throws"
+
+});
+
+
+
+var getCurly = globalCache.add("*.getCurly", function(content, start, backwards, returnIndexes) {
+
+    var left, right,
+        i, l,
+        first, last,
+        char;
+
+    if (!backwards) {
+
+        left    = 0;
+        right   = 0;
+        i       = start || 0;
+        l       = content.length;
+        first   = null;
+
+        for (; i < l; i++) {
+
+            char = content.charAt(i);
+
+            if (char == '{') {
+                left++;
+                if (first === null) {
+                    first = i + 1;
+                }
+            }
+            else if (char == '}' && first !== null) {
+                right++;
+            }
+
+            if (left > 0 && left == right) {
+                last = i;
+                break;
+            }
+        }
+    }
+    else {
+
+        left    = 0;
+        right   = 0;
+        i       = start || content.length - 1;
+        last    = null;
+
+        for (; i >= 0; i--) {
+
+            char = content.charAt(i);
+
+            if (char == '}') {
+                right++;
+                if (last === null) {
+                    last = i;
+                }
+            }
+            else if (char == '{' && last !== null) {
+                left++;
+            }
+
+            if (left > 0 && left == right) {
+                first = i + 1;
+                break;
+            }
+        }
+    }
+
+    if (first && last) {
+        if (returnIndexes) {
+            return [first, last];
+        }
+        else {
+            return content.substring(first, last);
+        }
+    }
+
+    return null;
+});
+
+
+
+var getFlagAliases = globalCache.add("*.getFlagAliases", function(ext){
+
+    var all = this.pget(ext + ".flagAliases", true),
+        aliases = {},
+        i, l;
+
+    for (i = 0, l = all.length; i < l; i++) {
+        extend(aliases, all[i]);
+    }
+
+    return aliases;
+});
+
+
+
+var getItemType = globalCache.add("*.getItemType", function(type, file) {
+
+    var ext = file ? file.ext : "*",
+        types = this.pget(ext + ".items"),
+        i, l;
+
+    if (types) {
+        for (i = 0, l = types.length; i < l; i++) {
+            if (types[i].name == type) {
+                return types[i];
+            }
+        }
+    }
+
+    return null;
+});
+
+
+
+var createContext = (function(){
+
+    var createFunctionContext = function createFunctionContext(commentPart, comment) {
+
+        var res = this.pcall(comment.file.ext + ".extractTypeAndName",
+            comment.file, comment.endIndex, true, false);
+
+        if (res) {
+            return {flag: res[0], content: res[1], sub: []};
+        }
+    };
+
+
+    globalCache.add("*.item.param.createContext", createFunctionContext);
+    globalCache.add("*.item.returns.createContext", createFunctionContext);
+
+    return createFunctionContext;
+}());
+
+
+
+
+var items = globalCache.add("*.items", [
+    {
+        name: "root",
+        children: ["*", "!param"]
+    }
+]);
+
+
+
+var normalizeType = globalCache.add("*.normalizeType", function(type, ext){
+
+    if (!this.pget) {
+        console.trace();
+    }
+
+    var aliases = this.pget(ext + ".typeAliases"),
+        ret = [],
+        tmp = type.split("|");
+
+    if (aliases) {
+        tmp.forEach(function(type){
+            ret.push(aliases[type] || type);
+        });
+    }
+
+    return ret;
+});
+
+
+
+var parseComment = (function(){
+
+
+    var parseComment = function(text, file) {
+
+        var ext = file.ext,
+            removeAsterisk = this.pget(ext + ".removeAsterisk"),
+            getCurly = this.pget(ext + ".getCurly");
+
+
+        text = removeAsterisk(text);
+
+        var lines       = text.split("\n"),
+            flagReg     = /@[^\s]+/,
+            aliases     = file.pcall("getFlagAliases", file.ext),
+            descrFlag   = aliases["description"] || "description",
+            line,
+            i, l, j,
+            description = "",
+            inx         = 0,
+            parts       = [],
+            part,
+            flag,
+            subInx,
+            sub;
+
+        for (i = 0, l = lines.length; i < l; i++) {
+
+            if (i > 0) {
+                inx = lines.slice(0, i).join("\n").length;
+            }
+
+            line = lines[i];
+            part = line.trim();
+
+            if (part == '{' || part == '}') {
+                continue;
+            }
+
+            if (part.charAt(0) == '@') {
+
+                if (description) {
+                    parts.push({flag: descrFlag, content: description, sub: []});
+                    description = "";
+                }
+
+                sub     = null;
+                flag    = null;
+
+                if (part.charAt(part.length - 1) == '{') {
+
+                    sub     = getCurly(text, inx + lines[i].length - 1);
+                    part    = part.substring(0, part.length - 2).trim();
+                    i      += sub.trim().split("\n").length + 1;
+                }
+                else if (part.charAt(part.length - 1) == '}') {
+
+                    subInx  = getCurly(part, null, true, true);
+                    if (subInx && (sub = part.substring(subInx[0], subInx[1])) &&
+                        sub.match(flagReg)) {
+
+                        part    = part.substr(0, subInx[0] - 1) + part.substr(subInx[1] + 1);
+                        part    = part.trim();
+                    }
+                    else {
+                        sub     = null;
+                    }
+                }
+                else if (part.charAt(part.length - 1) != '}' &&
+                         part.replace(flagReg, "").trim() != "") {
+
+                    for (j = i + 1; j < l; j++) {
+                        if (lines[j].trim().substr(0, 1) != '@') {
+                            part += "\n" + lines[j];
+                            i = j;
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+
+
+                if (sub) {
+                    sub = parseComment.call(this, sub, file);
+                }
+
+                part = part.replace(flagReg, function(match){
+                    flag = match.substr(1);
+                    return "";
+                });
+
+                part = part.trim();
+
+                while (aliases.hasOwnProperty(flag)) {
+                    flag = aliases[flag]
+                }
+
+                if (part == "") {
+                    part = null;
+                }
+
+                parts.push({flag: flag, content: part, sub: sub || []});
+            }
+            else if (part) {
+                if (description) {
+                    description += "\n"
+                }
+                description += line;
+            }
+        }
+
+        if (description) {
+            parts.push({flag: descrFlag, content: description, sub: []});
+        }
+
+
+        return parts;
+
+    };
+
+
+    return globalCache.add("*.parseComment",  parseComment);
+}());
+
+
+
+
+
+var removeAsterisk = globalCache.add("*.removeAsterisk", function(text) {
+
+    text = text.replace("/**", '');
+    text = text.replace("*/", '');
+    //text = text.trim();
+
+    var lines   = text.split("\n"),
+        min     = 1000,
+        newLines= [],
+        aFound  = false,
+        line,
+        i, l,
+        j, jl;
+
+    for (i = 0, l = lines.length; i < l; i++) {
+
+        line = lines[i].trim();
+
+        if (line.charAt(0) == '*') {
+            aFound  = true;
+            line    = line.substr(1);
+            newLines.push(line);
+
+            for (j = 0, jl = line.length; j < jl; j++) {
+                if (line.charAt(j) != " ") {
+                    min = Math.min(min, j);
+                    break;
+                }
+            }
+        }
+        else {
+            newLines.push(null);
+        }
+    }
+
+    if (!aFound) {
+
+        newLines = [];
+
+        for (i = 0, l = lines.length; i < l; i++) {
+
+            line = lines[i];
+            newLines.push(line);
+
+            for (j = 0, jl = line.length; j < jl; j++) {
+                if (line.charAt(j) != " ") {
+                    min = Math.min(min, j);
+                    break;
+                }
+            }
+        }
+    }
+
+    for (i = 0; i < l; i++) {
+        if (newLines[i] !== null) {
+            newLines[i] = newLines[i].substr(min);
+        }
+        else {
+            newLines[i] = lines[i];
+        }
+    }
+
+    return newLines.join("\n");
+});
+
+
+
+
+var requiredContext = globalCache.add("*.requiredContext", {
+    "param": ["function", "method"],
+    "returns": ["function", "method"],
+    "constructor": ["method"]
+});
+
+
+
+
+
+var sortParts = globalCache.add("*.sortParts", function(parts, comment) {
+
+    var flagInx = {},
+        ext = comment.file.ext,
+        items = this.pget(ext + ".items");
+
+    if (!items) {
+        return parts;
+    }
+
+    var reqCtx = this.pget(ext + ".requiredContext") || {};
+
+    items.forEach(function(item, inx) {
+        flagInx[item.name] = inx;
+    });
+
+    // flags sorted by a simple rule:
+    // if flag has an item associated with it (class, method, var, etc) it goes higher
+    // if flag does not have an item, but requires an item, it goes below items
+    // the rest goes to the bottom
+    parts.sort(function(a, b){
+
+        // flag can be "constructor"
+        // so we must check hasOwnProperty
+        var aInx    = flagInx.hasOwnProperty(a.flag) ? flagInx[a.flag] : undefined,
+            bInx    = flagInx.hasOwnProperty(b.flag) ? flagInx[b.flag] : undefined,
+            aUndf   = typeof aInx == "undefined",
+            bUndf   = typeof bInx == "undefined",
+            aCtx    = reqCtx.hasOwnProperty(a.flag),
+            bCtx    = reqCtx.hasOwnProperty(b.flag);
+
+        if (aInx === bInx) {
+
+            // if both are simple flags
+            // we need to check if any of them
+            // requires a context;
+            // we put context aware flags above
+            if (aUndf) {
+                if (aCtx === bCtx) {
+                    return 0;
+                }
+                return aCtx ? -1 : 1;
+            }
+
+            return 0;
+        }
+        else if (aUndf != bUndf) {
+            return aUndf ? 1 : -1;
+        }
+        else {
+            return aInx < bInx ? -1 : 1;
+        }
+    });
+
+    return parts;
+});
+
+
+
+var extractTypeAndName = globalCache.add("js.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+
+    var content         = file.getContent(),
+        part            = content.substr(startIndex, 200),
+        lines           = part.split("\n"),
+        rVar            = /var\s+([^\s]+)\s*=\s*([^\s(;]+)/,
+        rProp           = /\s*(['"$a-zA-Z0-9\-_]+)\s*:\s*([^\s(;]+)/,
+        rFunc           = /(return|;|=)\s*function\s+([^(]+)/,
+        rNamedFunc      = /(['"$a-zA-Z0-9\-_\.]+)\s*[=:]\s*function\s*(\(|[$a-zA-Z0-9_]+)/,
+        isFunc          = typeof checkFunctions != "undefined" ? checkFunctions : null,
+        isVar           = typeof checkVars != "undefined" ? checkVars : null,
+        name, type,
+        match,
+        inx,
+        i, l;
+
+    inx = part.indexOf('/**');
+    if (inx > -1) {
+        part = part.substr(0, inx);
+    }
+
+    for (i = 0, l = lines.length; i < l; i++) {
+
+        part = lines.slice(0, i).join("\n");
+
+        if ((isFunc === null || isFunc === true) && (match = part.match(rFunc))) {
+            name = match[2].trim();
+            type = "function";
+        }
+        else if ((isFunc === null || isFunc === true) && (match = part.match(rNamedFunc))) {
+            name = match[2].trim();
+            if (name == '(') {
+                name = match[1].trim();
+                name = name.replace(/['"]/g, "");
+                var tmp = name.split(".");
+                name = tmp.pop();
+            }
+            type = "function";
+        }
+        else if ((isVar === null || isVar === true) && (match = part.match(rVar))) {
+            name = match[1].trim();
+            type = match[2].trim();
+        }
+        else if ((isVar === null || isVar === true) && (match = part.match(rProp))) {
+            name = match[1].trim();
+            type = match[2].trim();
+        }
+
+        if (type && name) {
+            return [type, name];
+        }
+    }
+});
+
+
+
+var getFullName = globalCache.add("js.item.*.getFullName", function(item) {
+
+    var parents = item.getParents().reverse(),
+        name = item.name,
+        fullName = "";
+
+    if (!name) {
+        return null;
+    }
+
+
+
+    parents.push(item);
+
+    var getPrefix = function(item) {
+        switch (item.type) {
+            case "param":
+                return '/';
+            case "event":
+                return "@";
+            default:
+                return ".";
+        }
+    };
+
+    parents.forEach(function(parent) {
+        if (parent.name) {
+            if (fullName) {
+                fullName += getPrefix(parent);
+            }
+            fullName += parent.name;
+        }
+    });
+
+    if (item.file.options.namePrefix) {
+        fullName = item.file.options.namePrefix + fullName;
+    }
+
+    return fullName;
+});
+
+
+
+
+
+var items = (function(){
+
+    var classes = function(name) {
+        return {
+            name: name,
+            children: ["method", "property", "const", "event", "!param"],
+            extendable: true,
+            transform: {
+                "function": "method",
+                "var":      "property"
+            }
+        };
+    };
+
+    var funcs = function(name) {
+        return {
+            name: name,
+            onePerComment: true,
+            multiple: name != "event",
+            children: ["param"],
+            transform: {}
+        }
+    };
+
+    var vars = function(name) {
+
+        var children = ["!param"];
+
+        if (name == "var" || name == "property") {
+            children.push("event");
+        }
+
+        return {
+            name: name,
+            stackable: false,
+            children: children,
+            transform: {
+                "var": "property"
+            }
+        };
+    };
+
+
+    return globalCache.add("js.items", [
+        {
+            name: "root",
+            namespace: true,
+            children: ["*", "!param"]
+        },
+        {
+            name: "namespace",
+            namespace: true,
+            children: ["*", "!namespace", "!param"],
+            transform: {
+                "method": "function"
+            }
+        },
+        {
+            name: "module",
+            namespace: true,
+            children: ["*", "!namespace", "!module", "!param"],
+            transform: {
+                "method": "function"
+            }
+        },
+        classes("class"),
+        classes("interface"),
+        classes("mixin"),
+        funcs("function"),
+        funcs("method"),
+        funcs("event"),
+        vars("param"),
+        vars("var"),
+        vars("property"),
+        vars("const")
+    ]);
+
+}());
+
+
+
+var resolveIncludes = globalCache.add("js.resolveIncludes", function(file) {
+
+    var content     = file.getContent(),
+        base        = file.dir + "/",
+        rInclude    = /require\(['|"]([^)]+)['|"]\)/,
+        start       = 0,
+        list        = [],
+        required,
+        match;
+
+    while (match = rInclude.exec(content.substr(start))) {
+
+        required = match[1];
+        start += match.index + required.length;
+
+        if (required.indexOf(".js") == -1) {
+            continue;
+        }
+
+        required = path.normalize(base + required);
+        list.push(required);
+    }
+
+    return list;
+});
+
+
+
+
+var typeAliases = globalCache.add("js.typeAliases", {
+
+    "{}": "object",
+    "Object": "object",
+
+    "[]": "array",
+    "Array": "array",
+
+    "bool": "boolean",
+    "Bool": "boolean",
+    "Boolean": "boolean",
+
+    "String": "string",
+
+    "Function": "function"
+});
+
 var fse = require("fs.extra"),
     jsdom = require("jsdom");
 
 
-globalCache.add("renderer.default", Renderer.$extend({
+var Default = globalCache.add("renderer.default", Renderer.$extend({
 
     data: null,
     templateDir: null,
@@ -3617,6 +4994,7 @@ globalCache.add("renderer.default", Renderer.$extend({
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
+        self.resolveLinks();
         self.data.sourceTree = self.doc.root.exportData().children;
     },
 
@@ -3641,6 +5019,7 @@ globalCache.add("renderer.default", Renderer.$extend({
         // path relative to dist/
         self.loadTemplates(MetaphorJs, path.normalize(__dirname + "/../assets/templates"));
         self.loadTemplates(MetaphorJs, self.templateDir + "/templates");
+
         self.runMetaphor(MetaphorJs, doc, self.data);
 
         var html = jsdom.serializeDocument(doc);
@@ -3677,7 +5056,7 @@ globalCache.add("renderer.default", Renderer.$extend({
 
 
 
-globalCache.add("renderer.json", Renderer.$extend({
+var Json = globalCache.add("renderer.json", Renderer.$extend({
 
     render: function() {
         return JSON.stringify(this.doc.exportData(null, false, true), null, 2);
@@ -3691,7 +5070,105 @@ globalCache.add("renderer.json", Renderer.$extend({
 
 
 
-globalCache.add("renderer.raw", Renderer.$extend({
+var Plain = globalCache.add("renderer.plain", Renderer.$extend({
+
+    render: function() {
+
+        var data = this.doc.getData(),
+            html = "<ul>",
+            keys = ["param", "var", "function", "namespace", "class", "property", "method"],
+            key, value;
+
+        var renderItem = function(type, item) {
+
+            html += '<li>';
+            html += '<p>';
+
+            if (type) {
+                html += '<i>' + type + '</i> ';
+            }
+
+            if (item.name) {
+                if (item.flags.type) {
+                    html += '['+ (item.flags.type.join(" | ")) +'] ';
+                    delete item.flags.type;
+                }
+                html += '<b>' + item.name + '</b>';
+
+                if (item.param) {
+                    html += '(';
+
+                    var params = [];
+                    item.param.forEach(function(param){
+                        params.push(param.name);
+                    });
+                    html += params.join(", ");
+                    html += ')';
+                }
+
+                if (item.flags.returns) {
+                    if (typeof item.flags.returns == "string") {
+                        html += ' : !!![' + (item.flags.returns) + ']';
+                    }
+                    else {
+                        html += ' : [' + (item.flags.returns.join(" | ")) + ']';
+                    }
+                    delete item.flags.returns;
+                }
+            }
+
+            html += '</p>';
+
+            if (item.flags.description) {
+                html += '<p>';
+                html += item.flags.description;
+                html += '</p>';
+                delete item.flags.description;
+            }
+
+            keys.forEach(function(key){
+
+                var items = item[key];
+
+                if (items) {
+                    html += '<ul>';
+                    items.forEach(function(item){
+                        renderItem(key, item);
+                    });
+                    html += '</ul>';
+                }
+            });
+
+            var flags = "";
+            for (key in item.flags) {
+                value = item.flags[key];
+                flags += '<li>'+key+' : '+value+'</li>';
+            }
+            if (flags) {
+                html += '<ul>' + flags + '</ul>';
+            }
+
+            html += '</li>';
+
+        };
+
+        renderItem(null, data);
+
+        html += '</ul>';
+
+        return html;
+    }
+
+}, {
+    mime: "text/html"
+}));
+
+
+
+
+
+
+var Raw = globalCache.add("renderer.raw", Renderer.$extend({
 
     render: function() {
         return this.doc.exportData(null, false, true);

@@ -37,6 +37,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
+        self.resolveLinks();
         self.data.sourceTree = self.doc.root.exportData().children;
     },
 
@@ -61,6 +62,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         // path relative to dist/
         self.loadTemplates(MetaphorJs, path.normalize(__dirname + "/../assets/templates"));
         self.loadTemplates(MetaphorJs, self.templateDir + "/templates");
+
         self.runMetaphor(MetaphorJs, doc, self.data);
 
         var html = jsdom.serializeDocument(doc);

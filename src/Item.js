@@ -386,6 +386,19 @@ module.exports = (function(){
             }
         },
 
+        eachFlag: function(cb, context, only) {
+            var self = this,
+                name;
+
+            for (name in self.flags) {
+                if (!only || name == only) {
+                    self.flags[name].forEach(function(flag){
+                        return cb.call(context, name, flag);
+                    });
+                }
+            }
+        },
+
 
         exportData: function(currentParent, noChildren, noHelpers) {
 

@@ -8,10 +8,7 @@
     "mixin": {
         "default": {
             "files": [
-                ["src/func/**", {"as": "*"}],
-                ["src/Runner.js", {"as": "*"}],
-                ["src/Documentor.js", {"as": "*"}],
-                "src/**"
+                ["src/**", {"as": "*"}]
             ]
         }
     },
