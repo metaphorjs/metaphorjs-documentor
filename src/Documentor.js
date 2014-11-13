@@ -29,6 +29,7 @@ module.exports = Base.$extend({
     typeSortCfg: null,
     itemSortCfg: null,
     contentSortCfg: null,
+    sections: null,
 
     $init: function(cfg){
 
@@ -38,6 +39,7 @@ module.exports = Base.$extend({
         self.files      = {};
         self.map        = {};
         self.content    = [];
+        self.sections   = ["top", "api", "bottom"];
         self.root       = new Item({
             doc:        self,
             type:       "root",
@@ -242,25 +244,37 @@ module.exports = Base.$extend({
         return this.files[path];
     },
 
-    addContent: function(id, content) {
-        this.content.push(new Content(id, content));
+    addContent: function(cfg) {
+        var self = this,
+            c = cfg instanceof Content ? cfg : new Content(cfg);
+        self.content.push(c);
+        self.pcall("contentAdded", self, c);
     },
 
     prepare: function() {
 
         var self = this;
 
+        self.pcall("beforePrepare", self);
+
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
 
+        self.pcall("namesResolved", self);
+
         self.pcall("prepareItems", self);
+        self.pcall("itemsPrepared", self);
+
         self.pcall("prepareContent", self);
+        self.pcall("contentPrepared", self);
 
         self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
         self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
         self.pcall("sortContent", self, self.contentSortCfg);
+
+        self.pcall("afterPrepare", self);
     },
 
 
@@ -302,7 +316,7 @@ module.exports = Base.$extend({
 
     },
 
-    exportData: function() {
+    exportData: function(noHelpers) {
 
         var self = this,
             exportData = self.pget("export");
@@ -311,7 +325,85 @@ module.exports = Base.$extend({
             return exportData(self);
         }
         else {
-            return this.root.exportData();
+
+            var exprt = {
+                sections: {},
+                structure: {}
+            };
+
+            var sectionItems = {};
+
+            var addSection = function(section) {
+                if (!exprt.sections[section]) {
+                    exprt.sections[section] = [];
+                }
+                if (!sectionItems[section]) {
+                    sectionItems[section] = [];
+                }
+            };
+
+            var addStructItem = function(type, groupName, name, id) {
+                if (!exprt.structure[type]) {
+                    exprt.structure[type] = {
+                        type: type,
+                        groupName: groupName,
+                        children: []
+                    };
+                }
+                exprt.structure[type].children.push({
+                    id: id,
+                    name: name
+                });
+            };
+
+            self.sections.forEach(addSection);
+
+            var currentGroup;
+
+            self.content.forEach(function(content){
+                var location = content.location || "top";
+                addSection(location);
+                addStructItem(content.type, content.groupName, content.title, content.id);
+
+                if (!currentGroup || currentGroup.type != content.type) {
+                    currentGroup = {
+                        isContentGroup: true,
+                        type: content.type,
+                        groupName: content.groupName,
+                        items: []
+                    };
+                    exprt.sections[location].push(currentGroup);
+                }
+
+                currentGroup.items.push(content.exportData());
+            });
+
+
+
+            self.root.eachChild(function(item){
+                if (item.file.hidden){
+                    return;
+                }
+                var location    = item.location || "api",
+                    typeProps   = item.getTypeProps();
+
+                addSection(location);
+                //exprt.sections[location].children.push(item.exportData());
+                sectionItems[location].push(item);
+                addStructItem(item.type, typeProps.groupName, item.name, item.fullName);
+            });
+
+            var loc;
+
+            for (loc in sectionItems) {
+                self.root.exportChildren(sectionItems[loc], noHelpers).children.forEach(function(ch){
+                    exprt.sections[loc].push(ch);
+                });
+            }
+
+
+
+            return exprt;
         }
     },
 

@@ -13,25 +13,32 @@
 <body>
 
 <mjs-include src="top-menu"></mjs-include>
+<mjs-include src="jubmotron"></mjs-include>
 
-<div class="jumbotron">
-    <div class="container">
-        <h1>{{.title}}</h1>
-        <p mjs-if=".description">{{.description}}</p>
-        <p mjs-if=".version">{{.version}}</p>
-    </div>
-</div>
 
 <div class="container source-container">
-    <div class="row item-group level-0" mjs-each="group in .sourceTree">
-        <div class="col-md-12 item-group-name" mjs-if=".$root.sourceTree.length > 1">
+    <mjs-each value="section in .sourceTree.sections | toArray">
+    <div class="row item-group level-0" mjs-each="group in .section.value">
+        <!--<div class="col-md-12 item-group-name" mjs-if=".$root.sourceTree.length > 1">
             <h2>{{.group.name}}</h2>
-        </div>
-        <div mjs-each="item in .group.items" class="col-md-12 item-group-items item-group-type-{{.item.type}} level-0">
-            <mjs-include src=".item.template"></mjs-include>
-        </div>
+        </div>-->
+        <mjs-if value=".group.isContentGroup">
+            <div mjs-each="item in .group.items" class="col-md-12 content">
+                <mjs-if value=".item.contentType == 'html'">
+                    <mjs-bind-html value=".item.content"></mjs-bind-html>
+                </mjs-if>
+            </div>
+        </mjs-if>
+        <mjs-if value=".group.isApiGroup">
+            <div mjs-each="item in .group.items"
+                 class="col-md-12 item-group-items item-group-type-{{.item.type}} level-0">
+                <mjs-include src=".item.template"></mjs-include>
+            </div>
+        </mjs-if>
     </div>
+    </mjs-each>
 </div>
+
 
 <div class="footer" mjs-if=".footer">
     <div class="container" mjs-bind-html=".footer"></div>

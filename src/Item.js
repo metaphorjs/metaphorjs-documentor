@@ -366,6 +366,18 @@ module.exports = (function(){
             });
         },
 
+        getChildren: function() {
+            var children = [];
+            this.eachChild(function(item){
+                children.push(item);
+            });
+            return children;
+        },
+
+        eachChild: function(fn, context) {
+            this.eachItem(fn, context, true);
+        },
+
         eachItem: function(fn, context, thisOnly) {
 
             var k, self = this;
@@ -418,6 +430,7 @@ module.exports = (function(){
             var self = this,
                 k,
                 exprt =  {
+                    isApiItem: true,
                     type: self.type,
                     name:  self.name,
                     fullName: self.fullName,
@@ -469,50 +482,61 @@ module.exports = (function(){
                 }
             }
 
-
             if (!noChildren) {
+                extend(exprt, self.exportChildren(self.getChildren(), noHelpers), true, false);
+            }
 
-                if (!noHelpers) {
-                    exprt.getChildren = function(type) {
-                        var i, l;
-                        for (i = 0, l = this.children.length; i < l; i++) {
-                            if (this.children[i].type == type) {
-                                return this.children[i].items;
-                            }
+            return exprt;
+        },
+
+        exportChildren: function(items, noHelpers) {
+
+            var self = this,
+                exprt = {
+                    children: [],
+                    childTypes: []
+                },
+                chGroups = {},
+                typeProps;
+
+            if (!noHelpers) {
+                exprt.getChildren = function(type) {
+                    var i, l;
+                    for (i = 0, l = this.children.length; i < l; i++) {
+                        if (this.children[i].type == type) {
+                            return this.children[i].items;
                         }
-                    };
+                    }
+                };
+            }
+
+            items.forEach(function (child) {
+
+                if (child.file.hidden) {
+                    return;
                 }
 
-                var chGroups = {},
-                    typeProps;
+                var type = child.type;
 
-                self.eachItem(function (child) {
+                if (!chGroups[type]) {
 
-                    if (child.file.hidden) {
-                        return;
-                    }
+                    typeProps = child.getTypeProps();
 
-                    var type = child.type;
-
-                    if (!chGroups[type]) {
-
-                        typeProps = child.getTypeProps();
-
-                        chGroups[type] = {
-                            type: type,
-                            name: typeProps.displayName,
-                            groupName: typeProps.groupName,
-                            items: []
-                        };
-                        exprt.children.push(chGroups[type]);
-                        exprt.childTypes.push(type);
-                    }
+                    chGroups[type] = {
+                        isApiGroup: true,
+                        type: type,
+                        name: typeProps.displayName,
+                        groupName: typeProps.groupName,
+                        items: []
+                    };
+                    exprt.children.push(chGroups[type]);
+                    exprt.childTypes.push(type);
+                }
 
 
-                    chGroups[type].items.push(child.exportData(self, false, noHelpers));
+                chGroups[type].items.push(child.exportData(self, false, noHelpers));
 
-                }, null, true);
-            }
+            });
 
             return exprt;
         },

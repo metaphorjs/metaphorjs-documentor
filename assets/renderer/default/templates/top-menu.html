@@ -14,21 +14,21 @@
 
         <div class="navbar-collapse collapse">
 
-            <mjs-if value=".sourceTree.length > 1 || (.sourceTree.length == 1 && .sourceTree[0].items.length > 1)">
-                <ul class="nav navbar-nav">
-                    <li mjs-each="group in .sourceTree" class="dropdown">
+            <ul class="nav navbar-nav">
+                <mjs-each value="section in .sourceTree.structure | toArray">
+                    <li class="dropdown">
                         <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                            {{.group.groupName}}
+                            {{.section.value.groupName}}
                             <span class="caret"></span>
                         </a>
                         <ul class="dropdown-menu" role="menu">
-                            <li mjs-each="item in .group.items">
+                            <li mjs-each="item in .section.value.children">
                                 <a href="#{{.item.id}}">{{.item.name}}</a>
                             </li>
                         </ul>
                     </li>
-                </ul>
-            </mjs-if>
+                </mjs-each>
+            </ul>
 
             <ul class="nav navbar-nav navbar-right" mjs-if=".hasOwnProperty('topRightMenu')">
                 <li mjs-each="item in .topRightMenu">

@@ -51,6 +51,8 @@ var Runner = Base.$extend({
             self.loadHooks(cfg, doc, jsonFile);
         }
 
+        doc.pcall("init", doc);
+
         if (cfg.files && jsonFile) {
             self.loadFiles(cfg, doc, jsonFile);
         }

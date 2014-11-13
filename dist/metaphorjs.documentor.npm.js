@@ -301,23 +301,22 @@ var fs = require("fs"),
 var Content = Base.$extend({
 
     id: null,
-    group: null,
+    location: null,
+    type: null,
+    groupName: null,
     content: null,
     title: null,
-    description: null,
     file: null,
-    fileType: null,
+    contentType: null,
 
-    $init: function(id, content) {
+    $init: function(cfg) {
 
         var self = this;
 
-        if (typeof id != "object") {
-            self.id = id;
-            self.content = content;
-        }
-        else {
-            extend(self, id, true, false);
+        extend(self, cfg, true, false);
+
+        if (self.file && !self.contentType) {
+            self.contentType = path.extname(self.file).substr(1);
         }
 
         self.$super();
@@ -326,11 +325,27 @@ var Content = Base.$extend({
     getContent: function() {
 
         if (this.file) {
-            return fs.readFileSync(this.file).toString();
+            return fs.readFileSync(this.file).toString().trim();
         }
         else {
             return this.content;
         }
+    },
+
+    exportData: function() {
+
+        var self = this;
+
+        return {
+            isContentItem: true,
+            id: self.id,
+            title: self.title,
+            type: self.type,
+            groupName: self.groupName,
+            contentType: self.contentType,
+            content: self.getContent()
+        };
+
     }
 
 });
@@ -854,6 +869,18 @@ var Item = (function(){
             });
         },
 
+        getChildren: function() {
+            var children = [];
+            this.eachChild(function(item){
+                children.push(item);
+            });
+            return children;
+        },
+
+        eachChild: function(fn, context) {
+            this.eachItem(fn, context, true);
+        },
+
         eachItem: function(fn, context, thisOnly) {
 
             var k, self = this;
@@ -906,6 +933,7 @@ var Item = (function(){
             var self = this,
                 k,
                 exprt =  {
+                    isApiItem: true,
                     type: self.type,
                     name:  self.name,
                     fullName: self.fullName,
@@ -957,50 +985,61 @@ var Item = (function(){
                 }
             }
 
-
             if (!noChildren) {
+                extend(exprt, self.exportChildren(self.getChildren(), noHelpers), true, false);
+            }
 
-                if (!noHelpers) {
-                    exprt.getChildren = function(type) {
-                        var i, l;
-                        for (i = 0, l = this.children.length; i < l; i++) {
-                            if (this.children[i].type == type) {
-                                return this.children[i].items;
-                            }
+            return exprt;
+        },
+
+        exportChildren: function(items, noHelpers) {
+
+            var self = this,
+                exprt = {
+                    children: [],
+                    childTypes: []
+                },
+                chGroups = {},
+                typeProps;
+
+            if (!noHelpers) {
+                exprt.getChildren = function(type) {
+                    var i, l;
+                    for (i = 0, l = this.children.length; i < l; i++) {
+                        if (this.children[i].type == type) {
+                            return this.children[i].items;
                         }
-                    };
+                    }
+                };
+            }
+
+            items.forEach(function (child) {
+
+                if (child.file.hidden) {
+                    return;
                 }
 
-                var chGroups = {},
-                    typeProps;
+                var type = child.type;
 
-                self.eachItem(function (child) {
+                if (!chGroups[type]) {
 
-                    if (child.file.hidden) {
-                        return;
-                    }
+                    typeProps = child.getTypeProps();
 
-                    var type = child.type;
-
-                    if (!chGroups[type]) {
-
-                        typeProps = child.getTypeProps();
-
-                        chGroups[type] = {
-                            type: type,
-                            name: typeProps.displayName,
-                            groupName: typeProps.groupName,
-                            items: []
-                        };
-                        exprt.children.push(chGroups[type]);
-                        exprt.childTypes.push(type);
-                    }
+                    chGroups[type] = {
+                        isApiGroup: true,
+                        type: type,
+                        name: typeProps.displayName,
+                        groupName: typeProps.groupName,
+                        items: []
+                    };
+                    exprt.children.push(chGroups[type]);
+                    exprt.childTypes.push(type);
+                }
 
 
-                    chGroups[type].items.push(child.exportData(self, false, noHelpers));
+                chGroups[type].items.push(child.exportData(self, false, noHelpers));
 
-                }, null, true);
-            }
+            });
 
             return exprt;
         },
@@ -1772,6 +1811,7 @@ var Documentor = Base.$extend({
     typeSortCfg: null,
     itemSortCfg: null,
     contentSortCfg: null,
+    sections: null,
 
     $init: function(cfg){
 
@@ -1781,6 +1821,7 @@ var Documentor = Base.$extend({
         self.files      = {};
         self.map        = {};
         self.content    = [];
+        self.sections   = ["top", "api", "bottom"];
         self.root       = new Item({
             doc:        self,
             type:       "root",
@@ -1985,25 +2026,37 @@ var Documentor = Base.$extend({
         return this.files[path];
     },
 
-    addContent: function(id, content) {
-        this.content.push(new Content(id, content));
+    addContent: function(cfg) {
+        var self = this,
+            c = cfg instanceof Content ? cfg : new Content(cfg);
+        self.content.push(c);
+        self.pcall("contentAdded", self, c);
     },
 
     prepare: function() {
 
         var self = this;
 
+        self.pcall("beforePrepare", self);
+
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
 
+        self.pcall("namesResolved", self);
+
         self.pcall("prepareItems", self);
+        self.pcall("itemsPrepared", self);
+
         self.pcall("prepareContent", self);
+        self.pcall("contentPrepared", self);
 
         self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
         self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
         self.pcall("sortContent", self, self.contentSortCfg);
+
+        self.pcall("afterPrepare", self);
     },
 
 
@@ -2045,7 +2098,7 @@ var Documentor = Base.$extend({
 
     },
 
-    exportData: function() {
+    exportData: function(noHelpers) {
 
         var self = this,
             exportData = self.pget("export");
@@ -2054,7 +2107,85 @@ var Documentor = Base.$extend({
             return exportData(self);
         }
         else {
-            return this.root.exportData();
+
+            var exprt = {
+                sections: {},
+                structure: {}
+            };
+
+            var sectionItems = {};
+
+            var addSection = function(section) {
+                if (!exprt.sections[section]) {
+                    exprt.sections[section] = [];
+                }
+                if (!sectionItems[section]) {
+                    sectionItems[section] = [];
+                }
+            };
+
+            var addStructItem = function(type, groupName, name, id) {
+                if (!exprt.structure[type]) {
+                    exprt.structure[type] = {
+                        type: type,
+                        groupName: groupName,
+                        children: []
+                    };
+                }
+                exprt.structure[type].children.push({
+                    id: id,
+                    name: name
+                });
+            };
+
+            self.sections.forEach(addSection);
+
+            var currentGroup;
+
+            self.content.forEach(function(content){
+                var location = content.location || "top";
+                addSection(location);
+                addStructItem(content.type, content.groupName, content.title, content.id);
+
+                if (!currentGroup || currentGroup.type != content.type) {
+                    currentGroup = {
+                        isContentGroup: true,
+                        type: content.type,
+                        groupName: content.groupName,
+                        items: []
+                    };
+                    exprt.sections[location].push(currentGroup);
+                }
+
+                currentGroup.items.push(content.exportData());
+            });
+
+
+
+            self.root.eachChild(function(item){
+                if (item.file.hidden){
+                    return;
+                }
+                var location    = item.location || "api",
+                    typeProps   = item.getTypeProps();
+
+                addSection(location);
+                //exprt.sections[location].children.push(item.exportData());
+                sectionItems[location].push(item);
+                addStructItem(item.type, typeProps.groupName, item.name, item.fullName);
+            });
+
+            var loc;
+
+            for (loc in sectionItems) {
+                self.root.exportChildren(sectionItems[loc], noHelpers).children.forEach(function(ch){
+                    exprt.sections[loc].push(ch);
+                });
+            }
+
+
+
+            return exprt;
         }
     },
 
@@ -2150,7 +2281,11 @@ var Renderer = Base.$extend({
 
         self.doc = doc;
 
+        self.doc.pcall("renderer.init", self, self.doc);
+
         self.resolveLinks();
+
+        self.doc.pcall("renderer.linksResolved", self, self.doc);
     },
 
     initMetaphor: function(MetaphorJs) {
@@ -2185,6 +2320,8 @@ var Renderer = Base.$extend({
                     return fileType;
             }
         });
+
+        self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
     },
 
     loadTemplates: function(MetaphorJs, dir) {
@@ -2198,6 +2335,10 @@ var Renderer = Base.$extend({
 
     runMetaphor: function(MetaphorJs, doc, data) {
 
+        var self = this;
+
+        self.doc.pcall("renderer.beforeMetaphor", MetaphorJs, self, self.doc);
+
         var select = require("metaphorjs-select")(doc.parentWindow),
             appNodes    = select("[mjs-app]", doc),
             i, l, el;
@@ -2206,6 +2347,8 @@ var Renderer = Base.$extend({
             el = appNodes[i];
             MetaphorJs.initApp(el, MetaphorJs.getAttr(el, "mjs-app"), data, true);
         }
+
+        self.doc.pcall("renderer.afterMetaphor", MetaphorJs, self, self.doc);
     },
 
 
@@ -2301,6 +2444,8 @@ var Runner = Base.$extend({
         if (cfg.hooks) {
             self.loadHooks(cfg, doc, jsonFile);
         }
+
+        doc.pcall("init", doc);
 
         if (cfg.files && jsonFile) {
             self.loadFiles(cfg, doc, jsonFile);
@@ -4602,7 +4747,7 @@ var Default = globalCache.add("renderer.default", Renderer.$extend({
             self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
         }
 
-        self.data.sourceTree = self.doc.root.exportData().children;
+        self.data.sourceTree = self.doc.exportData();
     },
 
 

@@ -17,7 +17,11 @@ module.exports = Base.$extend({
 
         self.doc = doc;
 
+        self.doc.pcall("renderer.init", self, self.doc);
+
         self.resolveLinks();
+
+        self.doc.pcall("renderer.linksResolved", self, self.doc);
     },
 
     initMetaphor: function(MetaphorJs) {
@@ -52,6 +56,8 @@ module.exports = Base.$extend({
                     return fileType;
             }
         });
+
+        self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
     },
 
     loadTemplates: function(MetaphorJs, dir) {
@@ -65,6 +71,10 @@ module.exports = Base.$extend({
 
     runMetaphor: function(MetaphorJs, doc, data) {
 
+        var self = this;
+
+        self.doc.pcall("renderer.beforeMetaphor", MetaphorJs, self, self.doc);
+
         var select = require("metaphorjs-select")(doc.parentWindow),
             appNodes    = select("[mjs-app]", doc),
             i, l, el;
@@ -73,6 +83,8 @@ module.exports = Base.$extend({
             el = appNodes[i];
             MetaphorJs.initApp(el, MetaphorJs.getAttr(el, "mjs-app"), data, true);
         }
+
+        self.doc.pcall("renderer.afterMetaphor", MetaphorJs, self, self.doc);
     },
 
 
