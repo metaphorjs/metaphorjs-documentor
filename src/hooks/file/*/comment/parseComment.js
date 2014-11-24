@@ -21,6 +21,7 @@ module.exports = (function(){
             description = "",
             inx         = 0,
             parts       = [],
+            partInx     = 0,
             part,
             flag,
             subInx,
@@ -42,8 +43,9 @@ module.exports = (function(){
             if (part.charAt(0) == '@') {
 
                 if (description) {
-                    parts.push({flag: descrFlag, content: description, sub: []});
+                    parts.push({flag: descrFlag, content: description, sub: [], inx: partInx});
                     description = "";
+                    partInx++;
                 }
 
                 sub     = null;
@@ -102,7 +104,8 @@ module.exports = (function(){
                     part = null;
                 }
 
-                parts.push({flag: flag, content: part, sub: sub || []});
+                parts.push({flag: flag, content: part, sub: sub || [], inx: partInx});
+                partInx++;
             }
             else if (part) {
                 if (description) {
@@ -113,7 +116,7 @@ module.exports = (function(){
         }
 
         if (description) {
-            parts.push({flag: descrFlag, content: description, sub: []});
+            parts.push({flag: descrFlag, content: description, sub: [], inx: partInx});
         }
 
 

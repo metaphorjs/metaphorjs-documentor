@@ -47,12 +47,14 @@ module.exports = globalCache.add("file.*.comment.sortParts", function(parts, com
                     return aEnd ? 1 : -1;
                 }
                 if (aCtx === bCtx) {
-                    return 0;
+                    return a.inx < b.inx ? -1 : 1;
+                    //return 0;
                 }
                 return aCtx ? -1 : 1;
             }
 
-            return 0;
+            return a.inx < b.inx ? -1 : 1;
+            //return 0;
         }
         else if (aUndf != bUndf) {
             return aUndf ? 1 : -1;
