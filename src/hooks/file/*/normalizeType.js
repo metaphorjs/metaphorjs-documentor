@@ -12,6 +12,9 @@ module.exports = globalCache.add("file.*.normalizeType", function(type, file){
             ret.push(aliases[type] || type);
         });
     }
+    else {
+        ret.push(type);
+    }
 
     return ret;
 });

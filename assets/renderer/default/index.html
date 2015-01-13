@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html mjs-app>
 <head lang="en">
-    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ .title }}</title>
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="bower_components/prism/themes/prism.css">
     <link rel="stylesheet" href="assets/style.css">
+    <link mjs-each="style in .styles"
+          rel="stylesheet"
+          href="{{ .style }}">
+
+
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
     <script src="bower_components/prism/prism.js"></script>
@@ -19,13 +24,10 @@
 <div class="container source-container">
     <mjs-each value="section in .sourceTree.sections | toArray">
     <div class="row item-group level-0" mjs-each="group in .section.value">
-        <!--<div class="col-md-12 item-group-name" mjs-if=".$root.sourceTree.length > 1">
-            <h2>{{.group.name}}</h2>
-        </div>-->
         <mjs-if value=".group.isContentGroup">
             <div mjs-each="item in .group.items" class="col-md-12 content">
                 <mjs-if value=".item.contentType == 'html'">
-                    <mjs-bind-html value=".item.content"></mjs-bind-html>
+                    <div id="{{.item.id}}" mjs-bind-html=".item.content"></div>
                 </mjs-if>
             </div>
         </mjs-if>

@@ -40,8 +40,12 @@
             "target": "dist/metaphorjs.documentor.npm.js",
             "compile": false,
             "files": ["default"],
-            "exports": "Documentor",
-            "exposeIn": "Documentor",
+            "omit": [
+                "metaphorjs-class/src/var/cs.js",
+                "metaphorjs-namespace/src/var/ns.js"
+            ],
+            "exports": "documentorExport",
+            "exposeIn": "documentorExport",
             "expose": [
                 "Renderer",
                 "Item",

@@ -8,6 +8,7 @@ module.exports = Base.$extend({
 
     doc: null,
     outDir: null,
+    templates: null,
 
     $init: function(doc, cfg) {
 
@@ -25,6 +26,10 @@ module.exports = Base.$extend({
     },
 
     initMetaphor: function(MetaphorJs) {
+
+        MetaphorJs.error.on(function(e){
+            self.doc.trigger("error", e);
+        });
 
         MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
 
@@ -49,12 +54,30 @@ module.exports = Base.$extend({
         });
 
         MetaphorJs.ns.add("filter.prismClass", function(fileType){
+
+            if (fileType.indexOf('txt-') === 0) {
+                fileType = fileType.split('-')[1];
+            }
+
             switch (fileType) {
                 case "js":
+                case "json":
                     return "javascript";
                 default:
                     return fileType;
             }
+        });
+
+        MetaphorJs.ns.add("filter.readFile", function(filePath){
+
+            var path = self.runner.preparePath(filePath);
+
+            if (!path) {
+                self.doc.trigger("error", "File " + filePath + " not found!");
+                return "";
+            }
+
+            return fs.readFileSync(path).toString();
         });
 
         self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
@@ -115,12 +138,16 @@ module.exports = Base.$extend({
 
     },
 
-    writeOut: function(out) {
+    writeOut: function(out, done) {
         if  (this.out) {
             fs.writeFileSync(this.out, out);
         }
         else {
             process.stdout.write(out);
+        }
+
+        if (done) {
+            done();
         }
     },
 

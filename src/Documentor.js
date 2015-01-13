@@ -1,24 +1,27 @@
 
 var Base = require("./Base.js"),
-    isFile = require("../../metaphorjs/src/func/fs/isFile.js"),
-    extend = require("../../metaphorjs/src/func/extend.js"),
-    getFileList = require("../../metaphorjs/src/func/fs/getFileList.js"),
-    undf = require("../../metaphorjs/src/var/undf.js"),
+    isFile = require("metaphorjs/src/func/fs/isFile.js"),
+    extend = require("metaphorjs/src/func/extend.js"),
+    getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
+    undf = require("metaphorjs/src/var/undf.js"),
     path = require("path"),
     fs = require("fs"),
     SourceFile = require("./SourceFile.js"),
     Item = require("./Item.js"),
     Content = require("./Content.js"),
-    Cache = require("../../metaphorjs/src/lib/Cache.js"),
+    Cache = require("metaphorjs/src/lib/Cache.js"),
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
-    nextUid = require("../../metaphorjs/src/func/nextUid.js");
+    nextUid = require("metaphorjs/src/func/nextUid.js");
 
 
+require("metaphorjs-observable/src/mixin/Observable.js");
 
 
 
 module.exports = Base.$extend({
+
+    $mixins: ["mixin.Observable"],
 
     files: null,
     root: null,
@@ -53,7 +56,7 @@ module.exports = Base.$extend({
 
         self.hooks      = new Cache(true);
 
-        self.$super();
+        self.$super(cfg);
     },
 
 
@@ -80,6 +83,7 @@ module.exports = Base.$extend({
             self = this,
             id = self.id,
             value,
+            stopped = false,
             i, l;
 
         if (exact) {
@@ -88,6 +92,10 @@ module.exports = Base.$extend({
 
         [self.hooks, globalCache].forEach(function(cache){
             for (i = 0, l = names.length; i < l; i++) {
+
+                if (stopped) {
+                    return;
+                }
 
                 name = names[i];
 
@@ -113,12 +121,14 @@ module.exports = Base.$extend({
                         }
                         else if (passthru) {
                             if (passthru(value) === false) {
-                                return false;
+                                stopped = true;
+                                return;
                             }
                         }
                         else {
                             ret = value;
-                            return false;
+                            stopped = true;
+                            return;
                         }
                     }
                 }
@@ -180,7 +190,7 @@ module.exports = Base.$extend({
             }));
         }
         else {
-            var list = getFileList(directory, "js");
+            var list = getFileList(directory, ext || "js");
             var startDir = directory;
             while (startDir.charAt(startDir.length - 1) == '/' ||
                    startDir.charAt(startDir.length - 1) == '*') {

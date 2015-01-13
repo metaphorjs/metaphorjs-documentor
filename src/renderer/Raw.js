@@ -9,8 +9,12 @@ module.exports = globalCache.add("renderer.raw", Renderer.$extend({
         return this.doc.exportData(null, false, true);
     },
 
-    writeOut: function(out) {
+    writeOut: function(out, done) {
         console.log(out);
+
+        if (done) {
+            done();
+        }
     }
 
 }));

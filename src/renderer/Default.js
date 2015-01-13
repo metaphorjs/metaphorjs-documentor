@@ -6,13 +6,17 @@ var Renderer = require("../Renderer.js"),
     fse = require("fs.extra"),
     jsdom = require("jsdom"),
     extend = require("../../../metaphorjs/src/func/extend.js"),
-    initMetaphorTemplates = require("../func/initMetaphorTemplates.js");
+    getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
+    initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
+    Promise = require("metaphorjs-promise");
 
 
 module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
     data: null,
     templateDir: null,
+    templates: null,
+    assets: null,
     out: null,
     types: null,
 
@@ -60,7 +64,23 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
         // path relative to dist/
         self.loadTemplates(MetaphorJs, path.normalize(__dirname + "/../assets/templates"));
-        self.loadTemplates(MetaphorJs, self.templateDir + "/templates");
+        self.loadTemplates(MetaphorJs, tplDir + "/templates");
+
+        if (self.templates) {
+            self.loadTemplates(MetaphorJs, self.runner.preparePath(self.templates));
+        }
+
+        if (self.assets) {
+            var assetPath = self.runner.preparePath(self.assets);
+            var list = getFileList(assetPath);
+            list.forEach(function(filePath){
+
+                var ext = path.extname(filePath).substr(1);
+                if (ext == "css") {
+                    self.data.styles.push("assets/" + filePath.replace(assetPath, ""));
+                }
+            })
+        }
 
         self.runMetaphor(MetaphorJs, doc, self.data);
 
@@ -71,10 +91,11 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         return html;
     },
 
-    writeOut: function(out) {
+    writeOut: function(out, done) {
 
-        var outDir = this.out,
-            tplDir = this.templateDir;
+        var self    = this,
+            outDir  = this.out,
+            tplDir  = this.templateDir;
 
         if (fs.existsSync(outDir + "/bower_components")) {
             fse.rmrfSync(outDir + "/bower_components");
@@ -84,14 +105,63 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             fse.rmrfSync(outDir + "/assets");
         }
 
-        fse.copyRecursive(tplDir + "/bower_components", outDir + "/bower_components", function(){
-            fse.copyRecursive(tplDir + "/assets", outDir + "/assets", function(){
-                fs.writeFileSync(outDir + "/index.html", out);
-            });
+        var bowerPromise = new Promise,
+            defAssetsPromise = new Promise,
+            projAssetsPromise = new Promise;
+
+        fse.copyRecursive(tplDir + "/bower_components", outDir + "/bower_components", function(err){
+
+            if (err) {
+                self.doc.trigger("error", err);
+                throw err;
+            }
+
+            bowerPromise.resolve();
         });
+
+        fse.copyRecursive(tplDir + "/assets", outDir + "/assets", function(err){
+
+            if (err) {
+                self.doc.trigger("error", err);
+                throw err;
+            }
+
+            defAssetsPromise.resolve();
+        });
+
+        if (self.assets) {
+
+            var projAssetsPath = self.runner.preparePath(self.assets);
+
+            fse.copyRecursive(projAssetsPath, outDir + "/assets", function(err){
+
+                if (err) {
+                    self.doc.trigger("error", err);
+                    throw err;
+                }
+
+                projAssetsPromise.resolve();
+            });
+        }
+        else {
+            projAssetsPromise.resolve();
+        }
+
+        Promise.all([bowerPromise, defAssetsPromise, projAssetsPromise])
+            .done(function(){
+                fs.writeFileSync(outDir + "/index.html", out);
+
+                if (done) {
+                    done();
+                }
+            });
+
     }
 
 
 }, {
-    defaultData: {}
+    defaultData: {
+        styles: [],
+        scripts: []
+    }
 }));

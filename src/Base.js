@@ -1,5 +1,5 @@
 var cs = require("./var/cs.js"),
-    extend = require("../../metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs/src/func/extend.js");
 
 /**
  * @class Base

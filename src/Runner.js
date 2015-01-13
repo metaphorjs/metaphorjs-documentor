@@ -9,11 +9,15 @@ var Base = require("./Base.js"),
 
 var Runner = Base.$extend({
 
-    run: function(runCfg, runData, runOptions) {
+    run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
+
+        runCfg = runCfg || {};
+        runData = runData || {};
+        runOptions = runOptions || {};
 
         var self        = this,
             args        = minimist(process.argv.slice(2), {boolean: true}),
-            profileName = args._[0] || "",
+            profileName = runCfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
             jsonFile    = fs.existsSync(json) ? new mjsBuild.JsonFile(json) : null,
             profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
@@ -26,14 +30,29 @@ var Runner = Base.$extend({
         delete cfg.data;
         delete cfg.options;
 
+        self.jsonFile   = jsonFile;
+        self.json       = json;
+
         extend(data, self.prepareArgsData(args), true, false);
         extend(options, self.prepareArgsOptions(args), true, false);
         extend(cfg, self.prepareArgsCfg(args), true, false);
 
-        doc = new Documentor({
+        self.doc = doc  = new Documentor({
             itemSortCfg: cfg.itemSort,
             typeSortCfg: cfg.typeSort,
             contentSortCfg: cfg.contentSort
+        });
+
+        if (doneCallback) {
+            doc.on("done", doneCallback);
+        }
+
+        if (errorCallback) {
+            doc.on("error", errorCallback);
+        }
+
+        doc.on("error", function(e) {
+            throw e;
         });
 
         if (cfg.init) {
@@ -61,11 +80,6 @@ var Runner = Base.$extend({
             self.loadSrc(cfg, doc, jsonFile);
         }
 
-        //if (cfg.templates) {
-        //    self.loadTemplates(cfg, doc, jsonFile);
-        //}
-
-
         var rendererCls = doc.getRenderer(cfg.renderer || "default");
 
         if (!rendererCls) {
@@ -74,14 +88,18 @@ var Runner = Base.$extend({
 
         doc.prepare();
 
+
         var renderer = new rendererCls(doc, extend({}, options, {
 
             data: data,
-            out: cfg.out
+            out: cfg.out,
+            runner: self
 
         }, true, false));
 
-        renderer.writeOut(renderer.render());
+        renderer.writeOut(renderer.render(), function(){
+            self.doc.trigger("done");
+        });
     },
 
     runInit: function(cfg, doc, jsonFile) {
@@ -148,23 +166,6 @@ var Runner = Base.$extend({
         });
     },
 
-    /*loadTemplates: function(cfg, doc, jsonFile) {
-
-        if (typeof cfg.templates == "string") {
-            cfg.templates = [cfg.templates];
-        }
-
-        var self = this;
-
-        cfg.templates.forEach(function(hoorDir){
-
-            var dir = self.preparePath(hoorDir, jsonFile);
-
-            if (dir) {
-                doc.loadTemplates(dir);
-            }
-        });
-    },*/
 
 
     prepareArgsData: function(args) {
@@ -214,6 +215,8 @@ var Runner = Base.$extend({
         var res,
             normName = name;
 
+        jsonFile = jsonFile || this.jsonFile;
+
         if (isFile) {
             var tmp = name.split("/");
             tmp.pop();
@@ -241,10 +244,10 @@ var Runner = Base.$extend({
 
 }, {
 
-    run: function() {
+    run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
 
         var runner = new Runner;
-        runner.run();
+        return runner.run(runCfg, runData, runOptions, errorCallback, doneCallback);
 
     }
 

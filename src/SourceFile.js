@@ -94,6 +94,7 @@ module.exports = function(){
                     self.exportPath = self.path;
                 }
             }
+
         },
 
         pcall: function(name) {
@@ -457,6 +458,8 @@ module.exports = function(){
     }, {
 
         get: function(filePath, doc, options) {
+
+
             if (!all[filePath]) {
                 all[filePath] = new SourceFile({
                     path: filePath,
