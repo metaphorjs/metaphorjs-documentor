@@ -156,12 +156,15 @@ var Runner = Base.$extend({
 
         var self = this;
 
-        cfg.hooks.forEach(function(hoorDir){
+        cfg.hooks.forEach(function(hookDir){
 
-            var dir = self.preparePath(hoorDir, jsonFile);
+            var dir = self.preparePath(hookDir, jsonFile);
 
             if (dir) {
                 doc.loadHooks(dir);
+            }
+            else {
+                throw "Directory " + dir + " not found";
             }
         });
     },
