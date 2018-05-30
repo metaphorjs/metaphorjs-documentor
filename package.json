@@ -9,19 +9,19 @@
   "bin": {
     "mjs-doc": "bin/cli.js"
   },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/metaphorjs/metaphorjs-documentor.git"
-    },
-    "bugs": {
-        "url": "https://github.com/metaphorjs/metaphorjs-documentor/issues"
-    },
-    "homepage": "https://github.com/metaphorjs/metaphorjs-documentor",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metaphorjs/metaphorjs-documentor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/metaphorjs/metaphorjs-documentor/issues"
+  },
+  "homepage": "https://github.com/metaphorjs/metaphorjs-documentor",
   "author": "kuindji",
   "license": "MIT",
   "dependencies": {
     "fs.extra": "*",
-    "jsdom": "1.5.0",
+    "jsdom": "*",
     "marked": "*",
     "minimist": "*"
   }
