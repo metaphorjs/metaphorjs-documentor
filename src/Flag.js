@@ -1,6 +1,6 @@
 
 var Base = require("./Base.js"),
-    extend = require("../../metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs/src/func/extend.js"),
     fs = require("fs"),
     path = require("path");
 

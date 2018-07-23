@@ -11,19 +11,19 @@
     "mixin": {
         "default": {
             "files": [
-                ["src/**", {"as": "*"}]
+                ["src/**"]
             ]
         }
     },
 
     "docs": {
         "": {
-            "out": "docs",
+            "out": "docs/out.json",
             "src": [
                 "src/**"
             ],
             "includeExternal": false,
-            "renderer": "default",
+            "renderer": "json",
             "init": "assets/self-doc.js",
             "data": {
                 "title": "MetaphorJs.Documentor"
@@ -35,15 +35,39 @@
     },
 
     "build": {
+
+        "renderer": {
+            "auto": true,
+            "compile": false,
+            "wrap": {
+                "exported": true,
+                "deferred": true,
+                "args": ["window"]
+            },
+            "target": "assets/mjs-renderer.js",
+            "files": [
+                ["metaphorjs/metaphorjs.json", "core"],
+                [
+                    "metaphorjs/src/func/run.js",
+                    {
+                        "as": "run"
+                    }
+                ],
+                "metaphorjs/src/extra-directives/**",
+                "metaphorjs-model/src/directive/*",
+                "metaphorjs-dialog/src/class/dialog/Component.js",
+                "metaphorjs-validator/src/directive/**"
+            ],
+            "expose": "all",
+            "exposeIn": "MetaphorJsExport",
+            "returns": "MetaphorJsExport"
+        },
+
         "npm": {
             "auto": true,
             "target": "dist/metaphorjs.documentor.npm.js",
             "compile": false,
             "files": ["default"],
-            "omit": [
-                "metaphorjs-class/src/var/cs.js",
-                "metaphorjs-namespace/src/var/ns.js"
-            ],
             "exports": "documentorExport",
             "exposeIn": "documentorExport",
             "expose": [

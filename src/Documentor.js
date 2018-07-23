@@ -12,6 +12,7 @@ var Base = require("./Base.js"),
     Cache = require("metaphorjs/src/lib/Cache.js"),
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
+    setItemOrder = require("./func/setItemOrder.js"),
     nextUid = require("metaphorjs/src/func/nextUid.js");
 
 
@@ -282,7 +283,7 @@ module.exports = Base.$extend({
 
         self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
         self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
-        self.pcall("sortContent", self, self.contentSortCfg);
+        //self.pcall("sortContent", self, self.contentSortCfg);
 
         self.pcall("afterPrepare", self);
     },
@@ -316,7 +317,6 @@ module.exports = Base.$extend({
         dir = dir.replace("**", "");
 
         list.forEach(function(file){
-
             fn.call(
                 context,
                 file.replace(dir, "").replace("." + ext, "").replace(/\//g, '.'),
@@ -329,92 +329,114 @@ module.exports = Base.$extend({
     exportData: function(noHelpers) {
 
         var self = this,
-            exportData = self.pget("export");
+            exportData = self.pget("export"),
+            sections = {},
+            items = [];
 
         if (exportData) {
             return exportData(self);
         }
-        else {
 
-            var exprt = {
-                sections: {},
-                structure: {}
-            };
+        var exprt = {
+            sections: {},
+            items: [],
+            structure: {}
+        };
 
-            var sectionItems = {};
+        var sectionItems = {};
 
-            var addSection = function(section) {
-                if (!exprt.sections[section]) {
-                    exprt.sections[section] = [];
-                }
-                if (!sectionItems[section]) {
-                    sectionItems[section] = [];
-                }
-            };
+        var addSection = function(section) {
+            if (!sections[section]) {
+                sections[section] = [];
+            }
+            if (!sectionItems[section]) {
+                sectionItems[section] = [];
+            }
+        };
 
-            var addStructItem = function(type, groupName, name, id) {
-                if (!exprt.structure[type]) {
-                    exprt.structure[type] = {
-                        type: type,
-                        groupName: groupName,
-                        children: []
-                    };
-                }
-                exprt.structure[type].children.push({
-                    id: id,
-                    name: name
-                });
-            };
-
-            self.sections.forEach(addSection);
-
-            var currentGroup;
-
-            self.content.forEach(function(content){
-                var location = content.location || "top";
-                addSection(location);
-                addStructItem(content.type, content.groupName, content.title, content.id);
-
-                if (!currentGroup || currentGroup.type != content.type) {
-                    currentGroup = {
-                        isContentGroup: true,
-                        type: content.type,
-                        groupName: content.groupName,
-                        items: []
-                    };
-                    exprt.sections[location].push(currentGroup);
-                }
-
-                currentGroup.items.push(content.exportData());
+        var addStructItem = function(type, groupName, name, id) {
+            if (!exprt.structure[type]) {
+                exprt.structure[type] = {
+                    type: type,
+                    groupName: groupName,
+                    children: []
+                };
+            }
+            exprt.structure[type].children.push({
+                id: id,
+                name: name
             });
+        };
 
+        self.sections.forEach(addSection);
 
+        var currentGroup;
 
-            self.root.eachChild(function(item){
-                if (item.file.hidden){
-                    return;
-                }
-                var location    = item.location || "api",
-                    typeProps   = item.getTypeProps();
+        self.content.forEach(function(content){
+            var location = content.location || "top";
+            addSection(location);
+            addStructItem(content.type, content.groupName, content.title, content.id);
 
-                addSection(location);
-                //exprt.sections[location].children.push(item.exportData());
-                sectionItems[location].push(item);
-                addStructItem(item.type, typeProps.groupName, item.name, item.fullName);
-            });
-
-            var loc;
-
-            for (loc in sectionItems) {
-                self.root.exportChildren(sectionItems[loc], noHelpers).children.forEach(function(ch){
-                    exprt.sections[loc].push(ch);
-                });
+            if (!currentGroup || currentGroup.type != content.type) {
+                currentGroup = {
+                    isContentGroup: true,
+                    type: content.type,
+                    groupName: content.groupName,
+                    items: []
+                };
+                sections[location].push(currentGroup);
             }
 
+            currentGroup.items.push(content.exportData());
+        });
 
 
-            return exprt;
+
+        self.root.eachChild(function(item){
+            if (item.file.hidden){
+                return;
+            }
+            var location    = item.location || "api",
+                typeProps   = item.getTypeProps();
+
+            //addSection(location);
+            //exprt.sections[location].children.push(item.exportData());
+            //sectionItems[location].push(item);
+ 
+            
+
+            items.push(item);
+        });
+
+        var loc;
+
+        if (self.contentSortCfg) {
+            items = setItemOrder(items, self.contentSortCfg);
         }
+
+        items.forEach(function(item){
+            var typeProps   = item.getTypeProps();
+            addStructItem(item.type, typeProps.groupName, item.name, item.fullName);
+        });
+
+        self.root.exportChildren(items, noHelpers, true)
+            .forEach(function(ch){
+                exprt.items.push(ch);
+            });
+    
+ 
+
+        /*for (loc in sectionItems) {
+            self.root.exportChildren(sectionItems[loc], noHelpers)
+                .children.forEach(function(ch){
+                    sections[loc].push(ch);
+                });
+        }*/
+
+        //exprt.sections = sections;
+
+        return exprt;
+    
     },
 
     destroy: function() {

@@ -5,10 +5,10 @@ var Renderer = require("../Renderer.js"),
     fs = require("fs"),
     fse = require("fs.extra"),
     jsdom = require("jsdom"),
-    extend = require("../../../metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs/src/func/extend.js"),
     getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
     initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
-    Promise = require("metaphorjs-promise");
+    Promise = require("metaphorjs-promise/src/lib/Promise.js");
 
 
 module.exports = globalCache.add("renderer.default", Renderer.$extend({
@@ -37,8 +37,10 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         extend(self.data, globalCache.get("renderer.default").defaultData, false, false);
 
         if (!self.templateDir) {
-            // path relative to dist/
-            self.templateDir = path.normalize(__dirname + "/../assets/renderer/default");
+            // path relative to /dist or to /src/renderer
+            var dir = __dirname.split("/").pop(),
+                pfx = dir === "dist" ? __dirname +"/../" : __dirname + "/../../";
+            self.templateDir = path.normalize(pfx + "assets/renderer/default");
         }
 
         self.data.sourceTree = self.doc.exportData();
@@ -55,15 +57,23 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
         var util = require('util');
 
+        var dir = __dirname.split("/").pop(),
+            pfx = dir === "dist" ? __dirname +"/../" : __dirname + "/../../",
+            mjs = dir === "dist" ? 
+                    "../assets/mjs-renderer.js" : 
+                    path.normalize(__dirname + "/../../assets/mjs-renderer.js");
+
+        //var doc = new jsdom.JSDOM(tpl);
         var doc = jsdom.jsdom(tpl);
-        var MetaphorJs = require("metaphorjs")(doc.parentWindow);
+        
+        var MetaphorJs = require(mjs)(doc.defaultView);
 
         self.initMetaphor(MetaphorJs);
 
         initMetaphorTemplates(MetaphorJs);
 
         // path relative to dist/
-        self.loadTemplates(MetaphorJs, path.normalize(__dirname + "/../assets/templates"));
+        self.loadTemplates(MetaphorJs, path.normalize(pfx + "assets/templates"));
         self.loadTemplates(MetaphorJs, tplDir + "/templates");
 
         if (self.templates) {
@@ -84,6 +94,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
         self.runMetaphor(MetaphorJs, doc, self.data);
 
+        //var html = doc.serialize();
         var html = jsdom.serializeDocument(doc);
 
         MetaphorJs.destroy();

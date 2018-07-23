@@ -1,6 +1,6 @@
 
 
-var undf = require("../../../metaphorjs/src/var/undf.js"),
+var undf = require("metaphorjs/src/var/undf.js"),
     generateTemplateNames = require("./generateTemplateNames.js");
 
 module.exports = function(MetaphorJs){

@@ -1,8 +1,8 @@
 
 var Base = require("./Base.js"),
     Flag = require("./Flag.js"),
-    isArray = require("../../metaphorjs/src/func/isArray.js"),
-    emptyFn = require("../../metaphorjs/src/func/emptyFn.js");
+    isArray = require("metaphorjs/src/func/isArray.js"),
+    emptyFn = require("metaphorjs/src/func/emptyFn.js");
 
 
 module.exports = (function(){
@@ -180,6 +180,12 @@ module.exports = (function(){
             this.name = name;
         },
 
+        isThe: function(name) {
+            return this.name === name || 
+                    this.fullName === name ||
+                    this.fullName === this.type +':'+ name;
+        },
+
         setFullName: function(name) {
 
             var self = this;
@@ -289,7 +295,7 @@ module.exports = (function(){
 
             this.eachItem(function(item){
 
-                if (name == item.name) {
+                if (name === item.name) {
 
                     if (type) {
                         if (typeof type == "string") {
@@ -306,6 +312,11 @@ module.exports = (function(){
 
                     found.push(item);
                 }
+
+                if (name === item.fullName) {
+                    found.push(item);
+                }
+                
             }, null, thisOnly);
 
             return found;
@@ -462,7 +473,9 @@ module.exports = (function(){
             }
 
             for (k in self.flags) {
-                if (self.flags.hasOwnProperty(k) && k != "description") {
+                if (self.flags.hasOwnProperty(k) && 
+                    k != "description" && 
+                    k.substr(0,3) !== "md-") {
 
                     self.flags[k].forEach(function(flag){
                         if (flag.type == "boolean") {
@@ -489,17 +502,17 @@ module.exports = (function(){
             return exprt;
         },
 
-        exportChildren: function(items, noHelpers) {
+        exportChildren: function(items, noHelpers, plain) {
 
             var self = this,
-                exprt = {
+                exprt = plain ? [] :  {
                     children: [],
                     childTypes: []
                 },
                 chGroups = {},
                 typeProps;
 
-            if (!noHelpers) {
+            if (!noHelpers && !plain) {
                 exprt.getChildren = function(type) {
                     var i, l;
                     for (i = 0, l = this.children.length; i < l; i++) {
@@ -518,7 +531,7 @@ module.exports = (function(){
 
                 var type = child.type;
 
-                if (!chGroups[type]) {
+                if (!plain && !chGroups[type]) {
 
                     typeProps = child.getTypeProps();
 
@@ -533,8 +546,12 @@ module.exports = (function(){
                     exprt.childTypes.push(type);
                 }
 
-
-                chGroups[type].items.push(child.exportData(self, false, noHelpers));
+                if (!plain) {
+                    chGroups[type].items.push(child.exportData(self, false, noHelpers));
+                }
+                else {
+                    exprt.push(child.exportData(self, false, noHelpers));
+                }
 
             });
 
@@ -562,6 +579,12 @@ module.exports = (function(){
 
     });
 
+
+    Item.isThe = function(item, name) {
+        return item.name === name || 
+                item.fullName === name ||
+                item.fullName === item.type +':'+ name;
+    };
 
     return Item;
 

@@ -1,10 +1,12 @@
-<mjs-if value=".item.hasOwnProperty('description')">
-    <div mjs-each="descr in .item.description" class="item-description">
+<mjs-if value="!!this.item.hasOwnProperty('description')">
+    <div {each}="descr in .item.description" 
+         class="item-description">
         <mjs-if value=".descr.contentType == 'string'">
             <mjs-bind-html value=".descr.content | markdown"></mjs-bind-html>
         </mjs-if>
         <mjs-if value=".descr.contentType == 'code'">
-            <pre><code class="language-{{ .descr.fileType | prismClass }}">{{ .descr.content }}</code></pre>
+            <pre><code {class}="'language-' + .descr.fileType | prismClass" 
+                       {bind}=".descr.content"></code></pre>
         </mjs-if>
     </div>
 </mjs-if>

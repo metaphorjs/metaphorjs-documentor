@@ -42,6 +42,9 @@ module.exports = (function(){
 
             if (part.charAt(0) == '@') {
 
+                // description came from previous line
+                // new line starts with @ so its time 
+                // to finish description
                 if (description) {
                     parts.push({flag: descrFlag, content: description, sub: [], inx: partInx});
                     description = "";
@@ -52,7 +55,6 @@ module.exports = (function(){
                 flag    = null;
 
                 if (part.charAt(part.length - 1) == '{') {
-
                     sub     = getCurly(text, inx + lines[i].length - 1);
                     part    = part.substring(0, part.length - 2).trim();
                     i      += sub.trim().split("\n").length + 1;
@@ -73,6 +75,7 @@ module.exports = (function(){
                 else if (part.charAt(part.length - 1) != '}' &&
                          part.replace(flagReg, "").trim() != "") {
 
+                    // add all following non-@ lines to current flag
                     for (j = i + 1; j < l; j++) {
                         if (lines[j].trim().substr(0, 1) != '@') {
                             part += "\n" + lines[j];
@@ -83,7 +86,6 @@ module.exports = (function(){
                         }
                     }
                 }
-
 
                 if (sub) {
                     sub = parseComment.call(this, sub, file);

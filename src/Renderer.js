@@ -1,6 +1,6 @@
 
 var Base = require("./Base.js"),
-    extend = require("../../metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs/src/func/extend.js"),
     fs = require("fs"),
     eachLink = require("./func/eachLink.js");
 
@@ -39,7 +39,7 @@ module.exports = Base.$extend({
 
             var item;
             if ((item = self.doc.getItem(type)) && !item.file.hidden) {
-                return '['+ item.name +'](#'+ item.fullName + ')';
+                return '['+ item.fullName +'](#'+ item.fullName + ')';
             }
             else {
                 return type;
@@ -98,8 +98,7 @@ module.exports = Base.$extend({
 
         self.doc.pcall("renderer.beforeMetaphor", MetaphorJs, self, self.doc);
 
-        var select = require("metaphorjs-select")(doc.parentWindow),
-            appNodes    = select("[mjs-app]", doc),
+        var appNodes    = MetaphorJs.select("[mjs-app]"),
             i, l, el;
 
         for (i = -1, l = appNodes.length; ++i < l;){
@@ -121,8 +120,9 @@ module.exports = Base.$extend({
                     return '['+ flag.content +'](#'+ flag.ref +')';
                 }
                 if (typeof flag.content == "string") {
-                    flag.content = eachLink(flag.content, item, function(type, name, url) {
-                        return '['+ (name || url) +']('+ (url || name) +')';
+                    flag.content = eachLink(flag.content, item, 
+                        function(type, name, url, fullName) {
+                        return '['+ (fullName || name || url) +']('+ (url || name) +')';
                     });
                 }
             });

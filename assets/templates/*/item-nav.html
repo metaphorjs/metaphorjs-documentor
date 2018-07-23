@@ -1,13 +1,16 @@
-<ul mjs-each="group in .item.children" class="item-nav">
-    <li class="item-nav-group-name">{{.group.groupName}}</li>
-    <li mjs-each="item in .group.items"
-        mjs-init=".isFunction = .item.type == 'function' ||
+<ul {each}="group in .item.children" class="item-nav">
+    <li class="item-nav-group-name" 
+        {bind}=".group.groupName"></li>
+    <li {each}="item in .group.items"
+        {init}=".isFunction = .item.type == 'function' ||
                         .item.type == 'method' ||
-                        (.item.plainFlags.hasOwnProperty('type') && .item.plainFlags.type.indexOf('function') != -1)"
-        class="item-nav-property item-nav-property-{{ .item.type }}">
+                        (.item.plainFlags.hasOwnProperty('type') && 
+                            .item.plainFlags.type.indexOf('function') != -1)"
+        class="item-nav-property"
+        {class}="'item-nav-property-' + .item.type">
 
-        <a href="#{{ .item.fullName }}">
-            <span class="item-nav-item-name">{{ .item.name }}</span>
+        <a [href]="'#' + .item.fullName" [title]=".item.name">
+            <span class="item-nav-item-name" {bind}=".item.name"></span>
             <mjs-if value=".isFunction">
                 <mjs-if value=".item.childTypes.indexOf('param') != -1">
                     <span class="item-nav-item-arguments">({{ .item.getChildren('param') | collect:"name" | join:", " }})</span>

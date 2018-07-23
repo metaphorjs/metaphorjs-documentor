@@ -4,7 +4,7 @@ var Base = require("./Base.js"),
     path = require("path"),
     Item = require("./Item.js"),
     Comment = require("./Comment.js"),
-    extend = require("../../metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs/src/func/extend.js"),
     hideLinks = require("./func/hideLinks.js");
 
 module.exports = function(){

@@ -1,7 +1,7 @@
 
 module.exports = function hideLinks(comment) {
 
-    comment = comment.replace(/{\s*@(link|tutorial|code|page)[^{@]+}/ig, function(match){
+    comment = comment.replace(/{\s*@(link|tutorial|code|page)[^{@}]+}/ig, function(match){
         if (match.substr(match.length - 2) == '\\') {
             return match;
         }

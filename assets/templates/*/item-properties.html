@@ -1,8 +1,13 @@
 <mjs-each value="group in .item.children">
-    <div mjs-if=".group.type != 'param' && .$parent.item.level == 1"
-         class="item-property-group-name">{{.group.groupName}}</div>
-    <ul class="item-properties item-properties-{{ .group.type }} level-{{ .$parent.item.level - 1 }}">
-        <li mjs-each="item in .group.items" class="item-property item-property-{{ .item.type }}">
+    <div {if}=".group.type != 'param' && .$parent.item.level == 1"
+         class="item-property-group-name" 
+         {bind}=".group.groupName"></div>
+    <ul class="item-properties"
+        {class}="['item-properties-'+ .group.type, 
+                  'level-'+ .$parent.item.level - 1]">
+        <li {each}="item in .group.items" 
+            class="item-property"
+            {class}="'item-property-'+ .item.type">
             <mjs-include src=".item.template"></mjs-include>
         </li>
     </ul>

@@ -1,5 +1,5 @@
 
-var rUrl = require("../../../metaphorjs/src/var/rUrl.js");
+var rUrl = require("metaphorjs/src/var/rUrl.js");
 
 module.exports = function(str, cmtItem, cb, context) {
 
@@ -11,7 +11,7 @@ module.exports = function(str, cmtItem, cb, context) {
                 return match;
             }
 
-            var name, url, item;
+            var name, url, item, fullName;
 
 
             if ((item = cmtItem.doc.getItem(content)) ||
@@ -24,6 +24,7 @@ module.exports = function(str, cmtItem, cb, context) {
 
                 name = item.name;
                 url = '#' + item.fullName;
+                fullName = item.fullName;
             }
             else {
                 name = content.replace(rUrl, function(urlMatch){
@@ -36,7 +37,7 @@ module.exports = function(str, cmtItem, cb, context) {
                 }
             }
 
-            return cb.call(context, type, name, url, match);
+            return cb.call(context, type, name, url, fullName, match);
     });
 
 };

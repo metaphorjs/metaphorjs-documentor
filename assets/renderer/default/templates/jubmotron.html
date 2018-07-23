@@ -1,7 +1,7 @@
 <div class="jumbotron">
     <div class="container">
-        <h1>{{.title}}</h1>
-        <p mjs-if=".description">{{.description}}</p>
-        <p mjs-if=".version">{{.version}}</p>
+        <h1 {bind}=".title"></h1>
+        <p {if}=".description" {bind}=".description"></p>
+        <p {if}=".version" {bind}=".version"></p>
     </div>
 </div>

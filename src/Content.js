@@ -2,7 +2,7 @@
 var Base = require("./Base.js"),
     fs = require("fs"),
     path = require("path"),
-    extend = require("../../metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs/src/func/extend.js");
 
 module.exports = Base.$extend({
 

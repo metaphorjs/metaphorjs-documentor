@@ -2,14 +2,15 @@
 <mjs-include src=".item.fileType + '.item-flags'"></mjs-include>
 <mjs-include src=".item.fileType + '.item-description'"></mjs-include>
 
-<mjs-if value=".item.level == 1 && .item.children.length && .item.type != 'function'">
-    <div class="col-md-2 nopadding item-nav-container">
+<div {if}=".item.level == 1 && .item.children.length && .item.type != 'function'"
+    class="row">
+    <div class="col-2 col-md-2 nopadding item-nav-container">
         <mjs-include src=".item.fileType + '.item-nav'"></mjs-include>
     </div>
-    <div class="col-md-10 nopadding item-properties-container">
+    <div class="col-10 col-md-10 nopadding item-properties-container">
         <mjs-include src=".item.fileType + '.item-properties'"></mjs-include>
     </div>
-</mjs-if>
+</div>
 
 <mjs-if value=".item.level > 1 || .item.type == 'function'">
     <mjs-include src=".item.fileType + '.item-properties'"></mjs-include>

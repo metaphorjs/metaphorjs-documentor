@@ -4,8 +4,9 @@ var Base = require("./Base.js"),
     fs = require("fs"),
     path = require("path"),
     Documentor = require("./Documentor.js"),
-    mjsBuild = require("metaphorjs-build"),
-    extend = require("../../metaphorjs/src/func/extend.js");
+    JsonFile = require("metaphorjs-build/src/class/JsonFile.js"),
+    Build = require("metaphorjs-build/src/class/Build.js")
+    extend = require("metaphorjs/src/func/extend.js");
 
 var Runner = Base.$extend({
 
@@ -19,7 +20,7 @@ var Runner = Base.$extend({
             args        = minimist(process.argv.slice(2), {boolean: true}),
             profileName = runCfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
-            jsonFile    = fs.existsSync(json) ? new mjsBuild.JsonFile(json) : null,
+            jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
             profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
                           jsonFile.docs[profileName] : {},
             data        = extend({}, profile.data, runData, true, false),
@@ -113,7 +114,7 @@ var Runner = Base.$extend({
     },
 
     loadFiles: function(cfg, doc, jsonFile) {
-        var build = new mjsBuild.Build(jsonFile);
+        var build = new Build(jsonFile);
         build.collectFiles(cfg);
         build.prepareBuildList();
 

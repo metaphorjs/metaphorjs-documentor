@@ -82,6 +82,7 @@ module.exports = (function(){
         classes("class", "Class", "Classes"),
         classes("interface", "Interface", "Interfaces"),
         classes("mixin", "Mixin", "Mixins"),
+        classes("plugin", "Plugin", "Plugins"),
         funcs("function", "Function", "Functions"),
         funcs("method", "Method", "Methods"),
         funcs("event", "Event", "Events"),

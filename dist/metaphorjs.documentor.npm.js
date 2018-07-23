@@ -1,18 +1,4 @@
-
-
-var MetaphorJs = {
-
-
-};
-
-
-var Namespace = require("metaphorjs-namespace");
-
-var ns = new Namespace(MetaphorJs, "MetaphorJs");
-
-var Class = require("metaphorjs-class");
-
-var cs = new Class(ns);
+var __MetaphorJsPrebuilt = {};
 
 
 var slice = Array.prototype.slice;
@@ -38,7 +24,7 @@ var varType = function(){
     };
 
 
-    /**
+    /*
      * 'string': 0,
      * 'number': 1,
      * 'boolean': 2,
@@ -54,6 +40,9 @@ var varType = function(){
      * @param {*} value
      * @returns {number}
      */
+
+
+
     return function varType(val) {
 
         if (!val) {
@@ -71,7 +60,7 @@ var varType = function(){
             return -1;
         }
 
-        if (num == 1 && isNaN(val)) {
+        if (num === 1 && isNaN(val)) {
             return 8;
         }
 
@@ -414,7 +403,6 @@ var getFileList = function(directory, ext) {
         });
     };
 
-
     if (levels > 0 || isDir(directory)) {
         readDir(directory);
     }
@@ -506,7 +494,7 @@ var Flag = Base.$extend({
  * @returns {boolean}
  */
 function isArray(value) {
-    return typeof value == "object" && varType(value) === 5;
+    return typeof value === "object" && varType(value) === 5;
 };
 
 
@@ -1819,6 +1807,17 @@ var bind = Function.prototype.bind ?
               };
 
 
+/**
+ * @param {Function} fn
+ * @param {Object} context
+ * @param {[]} args
+ * @param {number} timeout
+ */
+function async(fn, context, args, timeout) {
+    return setTimeout(function(){
+        fn.apply(context, args || []);
+    }, timeout || 0);
+};
 
 function isFunction(value) {
     return typeof value == 'function';
@@ -1835,7 +1834,8 @@ var ObservableEvent = (function(){
      * @class ObservableEvent
      * @private
      */
-    var ObservableEvent = function(name, returnResult, autoTrigger, triggerFilter, filterContext) {
+    var ObservableEvent = function(name, returnResult, autoTrigger,
+                                   triggerFilter, filterContext) {
 
         var self    = this;
 
@@ -1847,11 +1847,12 @@ var ObservableEvent = (function(){
         self.suspended      = false;
         self.lid            = 0;
 
-        if (typeof returnResult == "object" && returnResult !== null) {
+        if (typeof returnResult === "object" && returnResult !== null) {
             extend(self, returnResult, true, false);
         }
         else {
-            self.returnResult = returnResult === undf ? null : returnResult; // first|last|all
+            // first|last|all
+            self.returnResult = returnResult === undf ? null : returnResult;
             self.autoTrigger = autoTrigger;
             self.triggerFilter = triggerFilter;
             self.filterContext = filterContext;
@@ -1951,7 +1952,7 @@ var ObservableEvent = (function(){
             if (self.autoTrigger && self.lastTrigger && !self.suspended) {
                 var prevFilter = self.triggerFilter;
                 self.triggerFilter = function(l){
-                    if (l.id == id) {
+                    if (l.id === id) {
                         return prevFilter ? prevFilter(l) !== false : true;
                     }
                     return false;
@@ -1980,7 +1981,7 @@ var ObservableEvent = (function(){
         /**
          * @method
          * @param {function} fn Callback function { @required }
-         * @param {object} context Function's "this" object
+         * @param {object} context Callback context
          */
         un: function(fn, context) {
 
@@ -1991,7 +1992,7 @@ var ObservableEvent = (function(){
                 id;
 
             if (fn == parseInt(fn)) {
-                id      = fn;
+                id      = parseInt(fn);
             }
             else {
                 context = context || fn;
@@ -2003,14 +2004,14 @@ var ObservableEvent = (function(){
             }
 
             for (var i = 0, len = listeners.length; i < len; i++) {
-                if (listeners[i].id == id) {
+                if (listeners[i].id === id) {
                     inx = i;
                     delete listeners[i].uniContext[uni];
                     break;
                 }
             }
 
-            if (inx == -1) {
+            if (inx === -1) {
                 return false;
             }
 
@@ -2027,8 +2028,8 @@ var ObservableEvent = (function(){
         /**
          * @method
          * @param {function} fn Callback function { @required }
-         * @param {object} context Function's "this" object
-         * @return bool
+         * @param {object} context Callback context
+         * @return boolean
          */
         hasListener: function(fn, context) {
 
@@ -2041,7 +2042,7 @@ var ObservableEvent = (function(){
                 context = context || fn;
 
                 if (!isFunction(fn)) {
-                    id  = fn;
+                    id  = parseInt(fn);
                 }
                 else {
                     id  = context[self.uni];
@@ -2052,7 +2053,7 @@ var ObservableEvent = (function(){
                 }
 
                 for (var i = 0, len = listeners.length; i < len; i++) {
-                    if (listeners[i].id == id) {
+                    if (listeners[i].id === id) {
                         return true;
                     }
                 }
@@ -2136,16 +2137,18 @@ var ObservableEvent = (function(){
                 self.lastTrigger = slice.call(arguments);
             }
 
-            if (listeners.length == 0) {
+            if (listeners.length === 0) {
                 return null;
             }
 
-            var ret     = returnResult == "all" || returnResult == "merge" ?
+            var ret     = returnResult === "all" || returnResult === "merge" ?
                           [] : null,
                 q, l,
                 res;
 
-            if (returnResult == "first") {
+
+
+            if (returnResult === "first") {
                 q = [listeners[0]];
             }
             else {
@@ -2169,36 +2172,46 @@ var ObservableEvent = (function(){
                     continue;
                 }
 
+                if (l.filter && l.filter.apply(l.filterContext || l.context, args) === false) {
+                    continue;
+                }
+
                 l.count++;
 
                 if (l.count < l.start) {
                     continue;
                 }
 
-                res = l.fn.apply(l.context, args);
+                if (l.async) {
+                    res = null;
+                    async(l.fn, l.context, args);
+                }
+                else {
+                    res = l.fn.apply(l.context, args);
+                }
 
                 l.called++;
 
-                if (l.called == l.limit) {
+                if (l.called === l.limit) {
                     self.un(l.id);
                 }
 
-                if (returnResult == "all") {
+                if (returnResult === "all") {
                     ret.push(res);
                 }
-                else if (returnResult == "merge" && res) {
+                else if (returnResult === "merge" && res) {
                     ret = ret.concat(res);
                 }
-                else if (returnResult == "first") {
+                else if (returnResult === "first") {
                     return res;
                 }
-                else if (returnResult == "nonempty" && res) {
+                else if (returnResult === "nonempty" && res) {
                     return res;
                 }
-                else if (returnResult == "last") {
+                else if (returnResult === "last") {
                     ret = res;
                 }
-                else if (returnResult == false && res === false) {
+                else if (returnResult === false && res === false) {
                     return false;
                 }
             }
@@ -2228,7 +2241,7 @@ var Observable = (function(){
      * @code examples/collector.js
      *
      * @class Observable
-     * @version 1.1
+     * @version 1.2
      * @author johann kuindji
      * @link https://github.com/kuindji/metaphorjs-observable
      */
@@ -2258,6 +2271,7 @@ var Observable = (function(){
         *   "all" -- return all results as array<br>
         *   "merge" -- merge all results into one array (each result must be array)<br>
         *   "first" -- return result of the first handler (next listener will not be called)<br>
+        *   "nonempty" -- return first nonempty result<br>
         *   "last" -- return result of the last handler (all listeners will be called)<br>
         * }
         * @param {bool} autoTrigger {
@@ -2273,6 +2287,7 @@ var Observable = (function(){
         *   @param {[]} arguments
         *   @return {bool}
         * }
+        * @param {object} filterContext triggerFilter's context
         * @return {ObservableEvent}
         */
 
@@ -2281,10 +2296,10 @@ var Observable = (function(){
          * @param {string} name
          * @param {object} options {
          *  @type {string} returnResult
-         *  @param {bool} autoTrigger
-         *  @param {function} triggerFilter
+         *  @type {bool} autoTrigger
+         *  @type {function} triggerFilter
+         *  @type {object} filterContext
          * }
-         * @param {object} filterContext
          * @returns {ObservableEvent}
          */
         createEvent: function(name, returnResult, autoTrigger, triggerFilter, filterContext) {
@@ -2338,6 +2353,7 @@ var Observable = (function(){
          *      @type {[]} append Append parameters
          *      @type {[]} prepend Prepend parameters
          *      @type {bool} allowDupes allow the same handler twice
+         *      @type {bool} async run eveny asynchronously
         * }
         */
         on: function(name, fn, context, options) {
@@ -2407,7 +2423,7 @@ var Observable = (function(){
                 if (!events[name]) {
                     return false;
                 }
-                return events[name].hasListener(fn, context);
+                return fn ? events[name].hasListener(fn, context) : true;
             }
             else {
                 for (name in events) {
@@ -2417,6 +2433,16 @@ var Observable = (function(){
                 }
                 return false;
             }
+        },
+
+        /**
+        * @method
+        * @access public
+        * @param {string} name Event name { @required }
+        * @return bool
+        */
+        hasEvent: function(name) {
+            return !!this.events[name];
         },
 
 
@@ -2434,10 +2460,17 @@ var Observable = (function(){
         */
         removeAllListeners: function(name) {
             var events  = this.events;
-            if (!events[name]) {
-                return;
+            if (name) {
+                if (!events[name]) {
+                    return;
+                }
+                events[name].removeAllListeners();
             }
-            events[name].removeAllListeners();
+            else {
+                for (name in events) {
+                    events[name].removeAllListeners();
+                }
+            }
         },
 
         /**
@@ -2592,15 +2625,44 @@ var Observable = (function(){
 
 /**
  * @mixin Observable
+ * Mixin adds observable features to the host object
  */
 ns.register("mixin.Observable", {
 
     /**
+     * @private
      * @type {Observable}
      */
     $$observable: null,
+
+    /**
+     * @private
+     * @type {object}
+     */
     $$callbackContext: null,
 
+    /**
+     * @protected
+     * @type {object} {
+     *      Override this to define event properties. 
+     *      Object's key is event name, value - either returnResult or 
+     *      options object. See Observable.createEvent()
+     * }
+     */
+    $$events: null,
+
+    /**
+     * @private
+     * @param {object} cfg {
+     *      @type {object} callback {
+     *          Here, except for 'context', '$context' and 'scope', 
+     *          keys are event names and values are listeners. 
+     *          @code examples/mixin.js
+     *          @type {object} context All given listeners context
+     *          @type {object} scope The same
+     *      }
+     * }
+     */
     $beforeInit: function(cfg) {
 
         var self = this;
@@ -2610,21 +2672,31 @@ ns.register("mixin.Observable", {
         self.$initObservable(cfg);
     },
 
+    /**
+     * @private
+     * @param {object} cfg
+     */
     $initObservable: function(cfg) {
 
-        var self = this;
+        var self    = this,
+            obs     = self.$$observable,
+            i;
 
         if (cfg && cfg.callback) {
             var ls = cfg.callback,
-                context = ls.context || ls.scope,
-                i;
+                context = ls.context || ls.scope || ls.$context,
+                events = extend({}, self.$$events, ls.$events, true, false);
+
+            for (i in events) {
+                obs.createEvent(i, events[i]);
+            }
 
             ls.context = null;
             ls.scope = null;
 
             for (i in ls) {
                 if (ls[i]) {
-                    self.$$observable.on(i, ls[i], context || self);
+                    obs.on(i, ls[i], context || self);
                 }
             }
 
@@ -2634,32 +2706,55 @@ ns.register("mixin.Observable", {
                 self.$$callbackContext = context;
             }
         }
+        else if (self.$$events) {
+            for (i in self.$$events) {
+                obs.createEvent(i, self.$$events[i]);
+            }
+        }
     },
 
+    /**
+     * @use Observable.on
+     */
     on: function() {
         var o = this.$$observable;
-        return o.on.apply(o, arguments);
+        return o ? o.on.apply(o, arguments) : null;
     },
 
+    /**
+     * @use Observable.un
+     */
     un: function() {
         var o = this.$$observable;
-        return o.un.apply(o, arguments);
+        return o ? o.un.apply(o, arguments) : null;
     },
 
+    /**
+     * @use Observable.once
+     */
     once: function() {
         var o = this.$$observable;
-        return o.once.apply(o, arguments);
+        return o ? o.once.apply(o, arguments) : null;
     },
 
+    /**
+     * @use Observable.trigger
+     */
     trigger: function() {
         var o = this.$$observable;
-        return o.trigger.apply(o, arguments);
+        return o ? o.trigger.apply(o, arguments) : null;
     },
 
+    /**
+     * @private
+     */
     $beforeDestroy: function() {
         this.$$observable.trigger("before-destroy", this);
     },
 
+    /**
+     * @private
+     */
     $afterDestroy: function() {
         var self = this;
         self.$$observable.trigger("destroy", self);
@@ -3107,7 +3202,43 @@ var Documentor = Base.$extend({
 
 
 
-var rUrl = /^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
+///^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
+
+// https://gist.github.com/dperini/729294
+var rUrl = new RegExp(
+    "^" +
+        // protocol identifier
+    "(?:(?:https?|ftp)://)" +
+        // user:pass authentication
+    "(?:\\S+(?::\\S*)?@)?" +
+    "(?:" +
+        // IP address exclusion
+        // private & local networks
+    "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
+    "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
+    "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
+        // IP address dotted notation octets
+        // excludes loopback network 0.0.0.0
+        // excludes reserved space >= 224.0.0.0
+        // excludes network & broacast addresses
+        // (first & last IP address of each class)
+    "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
+    "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
+    "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
+    "|" +
+        // host name
+    "(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)" +
+        // domain name
+    "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*" +
+        // TLD identifier
+    "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))" +
+    ")" +
+        // port number
+    "(?::\\d{2,5})?" +
+        // resource path
+    "(?:/\\S*)?" +
+    "$", "i"
+);
 
 
 
@@ -3307,11 +3438,922 @@ var Renderer = Base.$extend({
 
 });
 
-var minimist = require("minimist"),
-    
-    
-    
-    mjsBuild = require("metaphorjs-build");
+
+
+function isString(value) {
+    return typeof value == "string" || value === ""+value;
+    //return typeof value == "string" || varType(value) === 0;
+};
+
+
+
+
+
+var JsonFile = function(){
+
+    var insertVars = function(string, root) {
+
+        return string.replace(/@{([^}]+)}/ig, function(match, key) {
+
+            if (root[key]) {
+                return root[key];
+            }
+            else {
+                return "";
+            }
+        });
+    };
+
+    var prepareData = function(data, root) {
+
+        var k, val, i, l;
+
+        for (k in data) {
+
+            val = data[k];
+
+            if (isString(val)) {
+                data[k] = insertVars(val, root);
+            }
+            else if (isArray(val)) {
+                for (i = 0, l = val.length; i < l; i++) {
+                    prepareData(data[k][i], root);
+                }
+            }
+            else if (val && typeof val == "object") {
+                prepareData(data[k], root);
+            }
+        }
+    };
+
+
+    var JsonFile = function(jsonFilePath) {
+
+        var self    = this;
+
+        self.path   = path.normalize(jsonFilePath);
+        self.base   = path.dirname(self.path) + '/';
+        self.build  = {};
+        self.test   = [];
+        self.push   = [];
+        self.mixin  = {};
+
+        var json    = require(self.path),
+            key;
+
+        prepareData(json, json);
+
+        for (key in json) {
+            self[key] = json[key];
+        }
+    };
+
+    JsonFile.prototype = {
+
+        /**
+         * @type {string}
+         */
+        path: null,
+
+        /**
+         * @type {string}
+         */
+        base: null,
+
+        /**
+         * @type {string}
+         */
+        target: null,
+
+        /**
+         * @type {bool}
+         */
+        compile: true,
+
+        /**
+         * @type {[]}
+         */
+        test: null,
+
+        /**
+         * @type {string}
+         */
+        version: null,
+
+        /**
+         * @type {[]}
+         */
+        push: null,
+
+        /**
+         * @type {Object}
+         */
+        mixin: null,
+
+        /**
+         * @type {Object}
+         */
+        build: null
+    };
+
+    var all = {};
+
+    JsonFile.get = function(filePath) {
+        filePath = path.normalize(filePath);
+        if (!all[filePath]) {
+            all[filePath] = new JsonFile(filePath);
+        }
+        return all[filePath];
+    };
+
+
+    return JsonFile;
+
+}();
+
+
+
+var resolvePath = function(toResolve, locations, resolveDir) {
+
+    if (toResolve.indexOf("./") !== 0 &&
+        toResolve.indexOf("../") !== 0 &&
+        toResolve.indexOf("*") === -1 &&
+        toResolve.indexOf("/") === -1 &&
+        toResolve.indexOf(".js") !== toResolve.length - 3) {
+        return true;
+    }
+
+    locations = locations || [];
+
+    if (process.env.METAPHORJS_PATH) {
+        locations.push(process.env.METAPHORJS_PATH);
+    }
+    if (process.env.NODE_PATH) {
+        locations = locations.concat(process.env.NODE_PATH.split(path.delimiter));
+    }
+
+    var norm = toResolve,
+        inx,
+        i, l,
+        loc,
+        dirMode = !!resolveDir,
+        abs = norm.substr(0, 1) === "/";
+
+    while ((inx = norm.indexOf('*')) !== -1) {
+        norm = norm.substr(0, inx);
+        norm = norm.split('/');
+        norm.pop();
+        norm = norm.join("/");
+        dirMode = true;
+    }
+
+    if (abs) {
+        if (fs.existsSync(norm)) {
+            if (dirMode || !isDir(norm)) {
+                return path.normalize(norm) + toResolve.replace(norm, "");
+            }
+        }
+    }
+
+    for (i = 0, l = locations.length; i < l; i++) {
+        loc = locations[i];
+
+        if (loc.substr(loc.length - 1) !== '/') {
+            loc += '/';
+        }
+
+        if (fs.existsSync(loc + norm)) {
+            if (dirMode || !isDir(loc + norm)) {
+                return path.normalize(loc + norm) + toResolve.replace(norm, "");
+            }
+        }
+    }
+
+    try {
+        var resolved = require.resolve(toResolve);
+        if (resolved === toResolve) {
+            return true;
+        }
+        return resolved;
+    }
+    catch (thrown) {}
+
+    return false;
+};
+
+
+
+
+
+var File = function(){
+
+
+    var rStrict         = new RegExp("'use "+ "strict'|" + '"use ' + 'strict";?', "g"),
+        rRequires       = /([^\s]+)\s*=\s*require\(['|"]([^)]+)['|"]\)\s*,?/,
+        rInclude        = /[^=\s]?\s*(require\(['|"]([^)]+)['|"]\);?)/,
+        rEmptyVar       = /var[\s|,]*;/g,
+        rVarSpace       = /var\s+/g,
+        rTrailComma     = /,\s*;/g,
+
+
+
+        allFiles        = {},
+
+        getOrCreate     = function(file) {
+
+            if (!allFiles[file]) {
+                allFiles[file] = new File(file);
+            }
+
+            return allFiles[file];
+        };
+
+
+
+
+    var File = function(filePath, temporary) {
+
+        var self    = this;
+
+        self.id         = "_f_" + nextUid();
+        self.base       = path.dirname(filePath) + "/";
+        self.path       = filePath;
+        self.as         = [];
+        self.requires   = [];
+        self.requiredBy = [];
+        self.localRequires = [];
+
+        self.reqNames   = {};
+
+        self.temporary  = temporary;
+
+        self.process();
+        self.findUnused();
+    };
+
+    File.prototype = {
+
+        id: null,
+        base: null,
+        path: null,
+        content: "",
+        as: null,
+        requires: null,
+        requiredBy: null,
+        processed: false,
+        reqNames: null,
+
+        requiresUniqueAlias: false,
+        localRequires: null,
+        wrap: false,
+        temporary: false,
+
+        /**
+         * @param {Object} options
+         * @returns {string}
+         */
+        getContent: function(options) {
+
+            var self        = this,
+                content     = self.content,
+                as          = self.as.slice(),
+                inx,
+                match,
+                name, funcName;
+
+            //if (!as.length) {
+            //    self.addAs("*");
+            //    as          = self.as.slice();
+            //}
+
+            options = options || {};
+
+            if (this.requiresUniqueAlias) {
+                as.push(this.id);
+            }
+
+            if (!options.keepExports && content.indexOf("module.exports") != -1) {
+
+                if (options.returnExports) {
+
+                    content     = content.replace(/module\.exports\s*=/, "return");
+
+                }
+                else {
+
+                    match       = /module\.exports\s*=\s*([^(\['"+. ]+)\s*;/.exec(content);
+                    name        = match ? match[1] : null;
+
+                    match       = /module\.exports\s*=\s*function\s+([^( ]+)/i.exec(content);
+                    funcName    = match ? match[1] : null;
+
+                    if (name && (inx = as.indexOf(name)) != -1) {
+                        as.splice(inx, 1);
+                    }
+
+                    if (name && as.length == 0) {
+                        content = content.replace(/module\.exports\s*=\s*[^;]+;/, "");
+                    }
+                    else {
+
+                        if (as.length == 0 || (funcName && as.length == 1 && as[0] == funcName)) {
+                            content = content.replace(/module\.exports\s*=\s*/, "");
+                            //throw "No export names found for " + self.path + "; required by: " + self.requiredBy.join(", ");
+                        }
+                        else {
+
+                            if (as.length > 1) {
+                                content = "var " + as.join(", ") + ";\n" + content;
+                                content = content.replace("module.exports", as.join(" = "));
+                            }
+                            else {
+                                content = content.replace("module.exports", "var " + as[0]);
+                            }
+                        }
+                    }
+                }
+
+                //if (this.wrap) {
+                //    content = "(function(){\n"+content+"\n}());";
+                //}
+
+                content = content.replace(rStrict, "");
+            }
+
+            return content;
+        },
+
+        process:function() {
+
+            var self        = this,
+                content     = fs.readFileSync(self.path).toString(),
+                base        = self.base,
+                start       = 0,
+                required,
+                matches;
+
+            if (self.processed) {
+                return;
+            }
+
+            while (matches = rRequires.exec(content.substr(start))) {
+
+                required    = resolvePath(matches[2], [base]);
+
+                if (required === true) {
+                    start += matches.index + matches[2].length;
+                    continue;
+                }
+                else if (required === false) {
+                    throw matches[2] + " required in " + self.path + " does not exist";
+                }
+
+                content     = content.replace(matches[0], "");
+
+                self.reqNames[matches[1]] = required;
+
+                required    = getOrCreate(required);
+                required.addAs(matches[1]);
+
+                if (required.doesRequire(self.path)) {
+                    throw "Two files require each other: " + required.path + " <-> " + self.path;
+                }
+
+                self.addRequired(required.path);
+                required.addRequiredBy(self.path);
+            }
+
+            content = content.replace(rEmptyVar, "");
+            content = content.replace(rTrailComma, ";");
+            start   = 0;
+
+            while (matches = rInclude.exec(content.substr(start))) {
+
+                required    = resolvePath(matches[2], [base]);
+
+                if (required === true) {
+                    start += matches[2].length;
+                    continue;
+                }
+                else if (required === false) {
+                    throw matches[2] + " required in " + self.path + " does not exist";
+                }
+
+                content     = content.replace(matches[1], "");
+                required    = getOrCreate(required);
+
+                if (required.doesRequire(self.path)) {
+                    throw "Two files require each other: " + required.path + " <-> " + self.path;
+                }
+
+                self.addRequired(required.path);
+                required.addRequiredBy(self.path);
+            }
+
+
+            self.content    = content;
+            self.processed  = true;
+        },
+
+        doesRequire: function(file) {
+            return this.requires.indexOf(file) != -1;
+        },
+
+        addRequired: function(file) {
+            var self = this;
+
+            if (self.requires.indexOf(file) == -1) {
+                self.requires.push(file);
+            }
+        },
+
+        addLocalRequired: function(desiredName, fileId) {
+            this.localRequires.push({
+                desiredName: desiredName,
+                fileId: fileId
+            })
+        },
+
+        addRequiredBy: function(file) {
+            this.requiredBy.push(file);
+        },
+
+
+        getDefaultAlias: function() {
+            var as = path.basename(this.path, ".js");
+            if (as.indexOf(".") != -1 || as.indexOf("-") != -1) {
+                return null;
+            }
+            return as;
+        },
+
+        addAs: function(as) {
+            var self = this;
+
+            if (as == "*") {
+                as = self.getDefaultAlias();
+                if (!as) {
+                    return;
+                }
+            }
+
+            if (as && self.as.indexOf(as) == -1) {
+                self.as.push(as);
+            }
+        },
+
+        removeAs: function(as) {
+            var self = this,
+                inx;
+            if ((inx = self.as.indexOf(as)) != -1) {
+                self.as.splice(inx,1);
+            }
+        },
+
+        findUnused: function() {
+            var self        = this,
+                content     = self.content,
+                name,
+                reg;
+
+            for (name in self.reqNames) {
+
+                reg = new RegExp('[^a-zA-Z0-9]'+name+'[^a-zA-Z0-9]');
+
+                if (!content.match(reg)) {
+                    console.log("Unused requirement " + name + " in " + self.path);
+                }
+            }
+        },
+
+        needsWrapping: function() {
+
+        }
+    };
+
+    File.getOrCreate = getOrCreate;
+
+    File.exists = function(filePath) {
+        return !!allFiles[filePath];
+    };
+
+    File.get = function(filePath) {
+        return allFiles[filePath];
+    };
+
+    File.removeDupReqs = function(content) {
+
+        var matches,
+            required,
+            name,
+            start = 0,
+            used = {};
+
+        while (matches = rRequires.exec(content.substr(start))) {
+
+            name        = matches[1];
+            required    = matches[2];
+
+            if (used[name]) {
+                content = content.substr(0, start + matches.index) +
+                          content.substr(start + matches.index + matches[0].length);
+            }
+            else {
+                used[name] = true;
+                start += matches.index + matches[0].length;
+            }
+        }
+
+        content = content.replace(rEmptyVar, "");
+        content = content.replace(rTrailComma, ";");
+        content = content.replace(rVarSpace, "var ");
+
+        return content;
+    };
+
+    return File;
+
+}();
+
+
+
+
+var Build = function(jsonFile, name) {
+
+    var self    = this;
+
+    self.name           = name;
+    self.jsonFile       = jsonFile;
+    self.files          = [];
+    self.fileOptions    = {};
+    self.templates      = [];
+
+    var raw = typeof name === "string" ?
+                jsonFile.build[name] || jsonFile.mixin[name] :
+                name,
+        key;
+
+    if (raw) {
+        for (key in raw) {
+            self[key] = raw[key];
+        }
+
+        self.collectFiles(raw);
+        self.prepareBuildList();
+    }
+};
+
+Build.prototype = {
+
+    /**
+     * @type {string}
+     */
+    name: null,
+
+    /**
+     * @type {JsonFile}
+     */
+    jsonFile: null,
+
+    /**
+     * @type {[]}
+     */
+    files: null,
+
+    /**
+     * @type {[]}
+     */
+    templates: null,
+
+    /**
+     * @type {[]}
+     */
+    buildList: null,
+
+    /**
+     * @type {bool}
+     */
+    wrap: false,
+
+    /**
+     * @type {string}
+     */
+    target: "",
+
+    /**
+     * @type {string}
+     */
+    specificTarget: null,
+
+    /**
+     * @type {bool}
+     */
+    compile: true,
+
+    /**
+     * @type {Object}
+     */
+    allOmits: null,
+
+    /**
+     * @type {Object}
+     */
+    allReplaces: null,
+
+    /**
+     * @type {object}
+     */
+    fileOptions: null,
+
+    collectFiles: function(raw) {
+
+        var self        = this,
+            all         = {},
+            allTpls     = {},
+            allTplsCnt  = 0,
+            allFiles    = [],
+            allOmits    = {},
+            allReplaces = {},
+
+            addFile = function(path, props, temporary) {
+
+                if (!all[path]) {
+                    all[path] = props || {};
+                }
+                else {
+                    var oldProps = all[path];
+                    if (!oldProps) {
+                        all[path] = props;
+                    }
+                    else {
+                        var key, oldVal;
+                        for (key in props) {
+                            if (typeof oldProps[key] === "undefined") {
+                                oldProps[key] = props[key];
+                            }
+                            else if (key === "as") {
+                                oldVal = oldProps[key];
+                                if (typeof oldVal === "string") {
+                                    oldProps[key] = [oldVal];
+                                }
+                                oldProps[key].push(props[key]);
+                            }
+                        }
+                    }
+                }
+
+                if (temporary) {
+                    all[path].temporary = true;
+                }
+            },
+
+            addTplFile = function(path, props, jsonFile) {
+                if (!allTpls[path]) {
+                    props = props || {};
+                    if (props.root) {
+                        props.root = resolvePath(props.root, [jsonFile.base], true);
+                        if (props.root.substr(props.root.length - 1) !== '/') {
+                            props.root += '/';
+                        }
+                    }
+                    allTpls[path] = props;
+                    allTplsCnt++;
+                }
+            },
+
+            getMixin = function(jsonFile, name) {
+                return jsonFile.mixin[name] || {};
+            },
+
+            renderMixin = function(jsonFile, name, props) {
+
+                var raw = jsonFile.build[name] || jsonFile.mixin[name],
+                    ext = raw.extension || "js",
+                    tmp = "/tmp/mjs-build-tmp-" + (new Date).getTime() + "." + ext,
+                    r = require,
+                    Builder = typeof Builder === "undefined" ? r("./Builder.js") : Builder;
+
+                raw.specificTarget = tmp;
+
+                var builder = new Builder(raw, jsonFile);
+                builder.build();
+
+                addFile(tmp, props);
+            },
+
+            processMixin = function(mixin, jsonFile, props) {
+
+                var files   = mixin.files || [],
+                    omit    = mixin.omit || [],
+                    replace = mixin.replace || [],
+                    mixins  = mixin.mixins || [],
+                    tpls    = mixin.templates || [],
+                    base    = jsonFile.base,
+                    ext     = mixin.extension || "js";
+
+
+                mixins.forEach(function(item){
+                    if (typeof item === "string") {
+                        processMixin(getMixin(jsonFile, item), jsonFile);
+                    }
+                    else {
+                        var json = JsonFile.get(resolvePath(item[0], [base]));
+                        processMixin(getMixin(json, item[1]), json);
+                    }
+                });
+
+                omit.forEach(function(omitFile){
+                    getFileList(resolvePath(omitFile, [base]), ext)
+                        .forEach(function(omitFile){
+                            allOmits[omitFile] = true;
+                        });
+                });
+
+                replace.forEach(function(row){
+                    allReplaces[resolvePath(row[0], [base])] = resolvePath(row[1], [base]);
+                });
+
+                files.forEach(function(file){
+                    processFileItem(file, jsonFile);
+                });
+
+                tpls.forEach(function(file){
+                    processTplItem(file, jsonFile);
+                });
+            },
+
+            processTplItem = function(fileDef, jsonFile) {
+
+                if (typeof fileDef === "string") {
+                    fileDef = [fileDef];
+                }
+
+                var file    = fileDef[0],
+                    ext;
+
+                ext = path.extname(file).substr(1) || /^html|tpl$/;
+                getFileList(resolvePath(file, [jsonFile.base]), ext)
+                    .forEach(function(file){
+                        addTplFile(file, fileDef[1], jsonFile);
+                    });
+            },
+
+            processFileItem = function(fileDef, jsonFile){
+
+                if (typeof fileDef === "string") {
+                    fileDef = [fileDef];
+                }
+
+                var file    = fileDef[0],
+                    json,
+                    ext;
+
+                // mixin
+                if (file.indexOf('.') === -1 && file.indexOf('*') === -1) {
+                    if (fileDef[1]) {
+                        renderMixin(jsonFile, file, fileDef[1]);
+                    }
+                    else {
+                        processMixin(getMixin(jsonFile, file), jsonFile);
+                    }
+                }
+                else if (path.extname(file) === ".json") {
+                    json = JsonFile.get(resolvePath(file, [jsonFile.base]));
+                    if (fileDef[2]) {
+                        renderMixin(json, fileDef[1], fileDef[2]);
+                    }
+                    else {
+                        processMixin(getMixin(json, fileDef[1]), json);
+                    }
+                }
+                else {
+                    ext = path.extname(file).substr(1) || jsonFile.extension || "js";
+                    getFileList(resolvePath(file, [jsonFile.base]), ext)
+                        .forEach(function(file){
+                            addFile(file, fileDef[1]);
+                        });
+                }
+            };
+
+        processMixin(raw, self.jsonFile);
+
+        var file;
+
+        for (file in all) {
+            while (allReplaces[file]) {
+                file = allReplaces[file];
+            }
+            if (!allOmits[file]) {
+                allFiles.push([file, all[file] || {}]);
+
+                if (all[file]) {
+                    self.fileOptions[file] = all[file];
+                }
+            }
+        }
+
+        self.allOmits = allOmits;
+        self.allReplaces = allReplaces;
+        self.files = allFiles;
+        self.templates = allTplsCnt > 0 ? allTpls : null;
+    },
+
+    prepareBuildList: function() {
+
+        var self        = this,
+            buildList   = [],
+            included    = {},
+            stack       = [],
+            omit        = self.allOmits,
+            replace     = self.allReplaces;
+
+        var processFile = function(file) {
+
+            stack.push(file.path);
+
+            if (stack.length > 50) {
+                console.log(stack);
+                throw "Recursive requirement";
+            }
+
+            file.requires.forEach(function(requiredFile){
+                while (replace[requiredFile]) {
+                    requiredFile = replace[requiredFile];
+                }
+                if (!omit[requiredFile]) {
+                    processFile(File.get(requiredFile));
+                }
+            });
+
+            if (!included[file.path]) {
+                included[file.path] = true;
+                buildList.push(file.path);
+            }
+
+            stack.pop();
+        };
+
+        this.files.forEach(function(filePath){
+            processFile(File.getOrCreate(filePath[0]));
+        });
+
+        var options = self.fileOptions,
+            allAliases = {};
+        
+        var addAlias = function(file, as) {
+
+            if (as === "*") {
+                as = file.getDefaultAlias();
+            }
+
+            if (!as) {
+                return;
+            }
+
+            // alias is already occupied
+            // in this build
+            if (allAliases[as] && allAliases[as] !== file.path) {
+
+                throw "Non unique alias \"" + as + "\" Found in " +
+                        allAliases[as] + " and " + file.path;
+            }
+            else {
+                allAliases[as] = file.path;
+                file.addAs(as);
+            }
+        };
+
+        buildList.forEach(function(filePath){
+
+            var opt = options[filePath],
+                file;
+
+            if (opt && opt.as) {
+                file = File.getOrCreate(filePath);
+                if (typeof opt.as === "string") {
+                    //file.addAs(opt.as, allAliases);
+                    addAlias(file, opt.as);
+                }
+                else {
+                    opt.as.forEach(function(as) {
+                        addAlias(file, as);
+                        //file.addAs(as, allAliases);
+                    });
+                }
+            }
+
+        });
+
+        this.buildList = buildList;
+    }
+
+};
+
+
+
+
+
+var minimist = require("minimist");
 
 var Runner = Base.$extend({
 
@@ -3325,7 +4367,7 @@ var Runner = Base.$extend({
             args        = minimist(process.argv.slice(2), {boolean: true}),
             profileName = runCfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
-            jsonFile    = fs.existsSync(json) ? new mjsBuild.JsonFile(json) : null,
+            jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
             profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
                           jsonFile.docs[profileName] : {},
             data        = extend({}, profile.data, runData, true, false),
@@ -3419,7 +4461,7 @@ var Runner = Base.$extend({
     },
 
     loadFiles: function(cfg, doc, jsonFile) {
-        var build = new mjsBuild.Build(jsonFile);
+        var build = new Build(jsonFile);
         build.collectFiles(cfg);
         build.prepareBuildList();
 
@@ -3749,7 +4791,7 @@ function createFunctionContext(commentPart, comment) {
 
 
 
-var flagAliases = globalCache.add("file.*.comment.flagAliases", {
+globalCache.add("file.*.comment.flagAliases", {
 
     "type": "var",
     "return": "returns",
@@ -3762,7 +4804,7 @@ var flagAliases = globalCache.add("file.*.comment.flagAliases", {
 
 
 
-var getCurly = globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
+globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
 
     var left, right,
         i, l,
@@ -3839,7 +4881,7 @@ var getCurly = globalCache.add("file.*.comment.getCurly", function(content, star
 
 
 
-var getFlagAliases = globalCache.add("file.*.comment.getFlagAliases", function(file){
+globalCache.add("file.*.comment.getFlagAliases", function(file){
 
     var all = file.pget("comment.flagAliases", true),
         aliases = {},
@@ -3854,7 +4896,7 @@ var getFlagAliases = globalCache.add("file.*.comment.getFlagAliases", function(f
 
 
 
-var parseComment = (function(){
+(function(){
 
 
     var parseComment = function(text, file) {
@@ -3904,7 +4946,7 @@ var parseComment = (function(){
                 sub     = null;
                 flag    = null;
 
-                if (part.charAt(part.length - 1) == '{') {
+                /*if (part.charAt(part.length - 1) == '{') {
 
                     sub     = getCurly(text, inx + lines[i].length - 1);
                     part    = part.substring(0, part.length - 2).trim();
@@ -3923,7 +4965,8 @@ var parseComment = (function(){
                         sub     = null;
                     }
                 }
-                else if (part.charAt(part.length - 1) != '}' &&
+                else */
+                if (part.charAt(part.length - 1) != '}' &&
                          part.replace(flagReg, "").trim() != "") {
 
                     for (j = i + 1; j < l; j++) {
@@ -3985,7 +5028,7 @@ var parseComment = (function(){
 
 
 
-var removeAsterisk = globalCache.add("file.*.comment.removeAsterisk", function(text) {
+globalCache.add("file.*.comment.removeAsterisk", function(text) {
 
     text = text.replace("/**", '');
     text = text.replace("*/", '');
@@ -4054,7 +5097,7 @@ var removeAsterisk = globalCache.add("file.*.comment.removeAsterisk", function(t
 
 
 
-var sortParts = globalCache.add("file.*.comment.sortParts", function(parts, comment) {
+globalCache.add("file.*.comment.sortParts", function(parts, comment) {
 
     var flagInx = {},
         items = comment.file.pget("items");
@@ -4120,7 +5163,7 @@ var sortParts = globalCache.add("file.*.comment.sortParts", function(parts, comm
 
 
 
-var getItemType = globalCache.add("file.*.getItemType", function(type, file) {
+globalCache.add("file.*.getItemType", function(type, file) {
 
     var types = file.pget("items"),
         i, l;
@@ -4137,7 +5180,7 @@ var getItemType = globalCache.add("file.*.getItemType", function(type, file) {
 });
 
 
-var add = globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
+globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
 
     if (item.type == flag && typeof content == "string" && content) {
         item.setName(content.trim());
@@ -4148,7 +5191,7 @@ var add = globalCache.add("file.*.item.*.*.add", function(flag, content, item) {
 
 
 
-var prepare = globalCache.add("file.*.item.*.*.prepare", function(flag, content, item) {
+globalCache.add("file.*.item.*.*.prepare", function(flag, content, item) {
 
     if (content === null) {
         return true;
@@ -4271,7 +5314,7 @@ globalCache.add("file.*.item.*.description.prepare", function(flag, content, ite
 
 
 
-var resolveName = globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content){
+globalCache.add("file.*.item.*.emits.resolveName", function(item, flag, content){
 
     var parents = item.getParents(),
         items = [],
@@ -4299,31 +5342,31 @@ var resolveName = globalCache.add("file.*.item.*.emits.resolveName", function(it
 
 
 
-var resolveName = globalCache.add("file.*.item.*.extends.resolveName", resolveExtendableName);
+globalCache.add("file.*.item.*.extends.resolveName", resolveExtendableName);
 
 
 
-var resolveName = globalCache.add("file.*.item.*.implements.resolveName", resolveExtendableName);
+globalCache.add("file.*.item.*.implements.resolveName", resolveExtendableName);
 
 
 
-var resolveName = globalCache.add("file.*.item.*.mixes.resolveName", resolveExtendableName);
+globalCache.add("file.*.item.*.mixes.resolveName", resolveExtendableName);
 
 
 
-var add = globalCache.add("file.*.item.*.private.add", addAccessFlag);
+globalCache.add("file.*.item.*.private.add", addAccessFlag);
 
 
 
-var add = globalCache.add("file.*.item.*.protected.add", addAccessFlag);
+globalCache.add("file.*.item.*.protected.add", addAccessFlag);
 
 
 
-var add = globalCache.add("file.*.item.*.public.add", addAccessFlag);
+globalCache.add("file.*.item.*.public.add", addAccessFlag);
 
 
 
-var prepare = globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
+globalCache.add("file.*.item.*.returns.prepare", function(flag, content, item) {
 
     if (!item.file) {
         return content;
@@ -4351,24 +5394,24 @@ var prepare = globalCache.add("file.*.item.*.returns.prepare", function(flag, co
 
 
 
-var resolveName = globalCache.add("file.*.item.*.returns.resolveName", resolveTypeName);
+globalCache.add("file.*.item.*.returns.resolveName", resolveTypeName);
 
 
 
-var resolveName = globalCache.add("file.*.item.*.throws.resolveName", resolveTypeName);
+globalCache.add("file.*.item.*.throws.resolveName", resolveTypeName);
 
 
 
-var resolveName = globalCache.add("file.*.item.*.type.resolveName", resolveTypeName);
+globalCache.add("file.*.item.*.type.resolveName", resolveTypeName);
 
 
 
-var createContext = globalCache.add("file.*.item.?.param.createContext", createFunctionContext);
+globalCache.add("file.*.item.?.param.createContext", createFunctionContext);
 
 
 
 
-var requiredContext = globalCache.add("file.*.item.?.requiredContext", {
+globalCache.add("file.*.item.?.requiredContext", {
     "param": ["function", "method"],
     "returns": ["function", "method"],
     "constructor": ["method"]
@@ -4376,32 +5419,32 @@ var requiredContext = globalCache.add("file.*.item.?.requiredContext", {
 
 
 
-var createContext = globalCache.add("*.item.?.returns.createContext", createFunctionContext);
+globalCache.add("*.item.?.returns.createContext", createFunctionContext);
 
 
-var add = globalCache.add("file.*.item.param.param.add", addVarFlag);
-
-
-
-var parse = globalCache.add("file.*.item.param.param.parse", parseVarFlag);
-
-
-var add = globalCache.add("file.*.item.property.property.add", addVarFlag);
+globalCache.add("file.*.item.param.param.add", addVarFlag);
 
 
 
-var parse = globalCache.add("file.*.item.property.property.parse", parseVarFlag);
+globalCache.add("file.*.item.param.param.parse", parseVarFlag);
 
 
-var add = globalCache.add("file.*.item.var.var.add", addVarFlag);
-
-
-
-var parse = globalCache.add("file.*.item.var.var.parse", parseVarFlag);
+globalCache.add("file.*.item.property.property.add", addVarFlag);
 
 
 
-var items = globalCache.add("file.*.items", [
+globalCache.add("file.*.item.property.property.parse", parseVarFlag);
+
+
+globalCache.add("file.*.item.var.var.add", addVarFlag);
+
+
+
+globalCache.add("file.*.item.var.var.parse", parseVarFlag);
+
+
+
+globalCache.add("file.*.items", [
     {
         name: "root",
         children: ["*", "!param"]
@@ -4410,7 +5453,7 @@ var items = globalCache.add("file.*.items", [
 
 
 
-var normalizeType = globalCache.add("file.*.normalizeType", function(type, file){
+globalCache.add("file.*.normalizeType", function(type, file){
 
     var aliases = file.pget("typeAliases"),
         ret = [],
@@ -4478,7 +5521,7 @@ function sortArray(arr, by, dir) {
 
 
 
-var sortItems = globalCache.add("file.*.sortItems", function(item, cfg){
+globalCache.add("file.*.sortItems", function(item, cfg){
 
     var by = cfg ? cfg.by : null,
         dir = cfg ? (cfg.direction || null) : "asc",
@@ -4509,7 +5552,7 @@ var sortItems = globalCache.add("file.*.sortItems", function(item, cfg){
 
 
 
-var added = globalCache.add("file.js.item.*.description.added", function(flag, item){
+globalCache.add("file.js.item.*.description.added", function(flag, item){
 
     var ft;
 
@@ -4523,7 +5566,7 @@ var added = globalCache.add("file.js.item.*.description.added", function(flag, i
 
 
 
-var getFullName = globalCache.add("file.js.item.*.getFullName", function(item) {
+globalCache.add("file.js.item.*.getFullName", function(item) {
 
     var parents = item.getParents().reverse(),
         name = item.name,
@@ -4564,7 +5607,7 @@ var getFullName = globalCache.add("file.js.item.*.getFullName", function(item) {
 
 
 
-var extractTypeAndName = globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
 
     var content         = file.getContent(),
         part            = content.substr(startIndex, 200),
@@ -4622,7 +5665,7 @@ var extractTypeAndName = globalCache.add("file.js.item.extractTypeAndName", func
 
 
 
-var items = (function(){
+(function(){
 
     var classes = function(name, displayName, groupName) {
         return {
@@ -4714,7 +5757,7 @@ var items = (function(){
 
 
 
-var resolveIncludes = globalCache.add("file.js.resolveIncludes", function(file) {
+globalCache.add("file.js.resolveIncludes", function(file) {
 
     var content     = file.getContent(),
         base        = file.dir + "/",
@@ -4743,7 +5786,7 @@ var resolveIncludes = globalCache.add("file.js.resolveIncludes", function(file) 
 
 
 
-var typeAliases = globalCache.add("file.js.typeAliases", {
+globalCache.add("file.js.typeAliases", {
 
     "{}": "object",
     "Object": "object",
@@ -4764,7 +5807,7 @@ var marked = require("marked");
 
 
 
-var markdown = globalCache.add("markdown", function(content){
+globalCache.add("markdown", function(content){
 
     return marked(content, {
         gfm: true,
@@ -4781,7 +5824,7 @@ var fse = require("fs.extra"),
     Promise = require("metaphorjs-promise");
 
 
-var Default = globalCache.add("renderer.default", Renderer.$extend({
+globalCache.add("renderer.default", Renderer.$extend({
 
     data: null,
     templateDir: null,
@@ -4938,7 +5981,7 @@ var Default = globalCache.add("renderer.default", Renderer.$extend({
 
 
 
-var Json = globalCache.add("renderer.json", Renderer.$extend({
+globalCache.add("renderer.json", Renderer.$extend({
 
     render: function() {
         return JSON.stringify(this.doc.exportData(null, false, true), null, 2);
@@ -4952,7 +5995,7 @@ var Json = globalCache.add("renderer.json", Renderer.$extend({
 
 
 
-var Plain = globalCache.add("renderer.plain", Renderer.$extend({
+globalCache.add("renderer.plain", Renderer.$extend({
 
     render: function() {
 
@@ -5050,7 +6093,7 @@ var Plain = globalCache.add("renderer.plain", Renderer.$extend({
 
 
 
-var Raw = globalCache.add("renderer.raw", Renderer.$extend({
+globalCache.add("renderer.raw", Renderer.$extend({
 
     render: function() {
         return this.doc.exportData(null, false, true);

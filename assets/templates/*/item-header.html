@@ -1,20 +1,23 @@
-<div id="{{ .item.fullName }}" class="item-header"
-     mjs-init=".isFunction = .item.type == 'function' ||
+<div [id]=".item.fullName" 
+     class="item-header"
+     {init}=".isFunction = .item.type == 'function' ||
                         .item.type == 'method' ||
                         (.item.plainFlags.hasOwnProperty('type') &&
                         .item.plainFlags.type.indexOf('function') != -1 && .item.plainFlags.type.length == 1)">
     <mjs-if value=".item.hasOwnProperty('booleanFlags')">
-        <span class="label label-warning item-label" mjs-each="flag in .item.booleanFlags">{{ .flag }}</span>
+        <span class="badge badge-warning item-label" 
+              {each}="flag in .item.booleanFlags" 
+              {bind}=".flag"></span>
     </mjs-if>
     <mjs-tag value=".item.level + 2 > 6 ? 'h6' : 'h' + (.item.level + 2)">
         <mjs-if value=".item.plainFlags.hasOwnProperty('type')">
             <span class="item-type"
-                  mjs-bind-html=".item.plainFlags.type | map:'filter.typeRef' | join:' | ' | markdownLinks"></span>
+                  {bind-html}=".item.plainFlags.type | map:'filter.typeRef' | join:' | ' | markdownLinks"></span>
         </mjs-if>
         <mjs-if value=".item.level == 1 && .item.hasOwnProperty('type')">
-            <span class="item-type">{{ .item.type }}</span>
+            <span class="item-type" {bind}=".item.type"></span>
         </mjs-if>
-        <span class="item-name">{{ .item.name }}</span>
+        <span class="item-name" {bind}=".item.name"></span>
         <mjs-if value=".isFunction">
             <mjs-if value=".item.childTypes.indexOf('param') != -1">
                 <span class="item-name-arguments">({{
@@ -30,7 +33,7 @@
             </mjs-if>
             <mjs-if value=".item.plainFlags.hasOwnProperty('returnDescription')">
                 <small class="item-name-return-descr"
-                mjs-bind=".item.plainFlags.returnDescription[0]"></small>
+                       {bind}=".item.plainFlags.returnDescription[0]"></small>
             </mjs-if>
         </mjs-if>
     </mjs-tag>

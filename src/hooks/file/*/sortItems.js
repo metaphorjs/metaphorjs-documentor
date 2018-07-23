@@ -1,6 +1,6 @@
 
 var globalCache = require("../../../var/globalCache.js"),
-    sortArray = require("../../../../../metaphorjs/src/func/array/sortArray.js");
+    sortArray = require("metaphorjs/src/func/array/sortArray.js");
 
 
 module.exports = globalCache.add("file.*.sortItems", function(item, cfg){

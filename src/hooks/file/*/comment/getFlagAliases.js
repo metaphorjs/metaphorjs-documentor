@@ -1,6 +1,6 @@
 
 var globalCache = require("../../../../var/globalCache.js"),
-    extend = require("../../../../../../metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs/src/func/extend.js");
 
 module.exports = globalCache.add("file.*.comment.getFlagAliases", function(file){
 
