@@ -17,6 +17,8 @@ module.exports = function(){
      */
     var SourceFile = Base.$extend({
 
+        $class: "SourceFile",
+
 
         /**
          * @type string

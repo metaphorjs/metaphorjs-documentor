@@ -10,6 +10,8 @@ var Base = require("./Base.js"),
 
 var Runner = Base.$extend({
 
+    $class: "Runner",
+
     run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
 
         runCfg = runCfg || {};

@@ -6,6 +6,8 @@ var Base = require("./Base.js"),
 
 module.exports = Base.$extend({
 
+    $class: "Content",
+
     id: null,
     location: null,
     type: null,

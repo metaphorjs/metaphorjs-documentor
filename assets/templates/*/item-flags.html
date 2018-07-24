@@ -6,5 +6,8 @@
         <mjs-if value=".flag.contentType == 'string'">
             <span {bind-html}=".flag.content | markdownLinks"></span>
         </mjs-if>
+        <mjs-if value=".flag.contentType == 'typeRef'">
+            <a [href]="'#' + .flag.ref" {bind}=".flag.content"></a>
+        </mjs-if>
     </li>
 </ul>

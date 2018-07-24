@@ -19,9 +19,14 @@ var Base = require("./Base.js"),
 require("metaphorjs-observable/src/mixin/Observable.js");
 
 
-
+/**
+ * @class Documentor
+ * @extends Base
+ * @mixes mixin.Observable
+ */
 module.exports = Base.$extend({
 
+    $class: "Documentor",
     $mixins: ["mixin.Observable"],
 
     files: null,
@@ -104,7 +109,7 @@ module.exports = Base.$extend({
 
                     value = cache.get(name);
 
-                    if (typeof value == "function" && !value.hasOwnProperty(id)) {
+                    if (typeof value === "function" && !value.hasOwnProperty(id)) {
                         value = function(fn){
                             return function(){
                                 return fn.apply(self, arguments);
@@ -272,6 +277,7 @@ module.exports = Base.$extend({
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
+
 
         self.pcall("namesResolved", self);
 

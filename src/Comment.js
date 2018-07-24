@@ -7,6 +7,8 @@ var Base = require("./Base.js");
  */
 var Comment = Base.$extend({
 
+    $class: "Comment",
+
     comment: null,
     doc: null,
     file: null,
@@ -20,10 +22,20 @@ var Comment = Base.$extend({
         this.$super();
     },
 
+    /**
+     * @method
+     * @returns {bool}
+     */
     isTemporary: function() {
         return this.hasFlag("md-tmp");
     },
 
+    /**
+     * Check if comment has a flag in it
+     * @method
+     * @param {string} name 
+     * @returns {bool}
+     */
     hasFlag: function(name) {
         var parts = this.parts,
             i, l;
@@ -37,6 +49,12 @@ var Comment = Base.$extend({
         return false;
     },
 
+    /**
+     * Get flag content
+     * @method
+     * @param {string} name
+     * @returns {*}
+     */
     getFlag: function(name) {
 
         var parts = this.parts,
@@ -51,6 +69,11 @@ var Comment = Base.$extend({
         return null;
     },
 
+    /**
+     * Get flag content
+     * @method
+     * @param {string} name
+     */
     removeFlag: function(name) {
 
         var parts = this.parts,

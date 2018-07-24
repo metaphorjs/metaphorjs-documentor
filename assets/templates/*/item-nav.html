@@ -7,7 +7,8 @@
                         (.item.plainFlags.hasOwnProperty('type') && 
                             .item.plainFlags.type.indexOf('function') != -1)"
         class="item-nav-property"
-        {class}="'item-nav-property-' + .item.type">
+        {class}="'item-nav-property-' + .item.type"
+        {class.inherited}=".item.isInherited">
 
         <a [href]="'#' + .item.fullName" [title]=".item.name">
             <span class="item-nav-item-name" {bind}=".item.name"></span>

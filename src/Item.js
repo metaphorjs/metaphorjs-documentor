@@ -10,6 +10,8 @@ module.exports = (function(){
 
     var Item = Base.$extend({
 
+        $class: "Item",
+
         doc: null,
         file: null,
         type: null,
@@ -23,8 +25,6 @@ module.exports = (function(){
         parent: null,
         level: 0,
 
-
-
         $init: function() {
 
             var self = this;
@@ -37,6 +37,45 @@ module.exports = (function(){
             if (self.name) {
                 self.setName(self.name);
             }
+        },
+
+        clone: function(newParent) {
+
+            var items = {},
+                flags = {},
+                name, type;
+
+            for (name in this.flags) {
+                flags[name] = [];
+                this.flags[name].forEach(function(flag){
+                    flags[name].push(flag.clone());
+                });
+            }
+
+            var newItem = new Item({
+                doc: this.doc,
+                file: this.file,
+                type: this.type,
+                name: this.name,
+                comment: this.comment,
+                line: this.line,
+                props: null,
+
+                parent: newParent,
+                level: newParent.level + 1
+            });
+
+            for (type in this.items) {
+                items[type] = [];
+                this.items[type].forEach(function(item){
+                    items[type].push(item.clone(newItem));
+                });
+            }
+
+            newItem.items = items;
+            newItem.flags = flags;
+
+            return newItem;
         },
 
         isRoot: function() {
@@ -205,11 +244,16 @@ module.exports = (function(){
 
             self.applyInheritance = emptyFn;
 
+            if (!flags) {
+                return;
+            }
+
             ["extends", "implements", "mixes"].forEach(function(flag){
                 if (flags.hasOwnProperty(flag)) {
-                    flags[flag].forEach(function(parentClass){
+                    flags[flag].forEach(function(flagObj){
 
-                        parentClass = typeof parentClass == "string" ? parentClass : parentClass.ref;
+                        parentClass = typeof flagObj == "string" ? 
+                                        flagObj : flagObj.props.ref;
 
                         var parent = doc.getItem(parentClass);
 
@@ -229,9 +273,21 @@ module.exports = (function(){
             parent.eachItem(function(item){
 
                 if (!self.getItem(item.type, item.name)) {
-                    self.addItem(item);
+                    var newItem = item.clone(self);
+                    newItem.addFlag("inherited", parent.fullName);
+                    self.addItem(newItem);
                 }
             }, null, true);
+        },
+
+        hasInherited: function() {
+            var has = false;
+            this.eachChild(function(item){
+                if (item.hasFlag("inherited")) {
+                    has = true;
+                }
+            });
+            return has;
         },
 
 
@@ -449,6 +505,8 @@ module.exports = (function(){
                     originalFile: self.file.path,
                     fileType: self.file.ext,
                     template: self.file.ext + ".item." + self.type,
+                    hasInherited: self.hasInherited(),
+                    isInherited: self.hasFlag("inherited"),
                     level: self.level,
                     flags: {},
                     plainFlags: {},

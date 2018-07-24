@@ -6,6 +6,8 @@ var Base = require("./Base.js"),
 
 module.exports = Base.$extend({
 
+    $class: "Renderer",
+
     doc: null,
     outDir: null,
     templates: null,
