@@ -7,6 +7,10 @@ var Base = require("./Base.js"),
 
 module.exports = (function(){
     
+    /**
+     * @class Flag
+     * @extends Base
+     */
     var Flag = Base.$extend({
 
         $class: "Flag",
@@ -17,6 +21,14 @@ module.exports = (function(){
         props: null,
         file: null,
     
+        /**
+         * @constructor
+         * @param {string} name
+         * @param {string|object} content
+         * @param {string} type
+         * @param {object} props
+         * @param {string} file
+         */
         $init: function(name, content, type, props, file) {
     
             var ct,
@@ -46,6 +58,10 @@ module.exports = (function(){
             self.content = content;
         },
     
+        /**
+         * @method
+         * @returns {Flag}
+         */
         clone: function() {
             return new Flag(
                 this.name, this.content, this.type,
@@ -53,18 +69,36 @@ module.exports = (function(){
             );
         },
     
+        /**
+         * @method
+         * @param {string} type
+         */
         setType: function(type) {
             this.type = type;
         },
     
+        /**
+         * @method
+         * @param {string} content
+         */
         setContent: function(content) {
             this.content = content;
         },
     
+        /**
+         * @method
+         * @param {string} name
+         * @param {*} value
+         */
         setProperty: function(name, value){
             this.props[name] = value;
         },
     
+        /**
+         * @method
+         * @param {string} name
+         * @returns {*}
+         */
         getProperty: function(name) {
             return this.props[name];
         },

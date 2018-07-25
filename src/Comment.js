@@ -4,6 +4,7 @@ var Base = require("./Base.js");
 
 /**
  * @class Comment
+ * @extends Base
  */
 var Comment = Base.$extend({
 
@@ -17,6 +18,17 @@ var Comment = Base.$extend({
     endIndex: null,
     parts: null,
 
+    /**
+     * @constructor 
+     * @param {object} cfg {
+     *  @type {string} comment
+     *  @type {Documentor} doc
+     *  @type {SourceFile} file
+     *  @type {int} line
+     *  @type {int} startIndex
+     *  @type {int} endIndex
+     * }
+     */
     $init: function() {
         this.parts = [];
         this.$super();
@@ -87,6 +99,9 @@ var Comment = Base.$extend({
         }
     },
 
+    /**
+     * @method
+     */
     parse: function() {
 
         var parts = this.pcall("comment.parseComment", this.comment, this.file);

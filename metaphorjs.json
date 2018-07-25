@@ -22,6 +22,11 @@
             "src": [
                 "src/**"
             ],
+            "contentSort": [
+                "Documentor",
+                "Runner",
+                "Base"
+            ],
             "includeExternal": false,
             "renderer": "json",
             "init": "assets/self-doc.js",

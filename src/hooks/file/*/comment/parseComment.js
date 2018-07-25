@@ -23,7 +23,7 @@ module.exports = (function(){
             parts       = [],
             partInx     = 0,
             part,
-            flag,
+            flag, originalFlag,
             subInx,
             sub;
 
@@ -53,6 +53,7 @@ module.exports = (function(){
 
                 sub     = null;
                 flag    = null;
+                originalFlag = null;
 
                 if (part.charAt(part.length - 1) == '{') {
                     sub     = getCurly(text, inx + lines[i].length - 1);
@@ -92,7 +93,7 @@ module.exports = (function(){
                 }
 
                 part = part.replace(flagReg, function(match){
-                    flag = match.substr(1);
+                    originalFlag = flag = match.substr(1);
                     return "";
                 });
 
@@ -106,7 +107,12 @@ module.exports = (function(){
                     part = null;
                 }
 
-                parts.push({flag: flag, content: part, sub: sub || [], inx: partInx});
+                parts.push({
+                    flag: flag, 
+                    content: part, 
+                    sub: sub || [], 
+                    inx: partInx,
+                    originalFlag: originalFlag});
                 partInx++;
             }
             else if (part) {

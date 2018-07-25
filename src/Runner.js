@@ -8,10 +8,34 @@ var Base = require("./Base.js"),
     Build = require("metaphorjs-build/src/class/Build.js")
     extend = require("metaphorjs/src/func/extend.js");
 
+/**
+ * @class Runner
+ * @extends Base
+ */
 var Runner = Base.$extend({
 
     $class: "Runner",
 
+    /**
+     * @method
+     * @param {object} runCfg {
+     *  @type {string} profile Profile name in metaphorjs.json in docs section
+     *  @type {string} out Output directory or file
+     *  @type {string|array} hooks Paths to hooks dirs
+     *  @type {string|array} files Paths to content files
+     *  @type {string|array} src Paths to src dirs
+     *  @type {string|array} templates Paths to templates
+     *  @type {object} data Same as runData
+     *  @type {object} options Same as runOptions
+     *  @type {object} itemSort
+     *  @type {object} typeSort
+     *  @type {object} contentSort
+     * }
+     * @param {object} runData
+     * @param {object} runOptions
+     * @param {function} errorCallback
+     * @param {function} doneCallback
+     */
     run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
 
         runCfg = runCfg || {};

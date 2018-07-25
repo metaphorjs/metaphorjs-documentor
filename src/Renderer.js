@@ -4,6 +4,10 @@ var Base = require("./Base.js"),
     fs = require("fs"),
     eachLink = require("./func/eachLink.js");
 
+/**
+ * @class Renderer
+ * @extends Base
+ */
 module.exports = Base.$extend({
 
     $class: "Renderer",
@@ -12,6 +16,14 @@ module.exports = Base.$extend({
     outDir: null,
     templates: null,
 
+    /**
+     * @constructor
+     * @param {Documentor} doc
+     * @param {object} cfg {
+     *  @type {string} outDir
+     *  @type {string} templates
+     * }
+     */
     $init: function(doc, cfg) {
 
         var self = this;

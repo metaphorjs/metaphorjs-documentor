@@ -7,7 +7,10 @@ var Base = require("./Base.js"),
 
 module.exports = (function(){
 
-
+    /**
+     * @class Item
+     * @extends Base
+     */
     var Item = Base.$extend({
 
         $class: "Item",
@@ -23,8 +26,21 @@ module.exports = (function(){
         line: null,
         props: null,
         parent: null,
+
+        /**
+         * @var {int}
+         */
         level: 0,
 
+        /**
+         * @constructor 
+         * @param {object} cfg {
+         *  @type {Documentor} doc
+         *  @type {SourceFile} file
+         *  @type {string} name
+         *  @type {string} type
+         * }
+         */
         $init: function() {
 
             var self = this;
@@ -39,6 +55,11 @@ module.exports = (function(){
             }
         },
 
+        /**
+         * @method
+         * @param {Item} newParent
+         * @returns {Item}
+         */
         clone: function(newParent) {
 
             var items = {},
@@ -78,6 +99,10 @@ module.exports = (function(){
             return newItem;
         },
 
+        /**
+         * @method
+         * @returns {bool}
+         */
         isRoot: function() {
             return this.level == 0;
         },
@@ -105,6 +130,10 @@ module.exports = (function(){
             }
         },
 
+        /**
+         * @method
+         * @returns {object}
+         */
         getTypeProps: function() {
             if (!this.props) {
                 this.props = this.file.pcall("getItemType", this.type, this.file);
@@ -112,6 +141,14 @@ module.exports = (function(){
             return this.props;
         },
 
+        /**
+         * Get a child by type and name from direct children
+         * @method
+         * @param {string} type
+         * @param {string} name
+         * @param {bool} last
+         * @returns {Item}
+         */
         getItem: function(type, name, last) {
             var list = this.items[type],
                 ret = null;
@@ -132,6 +169,10 @@ module.exports = (function(){
             return ret;
         },
 
+        /**
+         * @method
+         * @param {Item} item
+         */
         addItem: function(item) {
 
             var type = item.type,
@@ -147,14 +188,26 @@ module.exports = (function(){
             }
 
             item.level = self.level + 1;
-
             items[type].push(item);
         },
 
+        /**
+         * @method
+         * @param {string} flag
+         * @returns {bool}
+         */
         hasFlag: function(flag) {
             return this.flags.hasOwnProperty(flag);
         },
 
+        /**
+         * @method
+         * @param {string} flag
+         * @param {string|array} content
+         * @param {string} type
+         * @param {object} props
+         * @returns {array} array of created flags
+         */
         addFlag: function(flag, content, type, props) {
 
             var self = this;
@@ -215,10 +268,19 @@ module.exports = (function(){
             return added;
         },
 
+        /**
+         * @method
+         * @param {string} name
+         */
         setName: function(name) {
             this.name = name;
         },
 
+        /**
+         * @method
+         * @param {string} name
+         * @returns {bool}
+         */
         isThe: function(name) {
             return this.name === name || 
                     this.fullName === name ||
@@ -277,6 +339,10 @@ module.exports = (function(){
                     newItem.addFlag("inherited", parent.fullName);
                     self.addItem(newItem);
                 }
+                else {
+                    self.getItem(item.type, item.name)
+                        .addFlag("overrides", parent.fullName);
+                }
             }, null, true);
         },
 
@@ -317,6 +383,10 @@ module.exports = (function(){
             return parents;
         },
 
+        /**
+         * @method
+         * @returns {array}
+         */
         getParents: function() {
 
             var parents = [],
@@ -345,6 +415,13 @@ module.exports = (function(){
             }
         },
 
+        /**
+         * @method
+         * @param {string} name
+         * @param {string} type
+         * @param {bool} thisOnly Search only among direct children
+         * @returns {array}
+         */
         findItem: function(name, type, thisOnly) {
 
             var found = [];
@@ -433,6 +510,10 @@ module.exports = (function(){
             });
         },
 
+        /**
+         * @method
+         * @returns {array}
+         */
         getChildren: function() {
             var children = [];
             this.eachChild(function(item){
@@ -441,10 +522,25 @@ module.exports = (function(){
             return children;
         },
 
+        /**
+         * @method
+         * @param {function} fn{
+         *  @param {Item} item
+         * }
+         * @param {object} context
+         */
         eachChild: function(fn, context) {
             this.eachItem(fn, context, true);
         },
 
+        /**
+         * @method
+         * @param {function} fn {
+         *  @param {Item} item
+         * }
+         * @param {object} context
+         * @param {bool} thisOnly Only among direct children
+         */
         eachItem: function(fn, context, thisOnly) {
 
             var k, self = this;
@@ -471,6 +567,15 @@ module.exports = (function(){
             }
         },
 
+        /**
+         * @method
+         * @param {function} cb {
+         *  @param {string} name
+         *  @param {Flag} flag
+         * }
+         * @param {object} context
+         * @param {string} only Only flags with this name
+         */
         eachFlag: function(cb, context, only) {
             var self = this,
                 name;

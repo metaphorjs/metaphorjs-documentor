@@ -75,6 +75,19 @@ module.exports = function(){
          */
         hidden: false,
 
+        /**
+         * @constructor
+         * @param {object} cfg {
+         *  @type {Documentor} doc
+         *  @type {string} path
+         *  @type {object} options {
+         *      @type {bool} hidden {
+         *          @default false
+         *      }
+         *      @type {string} basePath
+         *  }
+         * }
+         */
         $init: function() {
 
             var self = this;
@@ -110,6 +123,10 @@ module.exports = function(){
         },
 
 
+        /**
+         * @method
+         * @returns {string}
+         */
         getContent: function () {
             if (!this.content) {
                 this.content = fs.readFileSync(this.path).toString();
@@ -310,6 +327,11 @@ module.exports = function(){
                         });
 
                 item.addFlag(type, part.content);
+
+                if (part.originalFlag) {
+                    item.addFlag(part.originalFlag, '');
+                }
+                        
                 context.addItem(item);
 
                 if (typeProps.children.length && typeProps.stackable !== false && !fixedContext) {

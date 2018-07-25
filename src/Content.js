@@ -4,6 +4,10 @@ var Base = require("./Base.js"),
     path = require("path"),
     extend = require("metaphorjs/src/func/extend.js");
 
+/**
+ * @class Content
+ * @extends Base
+ */
 module.exports = Base.$extend({
 
     $class: "Content",
@@ -17,6 +21,18 @@ module.exports = Base.$extend({
     file: null,
     contentType: null,
 
+    /**
+     * @constructor
+     * @param {object} cfg {
+     *  @type {string} file
+     *  @type {string} content
+     *  @type {string} id
+     *  @type {string} location
+     *  @type {string} title
+     *  @type {string} groupName
+     *  @type {string} contentType
+     * }
+     */
     $init: function(cfg) {
 
         var self = this;
@@ -30,6 +46,10 @@ module.exports = Base.$extend({
         self.$super();
     },
 
+    /**
+     * @method
+     * @returns {string}
+     */
     getContent: function() {
 
         if (this.file) {

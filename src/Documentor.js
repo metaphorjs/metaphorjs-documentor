@@ -40,6 +40,14 @@ module.exports = Base.$extend({
     contentSortCfg: null,
     sections: null,
 
+    /**
+     * @constructor
+     * @param {object} cfg {
+     *  @type {object} typeSortCfg
+     *  @type {object} itemSortCfg
+     *  @type {object} contentSortCfg
+     * }
+     */
     $init: function(cfg){
 
         var self = this;
@@ -153,13 +161,20 @@ module.exports = Base.$extend({
     },
 
 
-
+    /**
+     * @method
+     * @param {string} name
+     * @returns {Renderer}
+     */
     getRenderer: function(name){
         return this.hooks.get("renderer." + name) ||
                globalCache.get("renderer." + name);
     },
 
-
+    /**
+     * @method
+     * @param {Item} item
+     */
     addUniqueItem: function(item) {
 
         var name = item.fullName;
@@ -169,12 +184,28 @@ module.exports = Base.$extend({
         }
     },
 
+    /**
+     * @method
+     * @param {string} name
+     * @returns {Item}
+     */
     getItem: function(name) {
         return this.map.hasOwnProperty(name) ? this.map[name] : null;
     },
 
 
-
+    /**
+     * @method
+     * @param {string} directory
+     * @param {string} ext
+     * @param {object} options {
+     *  @type {bool} hidden
+     *  @type {string} startDir
+     *  @type {bool} includeExternal
+     *  @type {bool} hideIncludes
+     *  @type {string} basePath
+     * }
+     */
     eat: function(directory, ext, options) {
 
         options = options || {};
@@ -211,6 +242,11 @@ module.exports = Base.$extend({
         }
     },
 
+    /**
+     * @method
+     * @param {string} filePath
+     * @param {object} options See <code>eat</code>
+     */
     addFile: function(filePath, options) {
 
         var self = this;
@@ -221,7 +257,6 @@ module.exports = Base.$extend({
                      filePath.indexOf(options.startDir) !== 0;
 
         if (!self.files[filePath]) {
-
 
             var file = SourceFile.get(filePath, self, extend({}, options, {
                 hidden: hidden
@@ -256,6 +291,11 @@ module.exports = Base.$extend({
         }
     },
 
+    /**
+     * @method 
+     * @param {string} path
+     * @returns {SourceFile}
+     */
     getFile: function(path) {
         return this.files[path];
     },
@@ -295,12 +335,22 @@ module.exports = Base.$extend({
     },
 
 
+    /**
+     * @method
+     * @param {function} fn {
+     *  @param {Item} item
+     * }
+     * @param {object} context
+     */
     eachItem: function(fn, context) {
         this.root.eachItem(fn, context);
     },
 
 
-
+    /**
+     * @method
+     * @param {string} dir
+     */
     loadHooks: function(dir) {
 
         var self = this,
@@ -311,6 +361,16 @@ module.exports = Base.$extend({
         });
     },
 
+    /**
+     * @method
+     * @param {string} dir
+     * @param {string} ext 
+     * @param {function} fn {
+     *  @param {string} directory
+     *  @param {string} filePath
+     * }
+     * @param {object} context
+     */
     eachHook: function(dir, ext, fn, context) {
 
         if (dir.substr(dir.length - 1) != '/') {

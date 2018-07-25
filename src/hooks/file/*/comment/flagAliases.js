@@ -8,6 +8,7 @@ module.exports = globalCache.add("file.*.comment.flagAliases", {
     "extend": "extends",
     "implement": "implements",
     "emit": "emits",
-    "throw": "throws"
+    "throw": "throws",
+    "constructor": "method"
 
 });

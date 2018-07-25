@@ -1,4 +1,5 @@
 var cs = require("metaphorjs-class/src/var/cs.js"),
+    isPlainObject = require("metaphorjs/src/func/isPlainObject.js"),
     extend = require("metaphorjs/src/func/extend.js");
 
 /**
@@ -10,7 +11,7 @@ module.exports = cs.define({
      * @ignore
      */
     $constructor: function(cfg) {
-        if (typeof(cfg) != "string") {
+        if (isPlainObject(cfg)) {
             extend(this, cfg, true, false);
         }
         this.$super(cfg);
