@@ -2,6 +2,7 @@
 var Base = require("./Base.js"),
     Flag = require("./Flag.js"),
     isArray = require("metaphorjs/src/func/isArray.js"),
+    undf = require("metaphorjs/src/var/undf.js"),
     emptyFn = require("metaphorjs/src/func/emptyFn.js");
 
 
@@ -214,6 +215,10 @@ module.exports = (function(){
 
             if (self.type == "root") {
                 return;
+            }
+
+            if (content == undf) {
+                content = true;
             }
 
             var prepared = self.pcall(flag + ".prepare", flag, content, self);

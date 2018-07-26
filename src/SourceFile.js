@@ -331,12 +331,14 @@ module.exports = function(){
                 if (part.originalFlag) {
                     item.addFlag(part.originalFlag, '');
                 }
-                        
+
                 context.addItem(item);
 
-                if (typeProps.children.length && typeProps.stackable !== false && !fixedContext) {
+                if (typeProps.children.length && typeProps.stackable !== false && 
+                    !fixedContext) {
                     cs.push(item);
                 }
+                
 
                 if (part.sub.length) {
                     part.sub.forEach(function (part) {
@@ -359,7 +361,6 @@ module.exports = function(){
                 transform,
                 i,
                 isItem;
-
 
             if (fixedContext) {
                 transform   = fixedContext.getTypeProps().transform;
@@ -393,7 +394,8 @@ module.exports = function(){
 
                 isItem = !!this.pcall("getItemType", type, this);
 
-                if (!isItem && requiredContext && requiredContext.indexOf(context.type) != -1) {
+                if (!isItem && requiredContext && 
+                        requiredContext.indexOf(context.type) != -1) {
                     return null;
                 }
 
@@ -430,7 +432,9 @@ module.exports = function(){
 
         getItemName: function(type, part, comment) {
 
-            var res = this.pcall("item."+ type +"." + type + ".parse", type, part.content, comment);
+            var res = this.pcall(
+                "item."+ type +"." + type + ".parse", 
+                type, part.content, comment);
 
             if (res && res.name) {
                 return res.name;

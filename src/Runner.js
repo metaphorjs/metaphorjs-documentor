@@ -167,7 +167,7 @@ var Runner = Base.$extend({
             if (dir) {
                 doc.eat(dir, cfg.extension || "js", {
                     namePrefix: cfg.namePrefix,
-                    basePath: cfg.basePath,
+                    basePath: cfg.basePath || jsonFile.base,
                     includeExternal: cfg.includeExternal
                 });
             }
