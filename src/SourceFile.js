@@ -325,10 +325,11 @@ module.exports = function(){
                             type: type,
                             name: name
                         });
-
+                    
                 item.addFlag(type, part.content);
 
-                if (part.originalFlag) {
+                if (part.originalFlag && part.originalFlag != type &&
+                    !item.hasFlag(part.originalFlag)) {
                     item.addFlag(part.originalFlag, '');
                 }
 

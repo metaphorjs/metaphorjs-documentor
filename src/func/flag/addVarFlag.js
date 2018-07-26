@@ -11,7 +11,7 @@ module.exports = function(flag, content, item) {
         if (res.description) {
             item.addFlag("description", res.description);
         }
-        if (res.type) {
+        if (res.type && !item.hasFlag("type")) {
             item.addFlag("type", res.type);
         }
 

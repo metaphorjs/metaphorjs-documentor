@@ -8,15 +8,15 @@ module.exports = function resolveExtendableName(item, flag, content) {
     var find = {
         "extends": "class",
         "implements": "interface",
-        "mixes": ["mixin", "trait"]
+        "mixes": ["mixin", "trait"],
+        "md-extend": null
     };
 
-    find = find.hasOwnProperty(flag) ? find[flag] : null;
-
-    if (find) {
-        var ns = item.getParentNamespace(),
-            refs = ns.findItem(content, find);
-
+    if (find.hasOwnProperty(flag)) {
+        var type = find[flag],
+            ns = item.getParentNamespace(),
+            refs = ns.findItem(content, type);
+            
         return refs.length ? refs[0].fullName : null;
     }
 

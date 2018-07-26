@@ -465,11 +465,9 @@ module.exports = Base.$extend({
             var location    = item.location || "api",
                 typeProps   = item.getTypeProps();
 
-            //addSection(location);
-            //exprt.sections[location].children.push(item.exportData());
-            //sectionItems[location].push(item);
- 
-            
+            if (typeProps && typeProps.virtual) {
+                return;
+            }
 
             items.push(item);
         });
@@ -482,6 +480,9 @@ module.exports = Base.$extend({
 
         items.forEach(function(item){
             var typeProps   = item.getTypeProps();
+            if (typeProps && typeProps.virtual) {
+                return;
+            }
             addStructItem(item.type, typeProps.groupName, item.name, item.fullName);
         });
 

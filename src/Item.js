@@ -249,22 +249,18 @@ module.exports = (function(){
             if (!self.flags.hasOwnProperty(flag)) {
                 self.flags[flag] = [];
             }
-            if (isArray(content)) {
-                content.forEach(function(content){
-                    f = content instanceof Flag ?
-                            content :
-                            new Flag(flag, content, type, props, self.file);
-                    self.flags[flag].push(f);
-                    added.push(f);
-                });
+
+            if (!isArray(content)) {
+                content = [content];
             }
-            else {
+
+            content.forEach(function(content){
                 f = content instanceof Flag ?
                         content :
                         new Flag(flag, content, type, props, self.file);
                 self.flags[flag].push(f);
                 added.push(f);
-            }
+            });
 
             added.forEach(function(f) {
                 self.pcall(flag + ".added", f, self);
@@ -315,8 +311,9 @@ module.exports = (function(){
                 return;
             }
 
-            ["extends", "implements", "mixes"].forEach(function(flag){
+            ["extends", "implements", "mixes", "md-extend"].forEach(function(flag){
                 if (flags.hasOwnProperty(flag)) {
+
                     flags[flag].forEach(function(flagObj){
 
                         parentClass = typeof flagObj == "string" ? 
@@ -326,14 +323,14 @@ module.exports = (function(){
 
                         if (parent) {
                             parent.applyInheritance();
-                            self.inheritFrom(parent);
+                            self.inheritFrom(parent, flag);
                         }
                     });
                 }
             });
         },
 
-        inheritFrom: function(parent) {
+        inheritFrom: function(parent, inheritanceFlag) {
 
             var self = this;
 
@@ -341,12 +338,16 @@ module.exports = (function(){
 
                 if (!self.getItem(item.type, item.name)) {
                     var newItem = item.clone(self);
-                    newItem.addFlag("inherited", parent.fullName);
+                    if (inheritanceFlag != "md-extend") {
+                        newItem.addFlag("inherited", parent.fullName);
+                    }
                     self.addItem(newItem);
                 }
                 else {
-                    self.getItem(item.type, item.name)
-                        .addFlag("overrides", parent.fullName);
+                    if (inheritanceFlag != "md-extend") {
+                        self.getItem(item.type, item.name)
+                            .addFlag("overrides", parent.fullName);
+                    }
                 }
             }, null, true);
         },
@@ -431,6 +432,12 @@ module.exports = (function(){
 
             var found = [];
 
+            if (!type && name.indexOf(":") !== -1) {
+                name = name.split(":");
+                type = name.shift();
+                name = name.pop();
+            }
+ 
             this.eachItem(function(item){
 
                 if (name === item.name) {
@@ -475,11 +482,11 @@ module.exports = (function(){
         },
 
         resolveInheritanceNames: function() {
-            this.resolveNames(["extends", "implements", "mixes"]);
+            this.resolveNames(["extends", "implements", "mixes", "md-extend"]);
         },
 
         resolveOtherNames: function() {
-            this.resolveNames(null, ["extends", "implements", "mixes"]);
+            this.resolveNames(null, ["extends", "implements", "mixes", "md-extend"]);
         },
 
         resolveNames: function(flags, notFlags) {
@@ -702,6 +709,10 @@ module.exports = (function(){
                 if (!plain && !chGroups[type]) {
 
                     typeProps = child.getTypeProps();
+
+                    if (typeProps && typeProps.virtual) {
+                        return;
+                    }
 
                     chGroups[type] = {
                         isApiGroup: true,
