@@ -202,7 +202,13 @@ module.exports = (function(){
         },
 
         /**
-         * @method
+         * @method addFlag
+         * @param {Flag} flag
+         * @returns {array} array of created flags
+         */
+
+        /**
+         * @method addFlag
          * @param {string} flag
          * @param {string|array} content
          * @param {string} type
@@ -215,6 +221,15 @@ module.exports = (function(){
 
             if (self.type == "root") {
                 return;
+            }
+
+            if (flag instanceof Flag) {
+                if (!self.flags.hasOwnProperty(flag.name)) {
+                    self.flags[flag.name] = [];
+                }
+                self.flags[flag.name].push(flag);
+                self.pcall(flag.name + ".added", flag, self);
+                return [flag];
             }
 
             if (content == undf) {
@@ -267,6 +282,22 @@ module.exports = (function(){
             });
 
             return added;
+        },
+
+        /**
+         * @method
+         * @param {function} fn {
+         *  @param {string} name
+         *  @param {Flag} flag
+         * }
+         */
+        eachFlag: function(fn, context) {
+            var self = this, flag;
+            for (flag in self.flags) {
+                self.flags.forEach(function(f){
+                    fn.call(context, flag, f);
+                });
+            }
         },
 
         /**
@@ -350,6 +381,12 @@ module.exports = (function(){
                     }
                 }
             }, null, true);
+
+            if (inheritanceFlag === "md-extend") {
+                parent.eachFlag(function(name, f){
+                    self.addFlag(f.clone());
+                });
+            }
         },
 
         hasInherited: function() {

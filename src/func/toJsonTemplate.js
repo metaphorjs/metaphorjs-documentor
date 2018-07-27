@@ -1,6 +1,7 @@
 
 var isArray = require("metaphorjs/src/func/isArray.js"),
     copy = require("metaphorjs/src/func/copy.js"),
+    toBool = require("metaphorjs/src/func/toBool.js"),
     nextUid = require("metaphorjs/src/func/nextUid.js");
 
 module.exports = (function() {
@@ -42,7 +43,23 @@ module.exports = (function() {
                 key = name +"_"+ id;
 
                 if (!def) {
-                    def = defaults[type];
+                    def = defaults[type];   
+                }
+                
+                switch (type) {
+                    case "bool":
+                    case "boolean": {
+                        def = toBool(def);
+                        break;
+                    }
+                    case "int": {
+                        def = parseInt(def);
+                        break;
+                    }
+                    case "float": {
+                        def = parseFloat(def);
+                        break;
+                    }
                 }
 
                 o[key] = def;
