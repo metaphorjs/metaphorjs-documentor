@@ -2,6 +2,7 @@
 var Base = require("./Base.js"),
     extend = require("metaphorjs/src/func/extend.js"),
     fs = require("fs"),
+    toJsonTemplate = require("./func/toJsonTemplate.js"),
     eachLink = require("./func/eachLink.js");
 
 /**
@@ -93,6 +94,9 @@ module.exports = Base.$extend({
 
             return fs.readFileSync(path).toString();
         });
+
+
+        MetaphorJs.ns.add("filter.presentAsJson", toJsonTemplate);
 
         self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
     },
