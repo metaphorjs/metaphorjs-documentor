@@ -63,7 +63,11 @@ module.exports = Base.$extend({
 
         MetaphorJs.ns.add("filter.markdownLinks", function(str){
 
-            return str.replace(/\[([^\]]+)\]\(([^\)]+)\)/i, function(match, name, url){
+            if (!str) {
+                return "";
+            }
+
+            return (""+str).replace(/\[([^\]]+)\]\(([^\)]+)\)/i, function(match, name, url){
                 return '<a href="'+ url +'">'+ name +'</a>';
             });
         });

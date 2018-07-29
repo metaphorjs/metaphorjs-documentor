@@ -24,7 +24,8 @@ module.exports = (function() {
 
                 var name = child.name,
                     type = child.plainFlags.type,
-                    def = child.plainFlags.default,
+                    val = child.plainFlags.value || 
+                            child.plainFlags.default,
                     key, descr,
                     id;
                 
@@ -33,7 +34,7 @@ module.exports = (function() {
                 }
 
                 type && (type = type[0]);
-                def && (def = def[0]);
+                val && (val = val[0]);
 
                 if (!type) {
                     return;
@@ -42,27 +43,27 @@ module.exports = (function() {
                 id = nextUid();
                 key = name +"_"+ id;
 
-                if (!def) {
-                    def = defaults[type];   
+                if (!val) {
+                    val = defaults[type];   
                 }
                 
                 switch (type) {
                     case "bool":
                     case "boolean": {
-                        def = toBool(def);
+                        val = toBool(val);
                         break;
                     }
                     case "int": {
-                        def = parseInt(def);
+                        val = parseInt(val);
                         break;
                     }
                     case "float": {
-                        def = parseFloat(def);
+                        val = parseFloat(val);
                         break;
                     }
                 }
 
-                o[key] = def;
+                o[key] = val;
 
                 cache[key] = {
                     id: id,
@@ -130,6 +131,10 @@ module.exports = (function() {
     var putComments = function(json, o, cache, lineSize) {
         var key, item, r, comment, type;
 
+        if (!json) {
+            return "";
+        }
+
         for (key in cache) {
             item = cache[key];
             r = new RegExp('^(\\s+)"' + key + '":\\s(.+)$', 'im');
@@ -161,7 +166,7 @@ module.exports = (function() {
             cache = {};
 
         type && (type = type[0]);
-    
+
         if (type === "array") {
             o = [{}];
             childrenToObject(o[0], item, cache);

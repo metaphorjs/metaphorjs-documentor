@@ -265,13 +265,39 @@ module.exports = function(){
                 item,
                 name;
 
-            if (part.flag == "md-apply") {
+            if (part.flag === "md-apply") {
                 context = fixedContext || self.getCurrentContext();
                 var tmp = self.tmp[part.content];
                 if (tmp) {
                     self.processComments([tmp], context);
                 }
                 return null;
+            }
+
+            if (part.flag === "md-set-var") {
+                context = fixedContext || self.getCurrentContext();
+                if (context) {
+                    var res = this.pcall(
+                        "item."+ (type||"*") +".md-set-var.parse", 
+                        type, part.content, cmt);
+                    
+                    if (res.name) {
+                        context.setValue(res.name, res.value);
+                    }
+                }
+                return null;
+            }
+
+            if (part.flag == "md-var") {
+                context = fixedContext || self.getCurrentContext();
+                if (context) {
+                    var value = context.getValue(part.content);
+                    if (value != null && value != undefined && 
+                        !item.hasFlag("value")) {
+                        item.addFlag("value", value);
+                        return null;
+                    }
+                }
             }
 
             // end current context

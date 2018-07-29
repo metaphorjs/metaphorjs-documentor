@@ -3,6 +3,7 @@ var Base = require("./Base.js"),
     Flag = require("./Flag.js"),
     isArray = require("metaphorjs/src/func/isArray.js"),
     undf = require("metaphorjs/src/var/undf.js"),
+    copy = require("metaphorjs/src/func/copy.js"),
     emptyFn = require("metaphorjs/src/func/emptyFn.js");
 
 
@@ -27,6 +28,7 @@ module.exports = (function(){
         line: null,
         props: null,
         parent: null,
+        values: null,
 
         /**
          * @var {int}
@@ -48,6 +50,7 @@ module.exports = (function(){
 
             self.items = {};
             self.flags = {};
+            self.values = {};
 
             self.$super();
 
@@ -96,8 +99,28 @@ module.exports = (function(){
 
             newItem.items = items;
             newItem.flags = flags;
+            newItem.values = copy(this.values);
+
+            if (flags.hasOwnProperty("md-var") && 
+                !flags.hasOwnProperty("value")) {
+                var val = newParent.getValue(flags['md-var'][0].content);
+                if (val !== null) {
+                    newItem.addFlag("value", val);
+                }
+            }
 
             return newItem;
+        },
+
+        createChild: function(type, name) {
+            var item = new Item({
+                doc: this.doc,
+                file: this.file,
+                type: type
+            });
+
+            item.setName(name);
+            return item;
         },
 
         /**
@@ -304,6 +327,16 @@ module.exports = (function(){
          * @method
          * @param {string} name
          */
+        removeFlag: function(name) {
+            if (this.hasFlag(name)) {
+                delete this.flags[name];
+            }
+        },
+
+        /**
+         * @method
+         * @param {string} name
+         */
         setName: function(name) {
             this.name = name;
         },
@@ -366,7 +399,6 @@ module.exports = (function(){
             var self = this;
 
             parent.eachItem(function(item){
-
                 if (!self.getItem(item.type, item.name)) {
                     var newItem = item.clone(self);
                     if (inheritanceFlag != "md-extend") {
@@ -636,6 +668,33 @@ module.exports = (function(){
                     });
                 }
             }
+        },
+
+        /**
+         * @method
+         * @param {string} name
+         * @param {*} value
+         */
+        setValue: function(name, value) {
+            this.values[name] = value;
+        },
+
+        /**
+         * Get value from this item or one of its parents
+         * @method
+         * @param {string} name
+         * @param {bool} localOnly {
+         *  @default false
+         * }
+         */
+        getValue: function(name, localOnly) {
+            if (this.values.hasOwnProperty(name)) {
+                return this.values[name];
+            }
+            if (!localOnly && this.parent) {
+                return this.parent.getValue(name);
+            }
+            return null;
         },
 
 
