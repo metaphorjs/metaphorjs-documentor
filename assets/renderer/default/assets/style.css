@@ -155,4 +155,59 @@ ul.level-0 > li.item-property-group-name {
   margin-top: 10px;
 }
 
+.pre-code {
+  position: relative;
+}
+.pre-code .code-toggler {
+  position: absolute;
+  display: block;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #ccc;
+  line-height: 18px;
+  text-align: center;
+  right: 5px;
+  top: 4px;
+  font-size: 10px;
+  color: #ccc;
+  text-decoration: none;
+  padding-left: 1px;
+}
+.pre-code .code-toggler:hover, .pre-code .code-toggler:visited {
+  color: #ccc;
+  text-decoration: none;
+}
+.pre-code .code-placeholder {
+  color: #888;
+  position: absolute;
+  top: 0;
+  left: 0;
+  line-height: 20px;
+  padding-left: 10px;
+}
+.pre-code.hidden .code-placeholder {
+  display: block;
+}
+.pre-code.hidden .code-toggler-show {
+  display: inline;
+}
+.pre-code.hidden .code-toggler-hide {
+  display: none;
+}
+.pre-code.hidden code {
+  display: none;
+}
+.pre-code.visible .code-placeholder {
+  display: none;
+}
+.pre-code.visible .code-toggler-show {
+  display: none;
+}
+.pre-code.visible .code-toggler-hide {
+  display: inline;
+}
+.pre-code.visible code {
+  display: block;
+}
+
 /*# sourceMappingURL=style.css.map */

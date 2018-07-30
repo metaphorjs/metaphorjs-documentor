@@ -192,3 +192,73 @@ ul.level-0 > li.item-property-group-name {
     font-size: 12px;
     margin-top: 10px;
 }
+
+
+.pre-code {
+    position: relative;
+
+    .code-toggler {
+        position: absolute;
+        display: block;
+        width: 20px;
+        height: 20px;
+        border: 1px solid #ccc;
+        line-height: 18px;
+        text-align: center;
+        right: 5px;
+        top: 4px;
+        font-size: 10px;
+        color: #ccc;
+        text-decoration: none;
+        padding-left: 1px;
+
+        &:hover, &:visited {
+            color: #ccc;
+            text-decoration: none;
+        }
+    }
+
+    .code-placeholder {
+        color: #888;
+        position: absolute;
+        top: 0;
+        left: 0;
+        line-height: 20px;
+        padding-left: 10px;
+    }
+
+    &.hidden {
+
+        .code-placeholder {
+            display: block;
+        }
+
+        .code-toggler-show {
+            display: inline;
+        }
+        .code-toggler-hide {
+            display: none;
+        }
+
+        code {
+            display: none;
+        }
+    }
+
+    &.visible {
+        .code-placeholder {
+            display: none;
+        }
+
+        .code-toggler-show {
+            display: none;
+        }
+        .code-toggler-hide {
+            display: inline;
+        }
+
+        code {
+            display: block;
+        }
+    }
+}
