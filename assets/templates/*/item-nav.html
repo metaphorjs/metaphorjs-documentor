@@ -11,7 +11,7 @@
         {class.inherited}=".item.isInherited">
 
         <a [href]="'#' + .item.fullName" [title]=".item.name">
-            <span class="item-nav-item-name" {bind}=".item.name"></span>
+            <span class="item-nav-item-name" {bind}=".item.navName || .item.name"></span>
             <mjs-if value=".isFunction">
                 <mjs-if value=".item.childTypes.indexOf('param') != -1">
                     <span class="item-nav-item-arguments">({{ .item.getChildren('param') | collect:"name" | join:", " }})</span>

@@ -64,8 +64,11 @@ module.exports = (function(){
          */
         clone: function() {
             return new Flag(
-                this.name, this.content, this.type,
-                copy(this.props), this.file
+                this.name, 
+                this.content, 
+                this.type,
+                copy(this.props), 
+                this.file
             );
         },
     

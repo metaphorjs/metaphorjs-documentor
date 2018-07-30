@@ -22,6 +22,7 @@ module.exports = (function(){
         type: null,
         name: null,
         fullName: null,
+        navName: null,
         items: null,
         flags: null,
         comment: null,
@@ -475,6 +476,13 @@ module.exports = (function(){
             return parents;
         },
 
+        /**
+         * @method
+         */
+        getParent: function() {
+            return this.parent;
+        },
+
         getParentNamespace: function() {
 
             var parents     = this.getParents(),
@@ -534,6 +542,16 @@ module.exports = (function(){
             }, null, thisOnly);
 
             return found;
+        },
+
+        /**
+         * @method
+         */
+        getFullName: function() {
+            if (!this.fullName) {
+                this.resolveFullName();
+            }
+            return this.fullName;
         },
 
 
@@ -714,6 +732,7 @@ module.exports = (function(){
                     type: self.type,
                     name:  self.name,
                     fullName: self.fullName,
+                    navName: self.navName,
                     file: self.file.exportPath,
                     originalFile: self.file.path,
                     fileType: self.file.ext,
