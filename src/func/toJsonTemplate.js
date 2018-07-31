@@ -92,7 +92,7 @@ module.exports = (function() {
 
     var buildComment = function(item, offset, lineSize) {
         var lines = [],
-            d, line, w, descr,
+            d, line, w, descr, descrContent,
             pad = " ".repeat(offset);
 
         if (!item.descr || !item.descr.length) {
@@ -104,23 +104,27 @@ module.exports = (function() {
             line = "";
 
             while (descr.length > 0) {
-                d = descr.shift().content;
-                d = d.split(" ");
+                descrContent = descr.shift().content.split(/[\r\n]/);
+                while (descrContent.length > 0) {
+                    d = descrContent.shift();
+                    d = d.split(" ");
 
-                while (d.length > 0) {
-                    w = d.shift();
-                    if (offset + 3 + w.length + 1 <= lineSize) {
-                        line += w + " ";
+                    while (d.length > 0) {
+                        w = d.shift();
+                        if (offset + 3 + w.length + 1 <= lineSize) {
+                            line += w + " ";
+                        }
+                        else {
+                            lines.push(pad + '// ' + line);
+                            line = "";
+                        }
                     }
-                    else {
+
+                    if (line.length > 0) {
                         lines.push(pad + '// ' + line);
                         line = "";
-                    }
-                }
 
-                if (line.length > 0) {
-                    lines.push(pad + '// ' + line);
-                    line = "";
+                    }
                 }
             }
         }
