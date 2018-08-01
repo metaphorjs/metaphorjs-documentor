@@ -681,8 +681,8 @@ module.exports = (function(){
                         fn.call(context, item);
                     }
                     else {
-                        if (fn.indexOf(".") == -1) {
-                            item[fn]();
+                        if (fn.indexOf(".") == -1 && item.hasOwnProperty(fn)) {
+                            item[fn](); 
                         }
                         else {
                             item.pcall(fn, item);

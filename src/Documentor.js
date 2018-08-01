@@ -318,11 +318,12 @@ module.exports = Base.$extend({
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
 
-
         self.pcall("namesResolved", self);
 
         self.pcall("prepareItems", self);
         self.pcall("itemsPrepared", self);
+
+        self.eachItem("finish");
 
         self.pcall("prepareContent", self);
         self.pcall("contentPrepared", self);
