@@ -42,11 +42,19 @@ module.exports = Base.$extend({
 
     initMetaphor: function(MetaphorJs) {
 
+        var self = this;
+
         MetaphorJs.error.on(function(e){
             self.doc.trigger("error", e);
         });
 
-        MetaphorJs.ns.add("filter.markdown", this.doc.pget("markdown"));
+        var md = self.doc.pget("markdown");
+        MetaphorJs.ns.add("filter.markdown", function(input){
+            if (typeof input != "string") {
+                return ""+input;
+            }
+            return md.apply(null, arguments);
+        });
 
         var self = this;
 

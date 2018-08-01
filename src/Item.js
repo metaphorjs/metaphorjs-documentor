@@ -325,12 +325,33 @@ module.exports = (function(){
         },
 
         /**
-         * @method
+         * @method removeFlag 
          * @param {string} name
+         * @param {Flag} flag {
+         *  @optional
+         * }
          */
-        removeFlag: function(name) {
+
+         /**
+          * @method removeFlag
+          * @param {Flag} flag
+          */
+        removeFlag: function(name, flag) {
+
+            if (name instanceof Flag) {
+                flag = name;
+                name = flag.name;
+            }
+
             if (this.hasFlag(name)) {
-                delete this.flags[name];
+                if (!flag) {
+                    delete this.flags[name];
+                    return;
+                }
+                var inx = this.flags[name].indexOf(flag);
+                if (inx !== -1) {
+                    this.flags[name].splice(inx, 1);
+                }
             }
         },
 
@@ -399,27 +420,36 @@ module.exports = (function(){
 
             var self = this;
 
-            parent.eachItem(function(item){
-                if (!self.getItem(item.type, item.name)) {
-                    var newItem = item.clone(self);
-                    if (inheritanceFlag != "md-extend") {
-                        newItem.addFlag("inherited", parent.fullName);
-                    }
-                    self.addItem(newItem);
-                }
-                else {
-                    if (inheritanceFlag != "md-extend") {
-                        self.getItem(item.type, item.name)
-                            .addFlag("overrides", parent.fullName);
-                    }
-                }
-            }, null, true);
+            var res = self.pcall("extend", self, parent, inheritanceFlag);
 
-            if (inheritanceFlag === "md-extend") {
-                parent.eachFlag(function(name, f){
-                    self.addFlag(f.clone());
-                });
+            if (res !== false) {
+
+                parent.eachItem(function(item){
+                    if (!self.getItem(item.type, item.name)) {
+                        var newItem = item.clone(self);
+                        if (inheritanceFlag != "md-extend") {
+                            newItem.addFlag("inherited", parent.fullName);
+                        }
+                        self.addItem(newItem);
+                    }
+                    else {
+                        if (inheritanceFlag != "md-extend") {
+                            self.getItem(item.type, item.name)
+                                .addFlag("overrides", parent.fullName);
+                        }
+                    }
+                }, null, true);
+
+                if (inheritanceFlag === "md-extend") {
+                    parent.eachFlag(function(name, f){
+                        self.addFlag(f.clone()).forEach(function(f){
+                            f.setProperty("inherited", true);
+                        });
+                    });
+                }
             }
+
+            self.pcall("extended", self, parent, inheritanceFlag)
         },
 
         hasInherited: function() {
