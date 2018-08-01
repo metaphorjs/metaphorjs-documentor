@@ -15,7 +15,8 @@ module.exports = (function() {
         "array": [],
         "bool": true,
         "boolean": true,
-        "float": 0.0
+        "float": 0.0,
+        "datetime": "0000-00-00T00:00:00+00:00"
     };
 
     var childrenToObject = function(o, item, cache) {
