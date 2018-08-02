@@ -10,7 +10,8 @@
           rel="stylesheet"
           [href]="this.style">
 
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/jquery/dist/jquery.slim.min.js"></script>
+    <script src="bower_components/popper.js/dist/popper.min.js"></script>
     <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="bower_components/prism/prism.js"></script>
     <script src="assets/doc.js"></script>
@@ -21,7 +22,6 @@
 <mjs-include src="jubmotron"></mjs-include>
 
 <div class="container source-container">
-
     <div class="row item-group level-0" >
         <div {each}="item in .sourceTree.items"
             class="col-md-12 item-group-items level-0"
@@ -29,27 +29,6 @@
         <mjs-include src=".item.template"></mjs-include>
         </div>
     </div>
-
-    <!--<mjs-each value="section in .sourceTree.sections | toArray">
-    <div class="row item-group level-0" 
-         {each}="group in .section.value">
-        <mjs-if value="!!this.group.isContentGroup">
-            <div {each}="item in .group.items" 
-                  class="col-md-12 content">
-                <mjs-if value=".item.contentType == 'html'">
-                    <div [id]=".item.id" {bind-html}=".item.content"></div>
-                </mjs-if>
-            </div>
-        </mjs-if>
-        <mjs-if value="!!this.group.isApiGroup">
-            <div {each}="item in .group.items"
-                 class="col-md-12 item-group-items level-0"
-                 {class}="'item-group-type-' + .item.type">
-                <mjs-include src=".item.template"></mjs-include>
-            </div>
-        </mjs-if>
-    </div>
-    </mjs-each>-->
 </div>
 
 
