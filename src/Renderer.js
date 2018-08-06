@@ -2,6 +2,7 @@
 var Base = require("./Base.js"),
     extend = require("metaphorjs/src/func/extend.js"),
     fs = require("fs"),
+    Promise = require("metaphorjs-promise/src/lib/Promise.js"),
     toJsonTemplate = require("./func/toJsonTemplate.js"),
     eachLink = require("./func/eachLink.js");
 
@@ -110,6 +111,10 @@ module.exports = Base.$extend({
 
         MetaphorJs.ns.add("filter.presentAsJson", toJsonTemplate);
 
+        MetaphorJs.Renderer.setSkip("link", false);
+        MetaphorJs.Renderer.setSkip("style", false);
+        MetaphorJs.Renderer.setSkip("script", false);
+
         self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
     },
 
@@ -157,7 +162,6 @@ module.exports = Base.$extend({
                 }
             });
         });
-
     },
 
     cleanupOutDir: function() {
@@ -181,9 +185,8 @@ module.exports = Base.$extend({
         }
     },
 
-
     render: function() {
-
+        return Promise.resolve();
     }
 
 });

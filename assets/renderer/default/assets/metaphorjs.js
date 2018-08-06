@@ -1,4 +1,4 @@
-module.exports = function (window) {
+(function(){
 "use strict";
 var __MetaphorJsPrebuilt = {};
 
@@ -7035,7 +7035,7 @@ ns.register("mixin.Provider", {
 
 
 
-defineClass({
+var App = defineClass({
 
     $class: "App",
     $mixins: ["mixin.Observable", "mixin.Provider"],
@@ -12871,7 +12871,7 @@ function resolveComponent(cmp, cfg, scope, node, args) {
 
 
 
-defineClass({
+var View = defineClass({
 
     $class: "View",
 
@@ -17220,16 +17220,6 @@ Directive.registerAttribute("cmp-prop", 200,
 
 Directive.registerAttribute("ignore", 0, returnFalse);
 
-
-
-
-Directive.registerAttribute("include-file", 900, function(scope, node, filePath){
-
-    var r = require,
-        fs = r("fs");
-
-    node.innerHTML = fs.readFileSync(filePath).toString();
-});
 
 
 
@@ -25074,3074 +25064,558 @@ Component.$extend({
 });
 
 
+var generateTemplateNames = function(name){
 
+    var list        = [],
+        path        = name.split("."),
+        max         = path.length - 2,
+        last        = path.length - 1,
+        exts        = [path[0], '*'],
+        tmp, i, j, ext, e;
 
+    for (e = 0; e < 2; e++) {
 
-ns.register("validator.messages", {
-    required: 		"This field is required.",
-    remote:	 		"Please fix this field.",
-    email: 			"Please enter a valid email address.",
-    url: 			"Please enter a valid URL.",
-    date: 			"Please enter a valid date.",
-    dateISO: 		"Please enter a valid date (ISO).",
-    number: 		"Please enter a valid number.",
-    digits: 		"Please enter only digits.",
-    creditcard: 	"Please enter a valid credit card number.",
-    equalTo: 		"Please enter the same value again.",
-    accept: 		"Please enter a value with a valid extension.",
-    maxlength: 		"Please enter no more than {0} characters.",
-    minlength: 		"Please enter at least {0} characters.",
-    rangelength: 	"Please enter a value between {0} and {1} characters long.",
-    range: 			"Please enter a value between {0} and {1}.",
-    max: 			"Please enter a value less than or equal to {0}.",
-    min: 			"Please enter a value greater than or equal to {0}."
-});
+        ext = exts[e];
+        tmp = path.slice();
+        tmp[0] = ext;
+        list.push(tmp.join("."));
 
+        for (j = 1; j <= max; j++) {
 
-///^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
-
-// https://gist.github.com/dperini/729294
-var rUrl = new RegExp(
-    "^" +
-        // protocol identifier
-    "(?:(?:https?|ftp)://)" +
-        // user:pass authentication
-    "(?:\\S+(?::\\S*)?@)?" +
-    "(?:" +
-        // IP address exclusion
-        // private & local networks
-    "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
-    "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
-    "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
-        // IP address dotted notation octets
-        // excludes loopback network 0.0.0.0
-        // excludes reserved space >= 224.0.0.0
-        // excludes network & broacast addresses
-        // (first & last IP address of each class)
-    "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
-    "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
-    "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
-    "|" +
-        // host name
-    "(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)" +
-        // domain name
-    "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*" +
-        // TLD identifier
-    "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))" +
-    ")" +
-        // port number
-    "(?::\\d{2,5})?" +
-        // resource path
-    "(?:/\\S*)?" +
-    "$", "i"
-);
-
-
-
-ns.register("validator.checkable", function(elem) {
-    return /radio|checkbox/i.test(elem.type);
-});
-
-function eachNode(el, fn, context) {
-    var i, len,
-        children = el.childNodes;
-
-    if (fn.call(context, el) !== false) {
-        for(i =- 1, len = children.length>>>0;
-            ++i !== len;
-            eachNode(children[i], fn, context)){}
+            for (i = last; i > last - j; i--) {
+                tmp[i] = "*";
+                list.push(tmp.join("."));
+            }
+        }
     }
+
+    return list.filter(function(value, index, self){
+        return self.indexOf(value) === index;
+    });
 };
 
 
+App.$extend({
+    $class: "DocsApp",
+    loading: 0,
 
+    $init: function() {
+        var self = this;
 
+        self.$super.apply(self, arguments);
 
+        self.scope.loading = false;
 
+        //initMetaphorTemplates(Template);
+        Template.cache.addFinder(function(id){
 
-(function(){
+            var names = generateTemplateNames(id),
+            i, l,
+            tplNode;
 
-    var checkable = ns.get("validator.checkable");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    return ns.register("validator.getLength", function(value, el) {
-        var l = 0;
-        switch( el.nodeName.toLowerCase() ) {
-            case 'select':
-                eachNode(el, function(node){
-                    if (node.selected) {
-                        l++;
-                    }
-                });
-                return l;
-            case 'input':
-                if (checkable(el)) {
-                    if (el.form) {
-                        eachNode(el.form, function (node) {
-                            if (node.type == el.type && node.name == el.name && node.checked) {
-                                l++;
-                            }
-                        });
-                    }
-                    else {
-                        var parent,
-                            inputs,
-                            i, len;
-
-                        if (isAttached(el)) {
-                            parent  = el.ownerDocument;
-                        }
-                        else {
-                            parent = el;
-                            while (parent.parentNode) {
-                                parent = parent.parentNode;
-                            }
-                        }
-
-                        inputs  = select("input[name="+ el.name +"]", parent);
-                        for (i = 0, len = inputs.length; i < len; i++) {
-                            if (inputs[i].checked) {
-                                l++;
-                            }
-                        }
-                    }
-                    return l;
+            for (i = 0, l = names.length; i < l; i++) {
+                tplNode = window.document.getElementById(names[i]);
+                if (tplNode) {
+                    return tplNode.innerHTML;
                 }
-        }
-        return value.length;
-    })
-
-}());
-
-
-
-
-
-
-(function(){
-
-    var checkable   = ns.get("validator.checkable"),
-        getLength   = ns.get("validator.getLength");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    return ns.register("validator.empty", function(value, element) {
-
-        if (!element) {
-            return value == undf || value === '';
-        }
-
-        switch(element.nodeName.toLowerCase()) {
-            case 'select':{
-                // could be an array for select-multiple or a string, both are fine this way
-                var val = getValue(element);
-                return !val || val.length == 0;
             }
-            case 'input':{
-                if (checkable(element))
-                    return getLength(value, element) == 0;
-                break;
+        });
+
+        var data = window.docsData;
+
+        if (data) {
+            var k;
+            for (k in data) {
+                self.scope[k] = data[k];
             }
         }
 
-        return trim(value).length == 0;
-    });
+        self.makeItemMap();
+        mhistory.init();
 
-}());
+        window.docsApp = self;
+    },
 
+    makeItemMap: function() {
+        var map = {},
+            self = this;
 
-
-
-
-
-
-(function(){
-
-    var empty = ns.get("validator.empty"),
-        getLength = ns.get("validator.getLength");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    // i've changed most of the functions, but the result is the same.
-    // this === field's api.
-
-    return ns.register("validator.methods", {
-
-        required: function(value, element, param) {
-            if (param === false) {
-                return true;
+        var flattenItem = function(item) {
+            if (item.isApiGroup) {
+                item.items.forEach(flattenItem);
             }
-            return !empty(value, element);
-        },
-
-        regexp: function(value, element, param) {
-            var reg = param instanceof RegExp ? param : new RegExp(param);
-            return empty(value, element) || reg.test(value);
-        },
-
-        notregexp: function(value, element, param) {
-            var reg = param instanceof RegExp ? param : new RegExp(param);
-            return empty(value, element) || !reg.test(value);
-        },
-
-        minlength: function(value, element, param) {
-            return empty(value, element) ||
-                   (
-                       element ?
-                       getLength(trim(value), element) >= param :
-                       value.toString().length >= param
-                   );
-        },
-
-        maxlength: function(value, element, param) {
-            return empty(value, element) ||
-                   (
-                       element ?
-                       getLength(trim(value), element) <= param:
-                       value.toString().length <= param
-                   );
-        },
-
-        rangelength: function(value, element, param) {
-            var length = element ? getLength(trim(value), element) : value.toString().length;
-            return empty(value, element) || ( length >= param[0] && length <= param[1] );
-        },
-
-        min: function(value, element, param) {
-            return empty(value, element) || parseInt(value, 10) >= param;
-        },
-
-        max: function(value, element, param) {
-            return empty(value, element) || parseInt(value, 10) <= param;
-        },
-
-        range: function(value, element, param) {
-            value = parseInt(value, 10);
-            return empty(value, element) || ( value >= param[0] && value <= param[1] );
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/email
-        email: function(value, element) {
-            // contributed by Scott Gonzalez: http://projects.scottsplayground.com/email_address_validation/
-            return empty(value, element) || /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/url
-        url: function(value, element) {
-            // contributed by Scott Gonzalez: http://projects.scottsplayground.com/iri/
-            return empty(value, element) || rUrl.test(value);
-            //	/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/date
-        date: function(value, element) {
-            return empty(value, element) || !/Invalid|NaN/.test(new Date(value));
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/dateISO
-        dateiso: function(value, element) {
-            return empty(value, element) || /^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/number
-        number: function(value, element) {
-            return empty(value, element) || /^-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/digits
-        digits: function(value, element) {
-            return empty(value, element) || /^\d+$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/creditcard
-        // based on http://en.wikipedia.org/wiki/Luhn
-        creditcard: function(value, element) {
-
-            if (empty(value, element)) {
-                return true; // !! who said this field is required?
-            }
-
-            // accept only digits and dashes
-            if (/[^0-9-]+/.test(value)) {
-                return false;
-            }
-
-            var nCheck 	= 0,
-                bEven 	= false,
-                nDigit,
-                cDigit;
-
-            value = value.replace(/\D/g, "");
-
-            for (var n = value.length - 1; n >= 0; n--) {
-
-                cDigit = value.charAt(n);
-                nDigit = parseInt(cDigit, 10);
-
-                if (bEven) {
-                    if ((nDigit *= 2) > 9) {
-                        nDigit -= 9;
-                    }
-                }
-
-                nCheck 	+= nDigit;
-                bEven 	= !bEven;
-            }
-
-            return (nCheck % 10) == 0;
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/accept
-        accept: function(value, element, param) {
-            param = isString(param) ? param.replace(/,/g, '|') : "png|jpe?g|gif";
-            return empty(value, element) || value.match(new RegExp(".(" + param + ")$", "i"));
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/equalTo
-        equalto: function(value, element, param, api) {
-            // bind to the blur event of the target in order to revalidate whenever the target field is updated
-
-            var f       = api.getValidator().getField(param),
-                target  = f ? f.getElem() : param;
-
-            //var listener = function(){
-            //    removeListener(target, "blur", listener);
-            //    api.check();
-            //};
-
-            return value == getValue(target);
-        },
-
-        notequalto: function(value, element, param, api) {
-
-            var f       = api.getValidator().getField(param),
-                target  = f ? f.getElem() : param;
-
-            //var listener = function(){
-            //    removeListener(target, "blur", listener);
-            //    api.check();
-            //};
-
-            return value != getValue(target);
-        },
-
-        zxcvbn: function(value, element, param) {
-            return zxcvbn(value).score >= parseInt(param);
-        }
-    });
-
-
-}());
-
-
-
-
-ns.register("validator.format", function(str, params) {
-
-    if (isFunction(params)) return str;
-
-    if (!isArray(params)) {
-        params = [params];
-    }
-
-    var i, l = params.length;
-
-    for (i = -1; ++i < l;
-         str = str.replace(new RegExp("\\{" + i + "\\}", "g"), params[i])){}
-
-    return str;
-});
-
-
-
-
-
-
-
-
-
-
-(function(){
-
-    /* ***************************** FIELD ****************************************** */
-
-
-    var defaults = /*field-options-start*/{
-
-        allowSubmit:		true,			// call form.submit() on field's ENTER keyup
-        alwaysCheck:		false,			// run tests even the field is proven valid and hasn't changed since last check
-        alwaysDisplayState:	false,
-        data:				null,
-        ignore:				null,			// put ignore:true to field config to ignore the field completely
-        disabled:			false,			// make validator disabled for this field initially
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			'',				// css class for a not valid form
-            ajax:			''				// css class for a form while it is being checked with ajax request
-        },
-
-        // if string is provided, considered errorBox: {tag: '...'}
-        errorBox: {
-            cls: 			'',				// add this class to the automatically created element
-            fn:				null, 			// must return dom node (cancels auto creation), receives api as the only param
-            tag:			'',				// create element automatically
-            position:		'after',		// place it before|after the form element
-            elem:			null,			// jquery or dom object or selector (already existing object)
-            enabled:		true			// can be disabled later (toggleErrorBox())
-        },
-
-        // callbacks are case insensitive
-        // you can use camel case if you like.
-        callback: {
-
-            scope:			null,
-
-            destroy:		null,			// called when field's validator is being destroyed. fn(api)
-            statechange:	null,			// when field's state has been changed. fn(api, (boolean) state)
-            errorchange:	null,			// fn(api, error)
-            submit:			null,			// when enter key was pressed. fn(api, event). return false to prevent submitting even
-            // if the form is valid
-            check:          null,           // called after each check (may not be relevant, if there is a ajax check) fn(api, valid)
-            beforeAjax:		null,			// when ajax check is about to be executed. fn(api, requestData)
-            afterAjax:		null,			// when ajax check ended. fn(api)
-
-            displaystate:	null			// use this to display custom field state: fn(api, valid, error)
-        },
-
-        rules: 				{},				// {name: value}
-        // {name: fn(fieldValue, dom, ruleValue, api)}
-        // fn must return error message, false or true.
-        messages: 			{}
-    }/*field-options-end*/;
-
-
-    var fixFieldShorthands = function(options) {
-
-        if (!options) {
-            return {};
-        }
-
-        var fix = function(level1, level2, type) {
-            var value   = options[level1],
-                yes     = false;
-
-            if (value === undf) {
-                return;
-            }
-
-            switch (type) {
-                case "string": {
-                    yes     = isString(value);
-                    break;
-                }
-                case "function": {
-                    yes     = isFunction(value);
-                    break;
-                }
-                case "boolean": {
-                    yes = isBool(value);
-                    break;
-                }
-            }
-            if (yes) {
-                options[level1] = {};
-                options[level1][level2] = value;
+            if (item.isApiItem) {
+                map[item.fullName] = item;
             }
         };
 
-        fix("errorBox", "enabled", "boolean");
-        fix("errorBox", "tag", "string");
-        fix("errorBox", "fn", "function");
-
-        return options;
-    };
-
-
-    var messages = ns.get("validator.messages"),
-        methods = ns.get("validator.methods"),
-        empty = ns.get("validator.empty"),
-        format = ns.get("validator.format");
-
-
-
-
-    var Field = defineClass({
-        $class: "validator.Field",
-        $mixins: ["mixin.Observable"],
-
-        vldr:           null,
-        elem:           null,
-        rules:          null,
-        cfg:            null,
-
-        input:          null,
-
-        enabled:		true,
-        valid:			null,			// the field has been checked and is valid (null - not checked yet)
-        dirty:			false,			// the field's value changed, hasn't been rechecked yet
-        id:				null,
-        prev:			'',
-        error:			null,
-        errorRule:      null,
-        pending: 		null,
-        rulesNum:		0,
-        displayState:	false,
-        data:			null,
-        checking:		false,
-        checkTmt:		null,
-        errorBox:       null,
-        customError:    false,
-
-        $init: function(elem, options, vldr) {
-            options             = options || {};
-
-            var self            = this,
-                cfg;
-
-            self.cfg            = cfg = extend({}, defaults,
-                fixFieldShorthands(Field.defaults),
-                fixFieldShorthands(options),
-                true, true
-            );
-
-            self.input          = Input.get(elem);
-            self.input.onChange(self.onInputChange, self);
-            self.input.onKey(13, self.onInputSubmit, self);
-
-            self.elem           = elem;
-            self.vldr           = vldr;
-            self.enabled        = !elem.disabled;
-            self.id             = getAttr(elem, 'name') || getAttr(elem, 'id');
-            self.data           = options.data;
-            self.rules			= {};
-
-            cfg.messages        = extend({}, messages, cfg.messages, true, true);
-
-            setAttr(elem, "data-validator", vldr.getVldId());
-
-            if (self.input.radio) {
-                self.initRadio();
-            }
-
-            if (cfg.rules) {
-                self.setRules(cfg.rules, false);
-            }
-
-            self.readRules();
-
-            self.prev 	= self.input.getValue();
-
-            if (cfg.disabled) {
-                self.disable();
-            }
-        },
-
-        getValidator: function() {
-            return this.vldr;
-        },
-
-        initRadio: function() {
-
-            var self    = this,
-                radios  = self.input.radio,
-                vldId   = self.vldr.getVldId(),
-                i,l;
-
-            for(i = 0, l = radios.length; i < l; i++) {
-                setAttr(radios[i], "data-validator", vldId);
-            }
-        },
-
-        /**
-         * Set/add field rules
-         */
-        setRules: function(list, check) {
-
-            var self    = this;
-
-            check = check == undf ? true : check;
-
-            for (var i in list) {
-                self.setRule(i, list[i], false);
-            }
-
-            if (check) {
-                self.check(false);
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Set/add field rule
-         */
-        setRule: function(rule, value, check) {
-
-            var self    = this,
-                rules   = self.rules;
-
-            check = check == undf ? true : check;
-
-            if (value === null) {
-                if (rules[rule]) {
-                    self.rulesNum--;
-                }
-                delete rules[rule];
-            }
-            else {
-                if (!rules[rule]) {
-                    self.rulesNum++;
-                }
-                rules[rule] = value;
-                if (self.valid !== null) {
-                    self.setValidState(false);
-                }
-            }
-
-            if (check) {
-                self.check(false);
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Set rule message
-         */
-        setMessage: function(rule, message) {
-            this.cfg.messages[rule] = message;
-            return this;
-        },
-
-        /**
-         * Set rule messages
-         */
-        setMessages: function(messages) {
-
-            var self = this;
-
-            for (var i in messages) {
-                self.setMessage(i, messages[i]);
-            }
-            return self;
-        },
-
-        /**
-         * Get rule messages
-         */
-        getMessages: function() {
-            return extend({}, this.cfg.messages);
-        },
-
-        /**
-         * Read rules from attributes and classes
-         * (this happens on init)
-         */
-        readRules: function() {
-
-            var self        = this,
-                elem        = self.elem,
-                cls 		= elem.className,
-                found		= {},
-                val, i, name, len;
-
-            for (i in methods) {
-
-                if (methods.hasOwnProperty(i)) {
-
-                    val = getAttr(elem, i) || getAttr(elem, "data-validate-" + i);
-
-                    if (val == undf || val === false) {
-                        continue;
-                    }
-                    if ((i == 'minlength' || i == 'maxlength') && parseInt(val, 10) == -1) {
-                        continue;
-                    }
-
-                    found[i] = val;
-
-                    val = getAttr(elem, "data-message-" + i);
-                    val && self.setMessage(i, val);
-                }
-            }
-
-            if ((val = getAttr(elem, 'remote'))) {
-                found['remote'] = val;
-            }
-
-            if (cls) {
-                cls = cls.split(" ");
-                for (i = 0, len = cls.length; i < len; i++) {
-
-                    name = trim(cls[i]);
-
-                    if (methods[name] || name == 'remote') {
-                        found[name] = true;
-                    }
-                }
-            }
-
-            for (i in found) {
-                self.setRule(i, found[i], false);
-            }
-        },
-
-        /**
-         * Get field rules
-         */
-        getRules: function() {
-            return this.rules;
-        },
-
-        /**
-         * @return boolean
-         */
-        hasRule: function(name) {
-            return this.rules[name] ? true : false;
-        },
-
-        /**
-         * Get field value
-         */
-        getValue: function() {
-            return this.input.getValue();
-        },
-
-        /**
-         * Get user data
-         */
-        getUserData: function() {
-            return this.data;
-        },
-
-
-        /**
-         * Set user data
-         */
-        setUserData: function(data) {
-            var self    = this,
-                old     = self.data;
-            self.data = data;
-            return old;
-        },
-
-        /**
-         * @returns boolean
-         */
-        isEmpty: function() {
-            var self = this;
-            return empty(self.getValue(), self.elem);
-        },
-
-        /**
-         * Enable field validation
-         */
-        enable: function() {
-            var self = this;
-            self.enabled = true;
-            self.vldr.reset();
-            return self;
-        },
-
-        /**
-         * Disable field validation
-         */
-        disable: function() {
-            var self = this;
-            self.enabled = false;
-
-            if (self.valid === false) {
-                self.setValidState(true);
-                self.doDisplayState();
-            }
-            return self;
-        },
-
-        enableDisplayState:	function() {
-            this.displayState = true;
-        },
-
-        disableDisplayState:	function() {
-            this.displayState = false;
-        },
-
-        isDisplayStateEnabled: function() {
-            return this.displayState;
-        },
-
-
-        toggleErrorBox: function(state) {
-
-            var self    = this,
-                cfg     = self.cfg,
-                prev    = cfg.errorBox.enabled;
-
-            cfg.errorBox.enabled = state;
-
-            if (!prev && state && state.displayState && self.valid() === false) {
-                self.doDisplayState();
-            }
-        },
-
-        isEnabled: function() {
-            return this.enabled;
-        },
-
-        getElem: function() {
-            return this.elem;
-        },
-
-        getName: function() {
-            return this.id;
-        },
-
-        getError: function() {
-            return this.error;
-        },
-
-        getErrorRule: function() {
-            return this.errorRule;
-        },
-
-        isValid: function() {
-
-            var self = this;
-
-            if (!self.isEnabled()) {
-                return true;
-            }
-            if (self.customError) {
-                return false;
-            }
-
-            return (self.valid === true && !self.pending) || self.rulesNum === 0;
-        },
-
-        getExactValidState: function() {
-            return this.valid;
-        },
-
-        setCustomError:	function(error, rule) {
-            var self = this;
-            self.customError = error ? true : false;
-            self.setValidState(error ? false : true);
-            self.setError(error === true ? null : error, rule);
-            self.doDisplayState();
-        },
-
-        reset: function() {
-
-            var self = this;
-
-            self.abort();
-            self.dirty 	= false;
-            self.prev 	= '';
-
-            self.setValidState(null);
-            self.setError(null);
-            self.doDisplayState();
-
-            return self;
-        },
-
-        /**
-         * Abort ajax check
-         */
-        abort: function() {
-            var self = this;
-            if (self.pending) {
-                self.pending.abort();
-                self.pending = null;
-            }
-            return self;
-        },
-
-        check: function(force) {
-
-            var self = this,
-                rules = self.rules,
-                cfg = self.cfg,
-                elem = self.elem;
-
-            // disabled field validator always returns true
-            if (!self.isEnabled()) {
-                return true;
-            }
-
-            if (self.customError) {
-                return false;
-            }
-
-            // if there are no rules, we return true
-            if (self.rulesNum == 0 && self.valid !== false) {
-                return true;
-            }
-
-            if (self.checking) {
-                if (!self.checkTmt) {
-                    self.checkTmt	= setTimeout(bind(self.checkTimeout, self), 100);
-                }
-                return self.valid === true;
-            }
-
-            self.checking = true;
-
-            // nothing changed since last check
-            // we need to find a way to indicate that (if) this field depends on others
-            // and state.dirty doesn't really work in this case
-            if (force !== true &&
-                !rules.equalTo && !rules.notEqualTo &&
-                !self.dirty && self.valid !== null &&
-                !cfg.alwaysCheck) {
-
-                if (!self.pending) {
-                    self.doDisplayState();
-                }
-
-                self.checking = false;
-                return self.valid === true;
-            }
-
-            var valid 			= true,
-                remote 			= false,
-                val				= self.getValue(),
-                msg;
-
-            for (var i in rules) {
-
-                // we always call remote check after all others
-                if (i == 'remote') {
-                    if (self.dirty || cfg.alwaysCheck || self.valid === null || force === true) {
-                        if (val || rules[i].checkEmpty) {
-                            remote = true;
-                        }
-                    }
-                    continue;
-                }
-
-                var fn = isFunction(rules[i]) ? rules[i] : methods[i];
-
-                if ((msg = fn.call(self.$$callbackContext, val, elem, rules[i], self)) !== true) {
-                    valid = false;
-                    self.setError(format(msg || cfg.messages[i] || "", rules[i]), i);
-                    break;
-                }
-            }
-
-            remote	= remote && valid;
-
-            if (valid) {
-                self.setError(null);
-            }
-
-            if (!remote) {
-                self.setValidState(valid);
-                self.doDisplayState();
-            }
-            else {
-                self.ajaxCheck();
-            }
-
-            self.dirty = false;
-            self.checking = false;
-
-            self.trigger("check", self, self.valid);
-
-            return self.valid === true && !remote;
-        },
-
-        doDisplayState: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                valid 		= self.isValid(),
-                errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid,
-                elem        = self.elem;
-
-            if (!self.displayState && !cfg.alwaysDisplayState) {
-                valid	= null;
-            }
-
-            if (self.valid === null) {
-                valid 	= null;
-            }
-
-            if (errorCls) {
-                valid === false ? addClass(elem, errorCls) : removeClass(elem, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(elem, validCls) : removeClass(elem, validCls);
-            }
-
-            var box 	= self.getErrorBox(),
-                error 	= self.error;
-
-            if (box) {
-                if (valid === false && error) {
-                    box.innerHTML = state.error;
-                }
-                box.style.display = valid !== false || !error || !cfg.errorBox.enabled ? 'none' : 'block';
-            }
-
-            self.trigger('display-state', self, valid, self.error);
-        },
-
-        /**
-         * @returns jQuery
-         */
-        getErrorBox: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                eb			= cfg.errorBox;
-
-            if (eb.tag || eb.fn || eb.selector) {
-                if (!self.errorBox && eb.enabled) {
-                    self.createErrorBox();
-                }
-                return self.errorBox;
-            }
-            else {
-                return null;
-            }
-        },
-
-
-        destroy: function() {
-
-            var self = this;
-
-            removeAttr(self.elem, "data-validator");
-
-            if (self.errorBox) {
-                self.errorBox.parentNode.removeChild(self.errorBox);
-            }
-
-            self.input.destroy();
-        },
-
-
-        isPending: function() {
-            return this.pending !== null;
-        },
-
-        setValidState: function(valid) {
-
-            var self = this;
-
-            if (self.valid !== valid) {
-                self.valid = valid;
-                self.trigger('state-change', self, valid);
-            }
-        },
-
-
-        setError:		function(error, rule) {
-
-            var self = this;
-
-            if (self.error != error || self.errorRule != rule) {
-                self.error = error;
-                self.errorRule = rule;
-                self.trigger('error-change', self, error, rule);
-            }
-        },
-
-
-        checkTimeout: function() {
-
-            var self = this;
-
-            self.checkTmt = null;
-            if (self.checking) {
+        self.scope.sourceTree.items.forEach(flattenItem);
+        self.itemMap = map;
+    },
+
+    getItem: function(id) {
+        return this.itemMap[id];
+    },
+
+    setLoading: function(state, ifNot) {
+        if (state) {
+            if (ifNot && this.loading > 0) {
                 return;
             }
-            self.check(false);
-        },
-
-        onInputChange: function(val) {
-
-            var self    = this,
-                prev    = self.prev;
-
-            if (prev !== val) {
-                self.dirty = true;
-                self.customError = false;
-                self.abort();
-                if (!self.pending) {
-                    self.check(false);
-                }
-
-                self.prev = self.input.getValue();
-            }
-        },
-
-        onInputSubmit: function(e) {
-
-            e = normalizeEvent(e);
-
-            if (!e.isDefaultPrevented || !e.isDefaultPrevented()) {
-                var res = this.trigger("submit", this, e);
-                if (res === false) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        },
-
-        createErrorBox: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                eb		= cfg.errorBox,
-                tag 	= eb.tag,
-                cls		= eb.cls,
-                fn		= eb.fn,
-                pos		= eb.position,
-                dom		= eb.elem;
-
-            if (fn) {
-                self.errorBox = fn.call(self.$$callbackContext, self);
-            }
-            else if(dom) {
-                self.errorBox = dom;
-            }
-            else {
-                self.errorBox = window.document.createElement(tag);
-                self.errorBox.className = cls;
-
-                var r = self.input.radio,
-                    f = r ?
-                        r[r - 1] :
-                        self.elem;
-
-                if (pos == 'appendParent') {
-                    f.parentNode.appendChild(self.errorBox);
-                }
-                else if (pos == "before") {
-                    f.parentNode.insertBefore(self.errorBox, f);
-                }
-                else {
-                    f.parentNode.insertBefore(self.errorBox, f.nextSibling);
-                }
-            }
-        },
-
-        ajaxCheck: function() {
-
-            var self    = this,
-                rules   = self.rules,
-                elem    = self.elem,
-                rm		= rules['remote'],
-                val 	= self.getValue(),
-                cfg     = self.cfg;
-
-            var acfg 	= extend({}, isString(rm) ? {url: rm} : rm, true);
-
-            //ajax.success 	= self.onAjaxSuccess;
-            //ajax.error 		= self.onAjaxError;
-            acfg.data 		= acfg.data || {};
-            acfg.data[acfg.paramName || getAttr(elem, 'name') || getAttr(elem, 'id')] = val;
-
-            if (!acfg.handler) {
-                acfg.dataType 	= 'text';
-            }
-
-            acfg.cache 		= false;
-
-            if (cfg.cls.ajax) {
-                addClass(elem, cfg.cls.ajax);
-            }
-
-            self.trigger('before-ajax', self, acfg);
-
-            self.pending = ajax(acfg);
-
-            self.pending.done(bind(self.onAjaxSuccess, self));
-            self.pending.fail(bind(self.onAjaxError, self));
-        },
-
-        onAjaxSuccess: function(data) {
-
-            var self    = this,
-                rules   = self.rules,
-                cfg     = self.cfg;
-
-            self.pending 	= null;
-            var valid 		= true;
-
-            if (rules['remote'].handler) {
-
-                var res = rules['remote'].handler.call(self.$$callbackContext, self, data);
-
-                if (res !== true) {
-                    self.setError(format(res || cfg.messages['remote'] || "", rules['remote']), 'remote');
-                    valid 		= false;
-                }
-            }
-            else {
-                if (data) {
-                    self.setError(data, 'remote');
-                    valid 		= false;
-                }
-                else {
-                    self.setError(null);
-                }
-            }
-
-            if (cfg.cls.ajax) {
-                removeClass(self.elem, cfg.cls.ajax);
-            }
-
-            self.setValidState(valid);
-            self.doDisplayState();
-            self.trigger('after-ajax', self);
-        },
-
-        onAjaxError: function(xhr, status) {
-
-            var self        = this,
-                cfg         = self.cfg,
-                response    = xhr.responseData,
-                rules       = self.rules;
-
-            if (response && rules['remote'].handler) {
-
-                var res = rules['remote'].handler.call(self.$$callbackContext, self, response);
-
-                if (res !== true) {
-                    self.setError(format(res || cfg.messages['remote'] || "", rules['remote']), 'remote');
-                }
-            }
-
-            if (cfg.cls.ajax) {
-                removeClass(self.elem, cfg.cls.ajax);
-            }
-
-            self.pending = null;
-
-            if (status != 'abort' && xhr != "abort") {
-                self.setValidState(false);
-                self.doDisplayState();
-                self.trigger('after-ajax', self);
-            }
-        }
-    }, {
-
-        defaults: {},
-        messages: {}
-
-    });
-
-
-    return Field;
-
-}());
-
-
-
-
-
-
-
-
-
-(function(){
-
-
-/* ***************************** GROUP ****************************************** */
-
-
-
-    var defaults	= /*group-options-start*/{
-
-        alwaysCheck:		false,			// run tests even the field is proven valid and hasn't changed since last check
-        alwaysDisplayState:	false,
-        disabled:			false,			// initialize disabled
-
-        value:				null,			// fn(api, vals)
-        elem:				null,			// dom node
-        errorBox:			null,			// fieldId|dom|jquery|selector|fn(api)
-        // fn must return dom|jquery object
-        errorField:			null,			// fieldId - relay errors to this field
-
-        data:				null,
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			''				// css class for a not valid form
-        },
-
-        fields:				[],
-        rules:				{},
-        messages:			{},
-
-        callback:		{
-
-            scope:			null,
-
-            destroy:		null,
-            statechange:	null,
-            errorchange:	null,
-            displaystate:	null
-        }
-    }/*group-options-end*/;
-
-
-    var messages = ns.get("validator.messages"),
-        methods = ns.get("validator.methods"),
-        format = ns.get("validator.format");
-
-
-    var Group = defineClass({
-        $class: "validator.Group",
-        $mixins: ["mixin.Observable"],
-
-        fields:         null,
-        rules:          null,
-        cfg:            null,
-        vldr:           null,
-        enabled:		false,
-        invalid:		null,
-        valid:			null,
-        displayState:	false,
-        rulesNum:	    0,
-        error:			null,
-        data:			null,
-        errorBox:		null,
-        el:			    null,
-
-        $init: function(options, vldr) {
-
-            options     = options || {};
-
-            var self            = this,
-                cfg;
-
-            self._vldr          = vldr;
-
-            self.cfg            = cfg = extend({},
-                defaults,
-                Group.defaults,
-                options,
-                true, true
-            );
-
-            self.data           = options.data;
-            self.el             = options.elem;
-            self.fields         = {};
-            self.rules		    = {};
-
-            cfg.messages        = extend({}, messages, cfg.messages, true, true);
-
-            var i, len;
-
-            if (cfg.rules) {
-                self.setRules(cfg.rules, false);
-            }
-
-            if (cfg.fields) {
-                for (i = 0, len = options.fields.length; i < len; i++) {
-                    self.add(vldr.getField(cfg.fields[i]));
-                }
-            }
-
-            self.enabled = !cfg.disabled;
-        },
-
-        /**
-         * Enable group
-         */
-        enable:		function() {
-            this.enabled	= true;
-            return this;
-        },
-
-        /**
-         * Disable group
-         */
-        disable:	function() {
-            this.enabled	= false;
-            return this;
-        },
-
-        /**
-         * Is group enabled
-         * @return {boolean}
-         */
-        isEnabled:	function() {
-            return this.enabled;
-        },
-
-        /**
-         * Are all fields in this group valid
-         * @return {boolean}
-         */
-        isValid:		function() {
-            var self = this;
-            return !self.enabled || (self.invalid === 0 && self.valid === true);
-        },
-
-        /**
-         * @return {boolean|null}
-         */
-        getExactValidState: function() {
-            return this.valid;
-        },
-
-        /**
-         * Reset group
-         */
-        reset:		function() {
-            var self = this;
-            self.invalid	= 0;
-            self.setValidState(null);
-            self.setError(null);
-            self.doDisplayState();
-            return self;
-        },
-
-        /**
-         * Get user data specified in group config
-         */
-        getUserData: function() {
-            return this.data;
-        },
-
-        /**
-         * Get group name
-         */
-        getName: function() {
-            return this.cfg.name;
-        },
-
-        /**
-         * Set group's rules
-         * @param {object} list {rule: param}
-         * @param {bool} check
-         */
-        setRules: 	function(list, check) {
-
-            var self = this;
-
-            check = check == undf ? true : check;
-
-            for (var i in list) {
-                self.setRule(i, list[i], false);
-            }
-
-            if (check) {
-                self.check();
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * @param rule
-         * @param value
-         * @param check
-         */
-        setRule:	function(rule, value, check) {
-
-            var self = this,
-                rules = self.rules;
-
-            check = check == undf ? true : check;
-
-            if (value === null) {
-                if (rules[rule]) {
-                    self.rulesNum--;
-                }
-                delete rules[rule];
-            }
-            else {
-                if (!rules[rule]) {
-                    self.rulesNum++;
-                }
-                rules[rule] = value;
-                if (self.valid !== null) {
-                    self.setValidState(false);
-                }
-            }
-
-            if (check) {
-                self.check();
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Get group rules
-         * @returns {name: value}
-         */
-        getRules:	function() {
-            return extend({}, this.rules);
-        },
-
-        /**
-         * @returns boolean
-         */
-        hasRule:	function(name) {
-            return this.rules[name] ? true : false;
-        },
-
-        /**
-         * Set group custom error
-         */
-        setError:	function(error) {
-
-            var self = this,
-                cfg = self.cfg;
-
-            if (self.error != error) {
-
-                if (cfg.errorField) {
-                    self.vldr.getField(cfg.errorField).setError(error);
-                    self.error = null;
-                }
-                else {
-                    self.error = error;
-                    self.trigger('error-change', self, error);
-                }
-            }
-        },
-
-        /**
-         * Get current error
-         */
-        getError: function() {
-            return this.error;
-        },
-
-        /**
-         * @returns {id: field}
-         */
-        getFields: function() {
-            return this.fields;
-        },
-
-        enableDisplayState:		function() {
-            this.displayState	= true;
-            return this;
-        },
-
-        disableDisplayState:	function() {
-            this.displayState	= false;
-            return this;
-        },
-
-        check: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                fields  = self.fields,
-                rules   = self.rules;
-
-            if (!self.enabled || self.rulesNum == 0) {
-                self.setValidState(null);
-                self.doDisplayState();
-                return true;
-            }
-
-            self.countInvalid();
-
-            if (self.invalid > 0) {
-                self.setValidState(null);
-                self.doDisplayState();
-                return true;
-            }
-
-            var vals	= {},
-                valid	= true,
-                val		= null,
-                msg,
-                i;
-
-            if (cfg.value) {
-
-                for (i in fields) {
-                    vals[i]	= fields[i].getValue();
-                }
-
-                val	= cfg.value.call(self.$$callbackContext, vals, self);
-            }
-
-            for (i in rules) {
-
-                var fn = isFunction(rules[i]) ? rules[i] : methods[i];
-
-                if ((msg = fn.call(self.$$callbackContext, val, null, rules[i], self, vals)) !== true) {
-
-                    valid = false;
-
-                    if (msg || cfg.messages[i]) {
-                        self.setError(format(msg || cfg.messages[i] || "", rules[i]));
-                    }
-                    else {
-                        self.setError(null);
-                    }
-
-                    break;
-                }
-
-            }
-
-            if (valid) {
-                self.setError(null);
-            }
-
-            self.setValidState(valid);
-            self.doDisplayState();
-
-            return self.valid === true;
-        },
-
-        doDisplayState:			function() {
-
-            var self    = this,
-                valid	= self.valid,
-                cfg     = self.cfg;
-
-            if (!self.displayState && !cfg.alwaysDisplayState) {
-                valid	= null;
-            }
-
-            if (cfg.errorBox) {
-
-                var ebox = self.getErrorBox();
-
-                if (valid !== null) {
-
-                    if (ebox) {
-                        ebox.innerHTML = self.error || '';
-                        ebox.style.display = self.valid === false ? 'block' : 'none';
-                    }
-                }
-                else {
-                    if (ebox) {
-                        ebox.style.display = "none";
-                    }
-                }
-            }
-
-            var errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid;
-
-            valid = self.valid;
-
-            if (errorCls) {
-                valid === false ? addClass(self.el, errorCls) : removeClass(self.el, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(self.el, validCls) : removeClass(self.el, validCls);
-            }
-
-            self.trigger('display-state', self, self.valid);
-        },
-
-        /**
-         * @returns {Element}
-         */
-        getErrorBox: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                fields  = self.fields,
-                eb	    = cfg.errorBox;
-
-            if (fields[eb]) {
-                return fields[eb].getErrorBox();
-            }
-            else if (!self.errorBox) {
-
-                if (isFunction(cfg.errorBox)) {
-                    self.errorBox	= cfg.errorBox.call(self.$$callbackContext, self);
-                }
-                else {
-                    self.errorBox	= cfg.errorBox;
-                }
-            }
-
-            return self.errorBox;
-        },
-
-
-        /**
-         * Destroy group
-         */
-        destroy:	function() {
-
-            var self    = this,
-                fields  = self.fields;
-
-            for (var i in fields) {
-                if (fields[i]) {
-                    self.setFieldEvents(fields[i], 'un');
-                }
-            }
-
-            if (self.errorBox) {
-                self.errorBox.parentNode.removeChild(self.errorBox);
-            }
-        },
-
-        add:		function(field) {
-
-            var self    = this,
-                fields  = self.fields,
-                id	    = field.getName();
-
-            if (!fields[id]) {
-                fields[id] 	= field;
-
-                self.setFieldEvents(field, 'on');
-            }
-        },
-
-        setFieldEvents:		function(f, mode) {
-            var self = this;
-            f[mode]('state-change', self.onFieldStateChange, self);
-        },
-
-        remove:		function(field) {
-
-            var self    = this,
-                fields  = self.fields,
-                id	    = field.getName();
-
-            if (fields[id]) {
-                delete fields[id];
-                self.setFieldEvents(field, 'un');
-            }
-
-            return self;
-        },
-
-        setValidState:			function(valid) {
-            var self = this;
-            if (self.valid !== valid) {
-                self.valid = valid;
-                self.trigger('state-change', self, valid);
-            }
-        },
-
-        countInvalid:			function() {
-
-            var self = this,
-                fields = self.fields;
-
-            self.invalid	= 0;
-            for (var i in fields) {
-                self.invalid += fields[i].isValid() ? 0 : 1;
-            }
-        },
-
-        onFieldStateChange:		function(f, valid) {
-            var self = this;
-            self.trigger("field-state-change", self, f, valid);
-            self.check();
-        }
-    }, {
-
-        defaults: {}
-    });
-
-
-
-    return Group;
-
-}());
-
-
-
-
-
-
-
-
-var Validator = (function(){
-
-
-    var validators  = {};
-
-    var Field = MetaphorJs.validator.Field,
-        Group = MetaphorJs.validator.Group;
-
-
-    var defaults = /*validator-options-start*/{
-
-        form:               null,           // form element -- jquery
-
-        all: 				{},				// {} of field properties which work as a preset
-        fields: 			{},				// {field: properties}
-        rules: 				{},				// {field: rules}
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			'',				// css class for a not valid form
-            checking:		''				// css class for a form while it is being checked with ajax request
-        },
-
-        groups: 			{},				// see groupDefaults. {name: cfg}
-
-        // callbacks are case insensitive
-        // you can use camel case if you like.
-        callback: {
-
-            scope:			null,
-
-            destroy:		null,			// when validator is being destroyd. fn(api)
-            reset:			null,			// when the form was resetted. fn(api)
-            beforesubmit:	null,			// when form is about to be submitted: valid and non-valid. fn(api)
-            submit:			null,			// when form is about to be submitted: only valid. fn(api).
-            // return false to prevent submitting
-            statechange:	null,			// when form's state has been changed. fn(api, state)
-            check:			null,			// fn(api) performe some additional out-of-form checks
-            // if false is returned, form becomes invalid
-
-            displaystate:	null,			// fn(api, valid)
-            displaystatechange:	null		// fn(api, state)
-        }
-    }/*validator-options-end*/;
-
-
-    var Validator = defineClass({
-
-        $class: "Validator",
-        $mixins: ["mixin.Observable"],
-
-        id:             null,
-        el:             null,
-        cfg:            null,
-        enabled: 		false,
-        invalid:		null,					// array of invalid fields
-        pending: 		0,						// number of pending requests
-        grps:			0,						// number of invalid groups
-        outside:		true,					// true - outside check passed or not present
-        submitted:		false,
-        displayState:	false,
-        isForm: 		false,
-        isField: 		false,
-        submitButton: 	null,
-        hidden:			null,
-
-        preventFormSubmit: false,
-
-        fields:         null,
-        groups:         null,
-
-        $init: function(el, preset, options) {
-
-            var self    = this,
-                tag     = el.nodeName.toLowerCase(),
-                cfg;
-
-            self.id     = nextUid();
-            validators[self.id] = self;
-
-            setAttr(el, "data-validator", self.id);
-
-            self.el     = el;
-
-            if (preset && !isString(preset)) {
-                options         = preset;
-                preset          = null;
-            }
-
-            self.cfg            = cfg = extend({}, defaults, Validator.defaults, Validator[preset], options, true, true);
-
-            self.$initObservable(cfg);
-
-            self.isForm         = tag === 'form';
-            self.isField        = /input|select|textarea/.test(tag);
-
-            self.fields         = {};
-            self.groups         = {};
-
-            self.$$observable.createEvent("submit", false);
-            self.$$observable.createEvent("beforesubmit", false);
-
-            self.onRealSubmitClickDelegate  = bind(self.onRealSubmitClick, self);
-            self.resetDelegate = bind(self.reset, self);
-            self.onSubmitClickDelegate = bind(self.onSubmitClick, self);
-            self.onFormSubmitDelegate = bind(self.onFormSubmit, self);
-
-            var i;
-
-            self.initFields();
-
-            var fields  = self.fields;
-
-            for (i in cfg.rules) {
-                if (!fields[i]) {
-                    continue;
-                }
-                fields[i].setRules(cfg.rules[i], false);
-            }
-
-            cfg.rules	= null;
-
-            for (i in cfg.groups) {
-                self.addGroup(i, cfg.groups[i]);
-            }
-
-            self.initForm('bind');
-
-            delete cfg.rules;
-            delete cfg.fields;
-            delete cfg.groups;
-
-            self.enabled = true;
-        },
-
-        getVldId:       function() {
-            return this.id;
-        },
-
-        /**
-         * @returns {Element}
-         */
-        getElem:        function() {
-            return this.el;
-        },
-
-        /**
-         * @return {validator.Group}
-         */
-        getGroup: function(name) {
-            return this.groups[name] || null;
-        },
-
-        /**
-         * @return {validator.Field}
-         */
-        getField:	function(id) {
-            return this.fields[id] || null;
-        },
-
-        /**
-         * Enable validator
-         */
-        enable: function() {
-            this.enabled = true;
-            return this;
-        },
-
-        /**
-         * Disable validator
-         */
-        disable: function() {
-            this.enabled = false;
-            return this;
-        },
-
-        /**
-         * @return boolean
-         */
-        isEnabled: function() {
-            return this.enabled;
-        },
-
-        enableDisplayState:	function() {
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups,
-                i;
-
-            if (self.displayState !== true) {
-
-                self.displayState = true;
-
-                for (i in fields) {
-                    fields[i].enableDisplayState();
-                }
-                for (i in groups) {
-                    groups[i].enableDisplayState();
-                }
-
-                self.trigger('display-state-change', self, true);
-            }
-
-            return self;
-        },
-
-        disableDisplayState:	function() {
-
-            var self    = this,
-                groups  = self.groups,
-                fields  = self.fields,
-                i;
-
-            if (self.displayState !== false) {
-
-                self.displayState = false;
-
-                for (i in fields) {
-                    fields[i].disableDisplayState();
-                }
-                for (i in groups) {
-                    groups[i].disableDisplayState();
-                }
-
-                self.trigger('display-state-change', self, false);
-            }
-
-            return self;
-        },
-
-        /**
-         * @return {boolean}
-         */
-        isDisplayStateEnabled:	function() {
-            return this.displayState;
-        },
-
-
-        /**
-         * Is form valid
-         * @return {boolean}
-         */
-        isValid: function() {
-
-            var self    = this;
-
-            if (self.enabled === false) {
-                return true;
-            }
-            return 	self.invalid === 0 &&
-                      self.pending === 0 &&
-                      self.grps === 0 &&
-                      self.outside === true;
-        },
-
-        getErrors: function(plain) {
-
-            var self    = this,
-                ers     = plain === true ? [] : {},
-                err,
-                i, j,
-                all     = [self.fields, self.groups],
-                curr;
-
-            if (!self.isEnabled()) {
-                return ers;
-            }
-
-            for (j = 0; j < 2; j++) {
-
-                curr = all[j];
-
-                for (i in curr) {
-                    if (curr[i].getExactValidState() === null) {
-                        curr[i].check();
-                    }
-
-                    if (!curr[i].isValid()) {
-
-                        err = curr[i].getError();
-
-                        // it can be invalid, but have no error
-                        if (err) {
-                            if (plain) {
-                                ers.push(err);
-                            }
-                            else {
-                                ers[i] = err;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return ers;
-        },
-
-
-        /**
-         * Check form for errors
-         */
-        check: function() {
-
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups;
-
-            // disabled field validator always returns true
-            if (!self.isEnabled()) {
-                return true;
-            }
-
-            var prevValid	= self.isValid(),
-                nowValid,
-                i;
-
-            for (i in fields) {
-                fields[i].check();
-            }
-
-            for (i in groups) {
-                groups[i].check();
-            }
-
-            self.outside 	= self.trigger('check', self) !== false;
-            nowValid		= self.isValid();
-
-            if (prevValid != nowValid) {
-                self.doDisplayState();
-                self.trigger('state-change', self, false);
-            }
-
-            return nowValid;
-        },
-
-
-        /**
-         * Add field
-         */
-        add: function(node, fieldCfg) {
-
-            var self    = this;
-
-            if (!isField(node)) {
-                return self;
-            }
-            if (getAttr(node, "data-no-validate") !== null) {
-                return self;
-            }
-            if (getAttr(node, "data-validator") !== null) {
-                return self;
-            }
-
-            var id 			= getAttr(node, 'name') || getAttr(node, 'id'),
-                cfg         = self.cfg,
-                fields      = self.fields,
-                fcfg,
-                f;
-
-            if (!id) {
-                return self;
-            }
-
-            fcfg 	= cfg.fields && cfg.fields[id] ? cfg.fields[id] : (fieldCfg || {});
-
-            if (isString(fcfg)) {
-                fcfg 	= {rules: [fcfg]};
-            }
-
-            fcfg 	= extend({}, cfg.all || {}, fcfg, true, true);
-
-            if (fcfg.ignore) {
-                return self;
-            }
-
-            if (!fcfg.callback) {
-                fcfg.callback = {
-                    context:	self.$$callbackContext
-                };
-            }
-
-            f       = new Field(node, fcfg, self);
-            fcfg    = null;
-            id      = f.getName();
-
-            if (fields[id]) {
-                return self; // already added
-            }
-
-            fields[id] = f;
-
-            self.setFieldEvents(f, 'on');
-
-            if (self.displayState) {
-                f.enableDisplayState();
-            }
-
-            if (self.isEnabled() && self.invalid !== null) {
-                f.check();
-            }
-
-            return self;
-        },
-
-        /**
-         * Add group of fields
-         */
-        addGroup:		function(name, cfg) {
-
-            var self    = this,
-                groups  = self.groups;
-
-            if (!groups[name]) {
-
-                cfg.name		= name;
-
-                groups[name]	= new Group(cfg, self);
-                self.setGroupEvents(groups[name], 'on');
-
-                if (self.isEnabled() && self.invalid !== null) {
-                    groups[name].check();
-                }
-            }
-        },
-
-
-        /**
-         * Focus first invalid field
-         */
-        focusInvalid: function() {
-            var fields  = this.fields;
-            for (var i in fields) {
-                if (!fields[i].isValid()) {
-                    fields[i].getElem().focus();
-                    return;
-                }
-            }
-        },
-
-
-        /**
-         * Reset validator
-         */
-        reset: function() {
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups,
-                i;
-
-            self.submitted 	= false;
-
-            self.disableDisplayState();
-
-            for (i in groups) {
-                groups[i].reset();
-            }
-
-            for (i in fields) {
-                fields[i].reset();
-            }
-
-            self.pending 		= 0;
-            self.invalid 		= null;
-            self.grps			= 0;
-            self.outside		= false;
-
-            self.doDisplayState();
-            self.trigger('reset', self);
-
-            return self;
-        },
-
-
-        /**
-         * Submit form
-         */
-        submit: function() {
-
-            var self    = this,
-                el      = self.el;
-
-            if (!self.isForm) {
-                self.onSubmit();
+            this.loading++;
+            if (this.loading > 1) {
                 return;
             }
-
-            if (isFunction(el.submit)) {
-
-                if (self.trigger('before-submit', self) !== false &&
-                    self.trigger('submit', self) !== false) {
-                    el.submit();
-                }
-            }
-            else {
-                self.onSubmit();
-            }
-        },
-
-        setFieldEvents: function(v, mode) {
-            var self    = this;
-            v[mode]('state-change', self.onFieldStateChange, self);
-            v[mode]('before-ajax', self.onBeforeAjax, self);
-            v[mode]('after-ajax', self.onAfterAjax, self);
-            v[mode]('submit', self.onFieldSubmit, self);
-            v[mode]('destroy', self.onFieldDestroy, self);
-            v[mode]('error-change', self.onFieldErrorChange, self);
-        },
-
-        setGroupEvents:	function(g, mode) {
-            g[mode]('state-change', this.onGroupStateChange, this);
-        },
-
-
-        initFields: function() {
-
-            var self    = this,
-                el      = self.el,
-                els, i, l;
-
-            if (self.isField) {
-                self.add(el);
-                return self;
-            }
-
-            els = select("input, textarea, select", el);
-
-            for (i = -1, l = els.length; ++i < l; self.add(els[i])){}
-
-            return self;
-        },
-
-        initForm: function(mode) {
-
-            var self    = this,
-                el      = self.el,
-                nodes   = el.getElementsByTagName("input"),
-                submits = select(".submit", el),
-                resets  = select(".reset", el),
-                fn      = mode === "bind" ? addListener : removeListener,
-                i, l,
-                type,
-                node;
-
-            for (i = 0, l = nodes.length; i < l; i++) {
-                node = nodes[i];
-                type = node.type;
-                if (type === "submit") {
-                    fn(node, "click", self.onRealSubmitClickDelegate);
-                }
-                else if (type === "reset") {
-                    fn(node, "click", self.resetDelegate);
-                }
-            }
-
-            for (i = -1, l = submits.length;
-                 ++i < l;
-                 submits[i].type !== "submit" && fn(submits[i], "click", self.onSubmitClickDelegate)
-            ){}
-
-            for (i = -1, l = resets.length;
-                 ++i < l;
-                 resets[i].type !== "reset" && fn(resets[i], "click", self.resetDelegate)
-            ){}
-
-            if (self.isForm) {
-                fn(el, "submit", self.onFormSubmitDelegate);
-            }
-        },
-
-        onRealSubmitClick: function(e) {
-            e = normalizeEvent(e || window.event);
-            this.submitButton  = e.target || e.srcElement;
-            this.preventFormSubmit = false;
-            return this.onSubmit(e);
-        },
-
-        onSubmitClick: function(e) {
-            this.preventFormSubmit = false;
-            return this.onSubmit(normalizeEvent(e || window.event));
-        },
-
-        onFormSubmit: function(e) {
-            e = normalizeEvent(e);
-            if (!this.isValid() || this.preventFormSubmit) {
-                e.preventDefault();
-                return false;
-            }
-
-        },
-
-        onFieldSubmit: function(fapi, e) {
-
-            var self    = this;
-            self.preventFormSubmit = false;
-            self.enableDisplayState();
-            self.submitted = true;
-
-            return self.onSubmit(e);
-        },
-
-        onSubmit: function(e) {
-
-            var self    = this;
-
-            self.enableDisplayState();
-
-            if (!self.isForm) {
-                e && e.preventDefault();
-                e && e.stopPropagation();
-            }
-
-            if (self.pending) {
-                e && e.preventDefault();
-                return false;
-            }
-
-            var buttonClicked = !!self.submitButton;
-
-            if (self.isForm) {
-
-                if (self.hidden) {
-                    self.el.removeChild(self.hidden);
-                    self.hidden = null;
-                }
-
-                // submit button's value is only being sent with the form if you click the button.
-                // since there can be a delay due to ajax checks and the form will be submitted later
-                // automatically, we need to create a hidden field
-                if (self.submitButton && /input|button/.test(self.submitButton.nodeName)) {
-                    self.hidden = window.document.createElement("input");
-                    self.hidden.type = "hidden";
-                    setAttr(self.hidden, "name", self.submitButton.name);
-                    self.hidden.value = self.submitButton.value;
-                    self.el.appendChild(self.hidden);
-                }
-            }
-
-            self.submitButton = null;
-
-            if (!self.isValid()) {
-                self.check();
-                self.onFieldStateChange();
-
-                if (self.pending) {
-                    // TODO: find out why this flag is not being set in all onSubmit handlers
-                    self.submitted = true;
-                    e && e.preventDefault();
-                    return false;
-                }
-            }
-
-            if (self.trigger('before-submit', self) === false || !self.isValid()) {
-
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                if (!self.pending) {
-                    self.focusInvalid();
-                    self.submitted = false;
-                }
-
-                self.trigger('failed-submit', self, buttonClicked);
-                return false;
-            }
-
-            if (!self.pending) {
-                self.submitted = false;
-            }
-
-            var res = self.trigger('submit', self);
-            self.preventFormSubmit = res === false;
-            return !self.isForm ? false : res;
-        },
-
-        onFieldDestroy: function(f) {
-
-            var elem 	= f.getElem(),
-                id		= getAttr(elem, 'name') || getAttr(elem, 'id');
-
-            delete this.fields[id];
-        },
-
-        onFieldErrorChange: function(f, error) {
-            this.trigger("field-error-change", this, f, error);
-        },
-
-        onFieldStateChange: function(f, valid) {
-
-            var self        = this,
-                num 		= self.invalid,
-                fields      = self.fields;
-
-            self.invalid 	= 0;
-
-            for (var i in fields) {
-                self.invalid += fields[i].isValid() ? 0 : 1;
-            }
-
-            if (f) {
-                self.trigger('field-state-change', self, f, valid);
-            }
-
-            if (num === null || (num !== null && self.invalid !== num)) {
-                self.doDisplayState();
-                self.trigger('state-change', self, self.isValid());
-            }
-        },
-
-        onGroupStateChange:	function() {
-
-            var self        = this,
-                groups      = self.groups,
-                num 		= self.grps;
-
-            self.grps 	= 0;
-
-            for (var i in groups) {
-                self.grps += groups[i].isValid() ? 0 : 1;
-            }
-
-            if (num === null || (num !== null && self.grps !== num)) {
-                self.doDisplayState();
-                self.trigger('state-change', self, self.isValid());
-            }
-        },
-
-        doDisplayState: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                valid 		= self.isValid(),
-                errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid,
-                el          = self.el;
-
-            if (self.isField || !self.displayState) {
-                valid		= null;
-            }
-
-            if (self.invalid === null) {
-                valid = null;
-            }
-
-            if (errorCls) {
-                valid === false ? addClass(el, errorCls) : removeClass(el, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(el, validCls) : removeClass(el, validCls);
-            }
-
-            self.trigger('display-state', self, valid);
-        },
-
-        onBeforeAjax: function() {
-            var self = this;
-            self.pending++;
-            if (self.cfg.cls.ajax) {
-                addClass(self.el, self.cfg.cls.ajax);
-            }
-        },
-
-        onAfterAjax: function() {
-
-            var self    = this,
-                fields  = self.fields,
-                cfg     = self.cfg;
-
-            self.pending = 0;
-
-            for (var i in fields) {
-                self.pending += fields[i].isPending() ? 1 : 0;
-            }
-
-            self.doDisplayState();
-
-            if (cfg.cls.ajax) {
-                removeClass(self.el, cfg.cls.ajax);
-            }
-
-            if (self.submitted && self.pending == 0) {
-                self.submitted = false;
-
-                if (self.isValid()) {
-                    self.submit();
-                }
-                else {
-                    self.focusInvalid();
-                }
-            }
-        },
-
-
-        /**
-         * Destroy validator
-         */
-        destroy: function() {
-
-            var self    = this,
-                groups  = self.groups,
-                fields  = self.fields,
-                i;
-
-            self.reset();
-            //self.trigger('destroy', self);
-
-            delete validators[self.id];
-
-            for (i in groups) {
-                if (groups.hasOwnProperty(i) && groups[i]) {
-                    self.setGroupEvents(groups[i], 'un');
-                    groups[i].destroy();
-                }
-            }
-
-            for (i in fields) {
-                if (fields.hasOwnProperty(i) && fields[i]) {
-                    self.setFieldEvents(fields[i], 'un');
-                    fields[i].destroy();
-                }
-            }
-
-            self.initForm('unbind');
-
-            self.fields = null;
-            self.groups = null;
-            self.el = null;
-            self.cfg = null;
+            this.scope.$set("loading", true);
         }
-
-    }, {
-
-        defaults:   {},
-
-        addMethod:  function(name, fn, message) {
-            var methods = ns.get("validator.methods");
-            if (!methods[name]) {
-                methods[name] = fn;
-                if (message) {
-                    Validator.messages[name] = message;
-                }
+        else if (this.loading > 0) {
+            this.loading--;
+            if (this.loading === 0) {
+                this.scope.$set("loading", false);
             }
-        },
-
-        getValidator: function(el) {
-            var vldId = getAttr(el, "data-validator");
-            return validators[vldId] || null;
         }
-
-
-    });
-
-
-
-    return Validator;
-
-}());
+    }
+});
 
 
 
+Component.$extend({
+    $class: "DocsItem",
+    template: "item-component",
 
+    initComponent: function() {
+        var self = this;
+        self.scope.tpl = '';
 
-
-defineClass({
-
-    $class: "validator.Component",
-
-    node: null,
-    scope: null,
-    validator: null,
-    scopeState: null,
-    fields: null,
-    formName: null,
-    nodeCfg: null,
-
-    $init: function(node, scope, renderer, nodeCfg) {
-
-        var self        = this;
-
-        self.node       = node;
-        self.scope      = scope;
-        self.scopeState = {};
-        self.fields     = [];
-        self.nodeCfg    = nodeCfg;
-        self.validator  = self.createValidator();
-        self.formName   = getAttr(node, 'name') || getAttr(node, 'id') || '$form';
-
-        self.initScope();
-        self.initScopeState();
-        self.initValidatorEvents();
-
-        // wait for the renderer to finish
-        // before making judgements :)
-        renderer.once("rendered", self.validator.check, self.validator);
-        renderer.on("destroy", self.$destroy, self);
-        scope.$on("destroy", self.$destroy, self);
+        self.itemId.on("change", self.onItemIdChange, self);
+        self.onItemIdChange(self.itemId.getValue() || self.findFirstItem());
     },
 
-    createValidator: function() {
-        var self    = this,
-            node    = self.node,
-            cfg     = {},
-            ncfg    = self.nodeCfg,
-            submit;
+    findFirstItem: function() {
+        var a = select(".bd-toc-sublink");
+        if (a.length) {
+            a = a[0];
+        }
+        var itemId = a.href.split("/item/");
+        if (itemId.length) {
+            return itemId[1];
+        }
+    },
 
-        if ((submit = ncfg.submit)) {
-            cfg.callback = cfg.callback || {};
-            cfg.callback.submit = function(fn, scope){
-                return function() {
-                    try {
-                        return fn(scope);
-                    }
-                    catch(thrownError) {
-                        error(thrownError);
-                    }
-                }
-            }(createFunc(submit), self.scope);
+    onItemIdChange: function(itemId) {
+        var self = this;
+
+        if (!itemId) {
+            return;
         }
 
-        return new Validator(node, cfg);
-    },
-
-    initValidatorEvents: function() {
-
-        var self    = this,
-            v       = self.validator;
-
-        v.on('field-state-change', self.onFieldStateChange, self);
-        v.on('state-change', self.onFormStateChange, self);
-        v.on('display-state-change', self.onDisplayStateChange, self);
-        v.on('field-error-change', self.onFieldErrorChange, self);
-        v.on('reset', self.onFormReset, self);
-    },
-
-    initScope: function() {
-
-        var self    = this,
-            scope   = self.scope,
-            name    = self.formName;
-
-        scope[name] = self.scopeState;
-    },
-
-
-    initScopeState: function() {
-
-        var self    = this,
-            node    = self.node,
-            state   = self.scopeState,
-            fields  = self.fields,
-            els, el,
-            i, l,
-            name;
-
-        if (node.elements) {
-            els     = node.elements;
-        }
-        else {
-            els     = [];
-            eachNode(node, function(el) {
-                if (isField(el)) {
-                    els.push(el);
-                }
+        return new Promise(function(resolve){
+            async(function(){
+                self.scope.$app.setLoading(true, true);
+                resolve();
+            }, null, [], 200);
+        })
+        .then(function(){
+            return new Promise(function(resolve){
+                raf(function(){
+                    self.scope.item = self.scope.$app.getItem(itemId);
+                    self.scope.$check();
+                    resolve();
+                });
             });
-        }
+        })
+        .then(function(){
+            return new Promise(function(resolve) {
+                raf(function(){
+                    window.Prism.highlightAll();
+                    resolve();
+                });
+            });
+        })
+        .then(function(){
+            return new Promise(function(resolve) {
+                raf(function(){
+                    self.scope.$app.setLoading(false);
+                    resolve();
+                });
+            });
+        });
+    }  
+});
 
-        for (i = -1, l = els.length; ++i < l;) {
-            el = els[i];
-            name = getAttr(el, "name") || getAttr(el, 'id');
 
-            if (name && !state[name]) {
-                fields.push(name);
-                state[name] = {
-                    $error: null,
-                    $invalid: null,
-                    $pristine: true,
-                    $errorMessage: null
-                };
-            }
-        }
 
-        state.$$validator = self.validator;
-        state.$invalid = false;
-        state.$pristine = true;
-        state.$isDestroyed = bind(self.$isDestroyed, self);
-        state.$submit = bind(self.validator.onSubmit, self.validator);
-        state.$reset = bind(self.validator.reset, self.validator);
-    },
 
-    onDisplayStateChange: function(vld, state) {
+View.$extend({
+    $class: "DocsView",
+    
+    initView: function() {
 
         var self    = this;
 
-        if (!state) {
-            self.onFormReset(vld);
+        self.route = [
+            {
+                regexp: /\/item\//,
+                cmp: "DocsItem",
+                id: "item",
+                default: true,
+                params: [
+                    {
+                        name: "itemId",
+                        regexp: /item\/(.+)/
+                    }
+                ]
+            }
+        ];
+    }
+});
+
+
+
+var toJsonTemplate = (function() {
+
+    var LINE_SIZE = 80;
+
+    var defaults = {
+        "int": 0,
+        "string": "",
+        "object": {},
+        "array": [],
+        "bool": true,
+        "boolean": true,
+        "float": 0.0,
+        "datetime": "0000-00-00T00:00:00+00:00"
+    };
+
+    var childrenToObject = function(o, item, cache) {
+        item.children.forEach(function(grp){
+            grp.items.forEach(function(child){
+
+                var name = child.name,
+                    type = child.plainFlags.type,
+                    val = child.plainFlags.value || 
+                            child.plainFlags.default,
+                    key, descr,
+                    id;
+                
+                if (!name) {
+                    return;
+                }
+
+                type && (type = type[0]);
+                val && (val = val[0]);
+
+                if (!type) {
+                    return;
+                }
+
+                id = nextUid();
+                key = name +"_"+ id;
+
+                if (!val) {
+                    val = defaults[type];   
+                }
+                
+                switch (type) {
+                    case "bool":
+                    case "boolean": {
+                        val = toBool(val);
+                        break;
+                    }
+                    case "int": {
+                        val = parseInt(val);
+                        break;
+                    }
+                    case "float": {
+                        val = parseFloat(val);
+                        break;
+                    }
+                }
+
+                o[key] = val;
+
+                cache[key] = {
+                    id: id,
+                    name: name,
+                    type: type,
+                    descr: null
+                };
+
+                if (child.hasOwnProperty("description")) {
+                    cache[key].descr = child.description;
+                }
+
+                if (child.children.length) {
+                    if (type === "object") {
+                        o[key] = {};
+                        childrenToObject(o[key], child, cache);
+                    }
+                    else if (type === "array") {
+                        o[key] = [{}];
+                        childrenToObject(o[key][0], child, cache);
+                    }
+                }
+            });
+        });
+    };
+
+    var buildComment = function(item, offset, lineSize) {
+        var lines = [],
+            d, line, w, descr, descrContent,
+            pad = " ".repeat(offset);
+
+        if (!item.descr || !item.descr.length) {
+            
         }
         else {
-            state   = self.scopeState;
-            var i, l, f,
-                fields = self.fields;
+            
+            descr = item.descr;
+            line = "";
 
-            for (i = 0, l = fields.length; i < l; i++) {
-                f = state[fields[i]];
-                if (f.$real) {
-                    state[fields[i]] = f.$real;
+            while (descr.length > 0) {
+                descrContent = descr.shift().content.split(/[\r\n]/);
+                while (descrContent.length > 0) {
+                    d = descrContent.shift();
+                    d = d.split(" ");
+
+                    while (d.length > 0) {
+                        w = d.shift();
+                        if (offset + 3 + w.length + 1 <= lineSize) {
+                            line += w + " ";
+                        }
+                        else {
+                            lines.push(pad + '// ' + line);
+                            line = "";
+                        }
+                    }
+
+                    if (line.length > 0) {
+                        lines.push(pad + '// ' + line);
+                        line = "";
+
+                    }
                 }
             }
-
-            state.$invalid = !vld.isValid();
-            state.$pristine = false;
-
-            self.scope.$check();
         }
 
-    },
+        return lines.join("\n");
+    };
 
-    onFieldErrorChange: function(vld, field, error) {
-        this.onFieldStateChange(vld, field, field.isValid());
-    },
+    var putComments = function(json, o, cache, lineSize) {
+        var key, item, r, comment, type;
 
-    onFormReset: function(vld) {
-
-        var self    = this,
-            state   = self.scopeState,
-            i, l, f,
-            fields = self.fields;
-
-        for (i = 0, l = fields.length; i < l; i++) {
-            f = state[fields[i]];
-            f.$error = null;
-            f.$errorMessage = null;
-            f.$invalid = null;
-            f.$pristine = true;
+        if (!json) {
+            return "";
         }
 
-        state.$invalid = false;
-        state.$pristine = true;
+        for (key in cache) {
+            item = cache[key];
+            r = new RegExp('^(\\s+)"' + key + '":\\s(.+)$', 'im');
+            json = json.replace(r, function(match, pref, rest) {
+                var comment = buildComment(
+                    item, 
+                    //match.length - item.id.length - 1, 
+                    pref.length,
+                    lineSize
+                );
+                if (comment) {
+                    comment += "\n";
+                }
+                return comment + pref +'"'+ item.name +'": '+ rest;
+            });
+        }
 
-        self.scope.$check();
-    },
+        return json;
+    };
 
-    onFormStateChange: function(vld, valid) {
+    return function(item) {
 
-        var self    = this,
-            state   = self.scopeState;
+        if (item.$$jsonPresentation) {
+            return item.$$jsonPresentation;
+        }
 
-        state.$invalid = valid === false && vld.isDisplayStateEnabled();
-        state.$pristine = false;
+        var type = item.plainFlags.type,
+            o = {},
+            cache = {};
 
-        self.scope.$check();
-    },
+        type && (type = type[0]);
 
-    onFieldStateChange: function(vld, field, valid) {
-
-        var self    = this,
-            state   = self.scopeState,
-            name    = field.getName(),
-            ds      = vld.isDisplayStateEnabled(),
-            fstate  = {
-                $error: field.getErrorRule(),
-                $errorMessage: field.getError(),
-                $invalid: valid === false,
-                $pristine: field.getExactValidState() === null
-            };
-
-        if (ds) {
-            state[name] = fstate;
+        if (type === "array") {
+            o = [{}];
+            childrenToObject(o[0], item, cache);
         }
         else {
-            state[name].$real = fstate;
+            childrenToObject(o, item, cache);
         }
 
-        self.scope.$check();
-    },
+        var json = JSON.stringify(o, null, 2);
+
+        json = putComments(json, o, cache, LINE_SIZE);
+
+        item.$$jsonPresentation = json;
+        return json;
+    };
+}());
 
 
-    destroy: function() {
-        var self = this;
-
-        self.validator.$destroy();
-
-        if (self.scope) {
-            delete self.scope[self.formName];
-        }
-    }
-
+nsAdd("filter.presentAsJson", function(input, scope, prop) {
+    return toJsonTemplate(input);
 });
+var MetaphorJsExports = {};
+MetaphorJsExports['MetaphorJs'] = MetaphorJs;
+MetaphorJsExports['isFunction'] = isFunction;
+MetaphorJsExports['undf'] = undf;
+MetaphorJsExports['varType'] = varType;
+MetaphorJsExports['isString'] = isString;
+MetaphorJsExports['isArray'] = isArray;
+MetaphorJsExports['strUndef'] = strUndef;
+MetaphorJsExports['isObject'] = isObject;
+MetaphorJsExports['Cache'] = Cache;
+MetaphorJsExports['Namespace'] = Namespace;
+MetaphorJsExports['slice'] = slice;
+MetaphorJsExports['isPlainObject'] = isPlainObject;
+MetaphorJsExports['isBool'] = isBool;
+MetaphorJsExports['extend'] = extend;
+MetaphorJsExports['emptyFn'] = emptyFn;
+MetaphorJsExports['instantiate'] = instantiate;
+MetaphorJsExports['intercept'] = intercept;
+MetaphorJsExports['Class'] = Class;
+MetaphorJsExports['ns'] = ns;
+MetaphorJsExports['cs'] = cs;
+MetaphorJsExports['defineClass'] = defineClass;
+MetaphorJsExports['getAttr'] = getAttr;
+MetaphorJsExports['bind'] = bind;
+MetaphorJsExports['nextUid'] = nextUid;
+MetaphorJsExports['async'] = async;
+MetaphorJsExports['ObservableEvent'] = ObservableEvent;
+MetaphorJsExports['Observable'] = Observable;
+MetaphorJsExports['toArray'] = toArray;
+MetaphorJsExports['trim'] = trim;
+MetaphorJsExports['split'] = split;
+MetaphorJsExports['isDate'] = isDate;
+MetaphorJsExports['isRegExp'] = isRegExp;
+MetaphorJsExports['isWindow'] = isWindow;
+MetaphorJsExports['equals'] = equals;
+MetaphorJsExports['copy'] = copy;
+MetaphorJsExports['isPrimitive'] = isPrimitive;
+MetaphorJsExports['returnFalse'] = returnFalse;
+MetaphorJsExports['levenshteinArray'] = levenshteinArray;
+MetaphorJsExports['error'] = error;
+MetaphorJsExports['functionFactory'] = functionFactory;
+MetaphorJsExports['createGetter'] = createGetter;
+MetaphorJsExports['createSetter'] = createSetter;
+MetaphorJsExports['Watchable'] = Watchable;
+MetaphorJsExports['createFunc'] = createFunc;
+MetaphorJsExports['Scope'] = Scope;
+MetaphorJsExports['isThenable'] = isThenable;
+MetaphorJsExports['createWatchable'] = createWatchable;
+MetaphorJsExports['nsGet'] = nsGet;
+MetaphorJsExports['filterLookup'] = filterLookup;
+MetaphorJsExports['nsAdd'] = nsAdd;
+MetaphorJsExports['Directive'] = Directive;
+MetaphorJsExports['isNull'] = isNull;
+MetaphorJsExports['TextRenderer'] = TextRenderer;
+MetaphorJsExports['setAttr'] = setAttr;
+MetaphorJsExports['removeAttr'] = removeAttr;
+MetaphorJsExports['toCamelCase'] = toCamelCase;
+MetaphorJsExports['getAttrSet'] = getAttrSet;
+MetaphorJsExports['Promise'] = Promise;
+MetaphorJsExports['aIndexOf'] = aIndexOf;
+MetaphorJsExports['Renderer'] = Renderer;
+MetaphorJsExports['Text'] = Text;
+MetaphorJsExports['destroy'] = destroy;
+MetaphorJsExports['Provider'] = Provider;
+MetaphorJsExports['App'] = App;
+MetaphorJsExports['isAttached'] = isAttached;
+MetaphorJsExports['data'] = data;
+MetaphorJsExports['toFragment'] = toFragment;
+MetaphorJsExports['clone'] = clone;
+MetaphorJsExports['getAnimationPrefixes'] = getAnimationPrefixes;
+MetaphorJsExports['getAnimationDuration'] = getAnimationDuration;
+MetaphorJsExports['getRegExp'] = getRegExp;
+MetaphorJsExports['getClsReg'] = getClsReg;
+MetaphorJsExports['removeClass'] = removeClass;
+MetaphorJsExports['stopAnimation'] = stopAnimation;
+MetaphorJsExports['hasClass'] = hasClass;
+MetaphorJsExports['addClass'] = addClass;
+MetaphorJsExports['raf'] = raf;
+MetaphorJsExports['animate'] = animate;
+MetaphorJsExports['parseJSON'] = parseJSON;
+MetaphorJsExports['parseXML'] = parseXML;
+MetaphorJsExports['select'] = select;
+MetaphorJsExports['serializeParam'] = serializeParam;
+MetaphorJsExports['returnTrue'] = returnTrue;
+MetaphorJsExports['DomEvent'] = DomEvent;
+MetaphorJsExports['normalizeEvent'] = normalizeEvent;
+MetaphorJsExports['mousewheelHandler'] = mousewheelHandler;
+MetaphorJsExports['addListener'] = addListener;
+MetaphorJsExports['ajax'] = ajax;
+MetaphorJsExports['Template'] = Template;
+MetaphorJsExports['inArray'] = inArray;
+MetaphorJsExports['htmlTags'] = htmlTags;
+MetaphorJsExports['Component'] = Component;
+MetaphorJsExports['isNumber'] = isNumber;
+MetaphorJsExports['Queue'] = Queue;
+MetaphorJsExports['ListRenderer'] = ListRenderer;
+MetaphorJsExports['rParseLocation'] = rParseLocation;
+MetaphorJsExports['parseLocation'] = parseLocation;
+MetaphorJsExports['joinLocation'] = joinLocation;
+MetaphorJsExports['mhistory'] = mhistory;
+MetaphorJsExports['currentUrl'] = currentUrl;
+MetaphorJsExports['UrlParam'] = UrlParam;
+MetaphorJsExports['resolveComponent'] = resolveComponent;
+MetaphorJsExports['View'] = View;
+MetaphorJsExports['isField'] = isField;
+MetaphorJsExports['getValue'] = getValue;
+MetaphorJsExports['setValue'] = setValue;
+MetaphorJsExports['removeListener'] = removeListener;
+MetaphorJsExports['isAndroid'] = isAndroid;
+MetaphorJsExports['isIE'] = isIE;
+MetaphorJsExports['browserHasEvent'] = browserHasEvent;
+MetaphorJsExports['Input'] = Input;
+MetaphorJsExports['evaluate'] = evaluate;
+MetaphorJsExports['getStyle'] = getStyle;
+MetaphorJsExports['boxSizingReliable'] = boxSizingReliable;
+MetaphorJsExports['getDimensions'] = getDimensions;
+MetaphorJsExports['getWidth'] = getWidth;
+MetaphorJsExports['getHeight'] = getHeight;
+MetaphorJsExports['getScrollTopOrLeft'] = getScrollTopOrLeft;
+MetaphorJsExports['getScrollTop'] = getScrollTop;
+MetaphorJsExports['getScrollLeft'] = getScrollLeft;
+MetaphorJsExports['EventBuffer'] = EventBuffer;
+MetaphorJsExports['EventHandler'] = EventHandler;
+MetaphorJsExports['toBool'] = toBool;
+MetaphorJsExports['preloadImage'] = preloadImage;
+MetaphorJsExports['removeStyle'] = removeStyle;
+MetaphorJsExports['parentData'] = parentData;
+MetaphorJsExports['transclude'] = transclude;
+MetaphorJsExports['filterArray'] = filterArray;
+MetaphorJsExports['dateFormats'] = dateFormats;
+MetaphorJsExports['numberFormats'] = numberFormats;
+MetaphorJsExports['sortArray'] = sortArray;
+MetaphorJsExports['onReady'] = onReady;
+MetaphorJsExports['initApp'] = initApp;
+MetaphorJsExports['run'] = run;
+MetaphorJsExports['getAttrMap'] = getAttrMap;
+MetaphorJsExports['factory'] = factory;
+MetaphorJsExports['Model'] = Model;
+MetaphorJsExports['Record'] = Record;
+MetaphorJsExports['Store'] = Store;
+MetaphorJsExports['StoreRenderer'] = StoreRenderer;
+MetaphorJsExports['setStyle'] = setStyle;
+MetaphorJsExports['isVisible'] = isVisible;
+MetaphorJsExports['is'] = is;
+MetaphorJsExports['ucfirst'] = ucfirst;
+MetaphorJsExports['getOuterWidth'] = getOuterWidth;
+MetaphorJsExports['getOuterHeight'] = getOuterHeight;
+MetaphorJsExports['delegates'] = delegates;
+MetaphorJsExports['delegate'] = delegate;
+MetaphorJsExports['undelegate'] = undelegate;
+MetaphorJsExports['getOffsetParent'] = getOffsetParent;
+MetaphorJsExports['getOffset'] = getOffset;
+MetaphorJsExports['getPosition'] = getPosition;
+MetaphorJsExports['Dialog'] = Dialog;
+MetaphorJsExports['generateTemplateNames'] = generateTemplateNames;
+MetaphorJsExports['toJsonTemplate'] = toJsonTemplate;
 
-
-
-
-
-
-
-Directive.registerAttribute("validate", 250,
-    function(scope, node, expr, renderer, attr) {
-
-    var cls     = expr || "validator.Component",
-        constr  = nsGet(cls),
-        cfg     = attr ? attr.config : {};
-
-    if (!constr) {
-        error(new Error("Class '"+cls+"' not found"));
-    }
-    else {
-        return new constr(node, scope, renderer, cfg);
-    }
-});
-
-
-var MetaphorJsExport = {};
-MetaphorJsExport['MetaphorJs'] = MetaphorJs;
-MetaphorJsExport['isFunction'] = isFunction;
-MetaphorJsExport['undf'] = undf;
-MetaphorJsExport['varType'] = varType;
-MetaphorJsExport['isString'] = isString;
-MetaphorJsExport['isArray'] = isArray;
-MetaphorJsExport['strUndef'] = strUndef;
-MetaphorJsExport['isObject'] = isObject;
-MetaphorJsExport['Cache'] = Cache;
-MetaphorJsExport['Namespace'] = Namespace;
-MetaphorJsExport['slice'] = slice;
-MetaphorJsExport['isPlainObject'] = isPlainObject;
-MetaphorJsExport['isBool'] = isBool;
-MetaphorJsExport['extend'] = extend;
-MetaphorJsExport['emptyFn'] = emptyFn;
-MetaphorJsExport['instantiate'] = instantiate;
-MetaphorJsExport['intercept'] = intercept;
-MetaphorJsExport['Class'] = Class;
-MetaphorJsExport['ns'] = ns;
-MetaphorJsExport['cs'] = cs;
-MetaphorJsExport['defineClass'] = defineClass;
-MetaphorJsExport['getAttr'] = getAttr;
-MetaphorJsExport['bind'] = bind;
-MetaphorJsExport['nextUid'] = nextUid;
-MetaphorJsExport['async'] = async;
-MetaphorJsExport['ObservableEvent'] = ObservableEvent;
-MetaphorJsExport['Observable'] = Observable;
-MetaphorJsExport['toArray'] = toArray;
-MetaphorJsExport['trim'] = trim;
-MetaphorJsExport['split'] = split;
-MetaphorJsExport['isDate'] = isDate;
-MetaphorJsExport['isRegExp'] = isRegExp;
-MetaphorJsExport['isWindow'] = isWindow;
-MetaphorJsExport['equals'] = equals;
-MetaphorJsExport['copy'] = copy;
-MetaphorJsExport['isPrimitive'] = isPrimitive;
-MetaphorJsExport['returnFalse'] = returnFalse;
-MetaphorJsExport['levenshteinArray'] = levenshteinArray;
-MetaphorJsExport['error'] = error;
-MetaphorJsExport['functionFactory'] = functionFactory;
-MetaphorJsExport['createGetter'] = createGetter;
-MetaphorJsExport['createSetter'] = createSetter;
-MetaphorJsExport['Watchable'] = Watchable;
-MetaphorJsExport['createFunc'] = createFunc;
-MetaphorJsExport['Scope'] = Scope;
-MetaphorJsExport['isThenable'] = isThenable;
-MetaphorJsExport['createWatchable'] = createWatchable;
-MetaphorJsExport['nsGet'] = nsGet;
-MetaphorJsExport['filterLookup'] = filterLookup;
-MetaphorJsExport['nsAdd'] = nsAdd;
-MetaphorJsExport['Directive'] = Directive;
-MetaphorJsExport['isNull'] = isNull;
-MetaphorJsExport['TextRenderer'] = TextRenderer;
-MetaphorJsExport['setAttr'] = setAttr;
-MetaphorJsExport['removeAttr'] = removeAttr;
-MetaphorJsExport['toCamelCase'] = toCamelCase;
-MetaphorJsExport['getAttrSet'] = getAttrSet;
-MetaphorJsExport['Promise'] = Promise;
-MetaphorJsExport['aIndexOf'] = aIndexOf;
-MetaphorJsExport['Renderer'] = Renderer;
-MetaphorJsExport['Text'] = Text;
-MetaphorJsExport['destroy'] = destroy;
-MetaphorJsExport['Provider'] = Provider;
-MetaphorJsExport['isAttached'] = isAttached;
-MetaphorJsExport['data'] = data;
-MetaphorJsExport['toFragment'] = toFragment;
-MetaphorJsExport['clone'] = clone;
-MetaphorJsExport['getAnimationPrefixes'] = getAnimationPrefixes;
-MetaphorJsExport['getAnimationDuration'] = getAnimationDuration;
-MetaphorJsExport['getRegExp'] = getRegExp;
-MetaphorJsExport['getClsReg'] = getClsReg;
-MetaphorJsExport['removeClass'] = removeClass;
-MetaphorJsExport['stopAnimation'] = stopAnimation;
-MetaphorJsExport['hasClass'] = hasClass;
-MetaphorJsExport['addClass'] = addClass;
-MetaphorJsExport['raf'] = raf;
-MetaphorJsExport['animate'] = animate;
-MetaphorJsExport['parseJSON'] = parseJSON;
-MetaphorJsExport['parseXML'] = parseXML;
-MetaphorJsExport['select'] = select;
-MetaphorJsExport['serializeParam'] = serializeParam;
-MetaphorJsExport['returnTrue'] = returnTrue;
-MetaphorJsExport['DomEvent'] = DomEvent;
-MetaphorJsExport['normalizeEvent'] = normalizeEvent;
-MetaphorJsExport['mousewheelHandler'] = mousewheelHandler;
-MetaphorJsExport['addListener'] = addListener;
-MetaphorJsExport['ajax'] = ajax;
-MetaphorJsExport['Template'] = Template;
-MetaphorJsExport['inArray'] = inArray;
-MetaphorJsExport['htmlTags'] = htmlTags;
-MetaphorJsExport['Component'] = Component;
-MetaphorJsExport['isNumber'] = isNumber;
-MetaphorJsExport['Queue'] = Queue;
-MetaphorJsExport['ListRenderer'] = ListRenderer;
-MetaphorJsExport['rParseLocation'] = rParseLocation;
-MetaphorJsExport['parseLocation'] = parseLocation;
-MetaphorJsExport['joinLocation'] = joinLocation;
-MetaphorJsExport['mhistory'] = mhistory;
-MetaphorJsExport['currentUrl'] = currentUrl;
-MetaphorJsExport['UrlParam'] = UrlParam;
-MetaphorJsExport['resolveComponent'] = resolveComponent;
-MetaphorJsExport['isField'] = isField;
-MetaphorJsExport['getValue'] = getValue;
-MetaphorJsExport['setValue'] = setValue;
-MetaphorJsExport['removeListener'] = removeListener;
-MetaphorJsExport['isAndroid'] = isAndroid;
-MetaphorJsExport['isIE'] = isIE;
-MetaphorJsExport['browserHasEvent'] = browserHasEvent;
-MetaphorJsExport['Input'] = Input;
-MetaphorJsExport['evaluate'] = evaluate;
-MetaphorJsExport['getStyle'] = getStyle;
-MetaphorJsExport['boxSizingReliable'] = boxSizingReliable;
-MetaphorJsExport['getDimensions'] = getDimensions;
-MetaphorJsExport['getWidth'] = getWidth;
-MetaphorJsExport['getHeight'] = getHeight;
-MetaphorJsExport['getScrollTopOrLeft'] = getScrollTopOrLeft;
-MetaphorJsExport['getScrollTop'] = getScrollTop;
-MetaphorJsExport['getScrollLeft'] = getScrollLeft;
-MetaphorJsExport['EventBuffer'] = EventBuffer;
-MetaphorJsExport['EventHandler'] = EventHandler;
-MetaphorJsExport['toBool'] = toBool;
-MetaphorJsExport['preloadImage'] = preloadImage;
-MetaphorJsExport['removeStyle'] = removeStyle;
-MetaphorJsExport['parentData'] = parentData;
-MetaphorJsExport['transclude'] = transclude;
-MetaphorJsExport['filterArray'] = filterArray;
-MetaphorJsExport['dateFormats'] = dateFormats;
-MetaphorJsExport['numberFormats'] = numberFormats;
-MetaphorJsExport['sortArray'] = sortArray;
-MetaphorJsExport['onReady'] = onReady;
-MetaphorJsExport['initApp'] = initApp;
-MetaphorJsExport['run'] = run;
-MetaphorJsExport['getAttrMap'] = getAttrMap;
-MetaphorJsExport['factory'] = factory;
-MetaphorJsExport['Model'] = Model;
-MetaphorJsExport['Record'] = Record;
-MetaphorJsExport['Store'] = Store;
-MetaphorJsExport['StoreRenderer'] = StoreRenderer;
-MetaphorJsExport['setStyle'] = setStyle;
-MetaphorJsExport['isVisible'] = isVisible;
-MetaphorJsExport['is'] = is;
-MetaphorJsExport['ucfirst'] = ucfirst;
-MetaphorJsExport['getOuterWidth'] = getOuterWidth;
-MetaphorJsExport['getOuterHeight'] = getOuterHeight;
-MetaphorJsExport['delegates'] = delegates;
-MetaphorJsExport['delegate'] = delegate;
-MetaphorJsExport['undelegate'] = undelegate;
-MetaphorJsExport['getOffsetParent'] = getOffsetParent;
-MetaphorJsExport['getOffset'] = getOffset;
-MetaphorJsExport['getPosition'] = getPosition;
-MetaphorJsExport['Dialog'] = Dialog;
-MetaphorJsExport['rUrl'] = rUrl;
-MetaphorJsExport['eachNode'] = eachNode;
-MetaphorJsExport['Validator'] = Validator;
-return MetaphorJsExport;
-
-};
+}());

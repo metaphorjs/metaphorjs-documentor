@@ -5,7 +5,9 @@ var Renderer = require("../Renderer.js"),
 module.exports = globalCache.add("renderer.json", Renderer.$extend({
 
     render: function() {
-        return JSON.stringify(this.doc.exportData(null, false, true), null, 2);
+        return self.writeOut(
+            JSON.stringify(this.doc.exportData(), null, 2)
+        );
     }
 
 }));

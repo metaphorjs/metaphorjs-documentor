@@ -2,6 +2,7 @@
     <li class="item-nav-group-name" 
         {bind}=".group.groupName"></li>
     <li {each}="item in .group.items"
+        {show}="!.item.isInherited || $parent.$parent.showInherited"
         {init}=".isFunction = .item.type == 'function' ||
                         .item.type == 'method' ||
                         (.item.plainFlags.hasOwnProperty('type') && 

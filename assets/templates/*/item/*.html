@@ -4,16 +4,18 @@
 
 <mjs-if value=".item.hasInherited">
     <div class="item-inheritance-toggler">
-        <a href="#">Toggle inherited</a>
+        <a href="#" 
+           (click)="this.showInherited = !this.showInherited" 
+           {bind}="this.showInherited ? 'Hide inherited' : 'Show inherited'"></a>
     </div>
 </mjs-if>
 
 <div {if}=".item.level == 1 && .item.children.length && .item.type != 'function'"
     class="row">
-    <div class="col-2 col-md-2 nopadding item-nav-container">
+    <div class="col-3 col-md-3 nopadding item-nav-container">
         <mjs-include src=".item.fileType + '.item-nav'"></mjs-include>
     </div>
-    <div class="col-10 col-md-10 nopadding item-properties-container">
+    <div class="col-9 col-md-9 nopadding item-properties-container">
         <mjs-include src=".item.fileType + '.item-properties'"></mjs-include>
     </div>
 </div>

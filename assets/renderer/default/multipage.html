@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html mjs-app>
+<html mjs-app class="multipage">
 <head lang="en">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ .title }}</title>
@@ -14,25 +14,28 @@
     <script type="text/javascript" src="assets/metaphorjs.js"></script>
 </head>
 <body>
-
-<mjs-include src="top-menu"></mjs-include>
-<mjs-include src="jubmotron"></mjs-include>
+    
+<mjs-include src="top-menu" $asis="true"></mjs-include>
+<mjs-include src="jubmotron" $asis="true"></mjs-include>
 
 <div class="container source-container">
     <div class="row item-group level-0" >
-        <div    {each}="item in .sourceTree.items"
-                {init}="this.showInherited = false"
-                class="col-md-12 item-group-items level-0"
-                {class}="'item-group-type-' + .item.type">
-        <mjs-include src=".item.template"></mjs-include>
-        </div>
+        <mjs-include src="left-menu" $asis="true"></mjs-include>
+        <mjs-include src="multipage-view" $asis="true"></mjs-include>
     </div>
 </div>
 
-<div class="footer" {if}=".footer">
-    <div class="container" {bind-html}=".footer"></div>
-</div>
+<mjs-include src="footer" $asis="true"></mjs-include>
 
+<script type="text/mjs-template"
+    {each}="tpl in .templates"
+    [id]=".tpl.name"
+    {bind}=".tpl.tpl" 
+    $ignore-inside></script>
+
+<bind-html value="this.renderDataScript()"></bind-html>
+
+<mjs-include src="loader" $asis="true"></mjs-include>
 
 </body>
 </html>

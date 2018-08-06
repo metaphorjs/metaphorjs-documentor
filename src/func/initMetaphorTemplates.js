@@ -3,9 +3,9 @@
 var undf = require("metaphorjs/src/var/undf.js"),
     generateTemplateNames = require("./generateTemplateNames.js");
 
-module.exports = function(MetaphorJs){
+module.exports = function(Template){
 
-    var cache = MetaphorJs.Template.cache,
+    var cache = Template.cache,
         origGet = cache.get;
 
     cache.get = function(id){

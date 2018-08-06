@@ -115,16 +115,13 @@ var Runner = Base.$extend({
 
         doc.prepare();
 
-
         var renderer = new rendererCls(doc, extend({}, options, {
-
             data: data,
             out: cfg.out,
             runner: self
-
         }, true, false));
 
-        renderer.writeOut(renderer.render(), function(){
+        renderer.render().done(function(){
             self.doc.trigger("done");
         });
     },

@@ -1,0 +1,19 @@
+
+
+<div class="col-12 col-md-3 col-xl-2 bd-sidebar">
+    <nav class="bd-links" id="bd-docs-nav">
+        <div class="bd-toc-item" 
+             {each}="section in .sourceTree.structure | toArray">
+            <a class="bd-toc-link" 
+                href="#" {bind}=".section.value.groupName"></a>
+
+            <ul class="nav bd-sidenav">
+                <li {each}="item in .section.value.children">
+                    <a [href]="'/item/' + .item.id" 
+                        class="bd-toc-sublink"
+                        {bind}=".item.name"></a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</div>

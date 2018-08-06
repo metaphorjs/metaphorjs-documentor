@@ -1,7 +1,7 @@
-<div class="jumbotron">
+<div class="jumbotron" {if}="!this.pageOptions.hideJubmotron">
     <div class="container">
         <h1 {bind}=".title"></h1>
-        <p {if}=".description" {bind}=".description"></p>
-        <p {if}=".version" {bind}=".version"></p>
+        <p {if}="this.description" {bind}=".description"></p>
+        <p {if}="this.version" {bind}=".version"></p>
     </div>
 </div>

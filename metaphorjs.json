@@ -68,6 +68,31 @@
             "returns": "MetaphorJsExport"
         },
 
+        "asset": {
+            "auto": true,
+            "wrap": true,
+            "global": false,
+            "compile": false,
+            "target": "assets/renderer/default/assets/metaphorjs.js",
+            "files": [
+                ["metaphorjs/metaphorjs.json", "core"],
+                [
+                    "metaphorjs/src/func/run.js",
+                    {
+                        "as": "run"
+                    }
+                ],
+                "metaphorjs/src/extra-directives/**",
+                "metaphorjs-model/src/directive/*",
+                "metaphorjs-dialog/src/class/dialog/Component.js",
+                "assets/renderer/default/metaphorjs/**"
+            ],
+            "omit": [
+                "metaphorjs/src/extra-directives/attr/include-file.js"
+            ],
+            "expose": "all"
+        },
+
         "npm": {
             "auto": true,
             "target": "dist/metaphorjs.documentor.npm.js",

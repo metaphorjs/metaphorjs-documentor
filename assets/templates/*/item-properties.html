@@ -7,6 +7,7 @@
                   'level-'+ .$parent.item.level - 1]">
         <li {each}="item in .group.items" 
             class="item-property"
+            {show}="!.item.isInherited || .$parent.showInherited"
             {class}="'item-property-'+ .item.type"
             {class.inherited}=".item.isInherited">
             <mjs-include src=".item.template"></mjs-include>

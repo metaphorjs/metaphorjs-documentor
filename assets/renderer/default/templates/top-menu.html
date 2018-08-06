@@ -1,9 +1,17 @@
 
-<div class="navbar navbar-expand navbar-dark bg-dark fixed-top" role="navigation">
+<mjs-if value="!this.pageOptions.hideTopMenu">
+
+<div class="navbar navbar-expand navbar-dark bg-dark fixed-top" 
+        role="navigation"
+        {class.fixed-top}="!this.multipage">
 
     <a class="navbar-brand" 
         [href]=".topTitleLink || '#'" 
         {bind}=".topTitle || .title"></a>
+
+
+<mjs-if value="!this.multipage">
+
     <button class="navbar-toggler" type="button" 
             data-toggle="collapse" 
             data-target="#navbarToggler1" 
@@ -12,8 +20,6 @@
             aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
     </button>
-            
-
 
     <div class="collapse navbar-collapse" id="navbarToggler1">
 
@@ -47,7 +53,12 @@
                     {bind}=".item.name"></a>
             </li>
         </ul>
+
     </div><!--/.nav-collapse -->
+
+</mjs-if>
 
     
 </div>
+
+</mjs-if>
