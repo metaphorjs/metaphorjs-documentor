@@ -20,10 +20,12 @@ Component.$extend({
         var a = select(".bd-toc-sublink");
         if (a.length) {
             a = a[0];
-        }
-        var itemId = a.href.split("/item/");
-        if (itemId.length) {
-            return itemId[1];
+            if (a.href) {
+                var itemId = a.href.split("/item/");
+                if (itemId.length) {
+                    return itemId[1];
+                }
+            }
         }
     },
 

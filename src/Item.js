@@ -22,7 +22,7 @@ module.exports = (function(){
         type: null,
         name: null,
         fullName: null,
-        navName: null,
+        //navName: null,
         items: null,
         flags: null,
         comment: null,
@@ -30,6 +30,8 @@ module.exports = (function(){
         props: null,
         parent: null,
         values: null,
+        toExport: null,
+        toStructExport: null,
 
         /**
          * @var {int}
@@ -52,6 +54,8 @@ module.exports = (function(){
             self.items = {};
             self.flags = {};
             self.values = {};
+            self.toExport = {};
+            self.toStructExport = {};
 
             self.$super();
 
@@ -101,6 +105,8 @@ module.exports = (function(){
             newItem.items = items;
             newItem.flags = flags;
             newItem.values = copy(this.values);
+            newItem.toExport = copy(this.toExport);
+            newItem.toStructExport = copy(this.toStructExport);
 
             if (flags.hasOwnProperty("md-var") && 
                 !flags.hasOwnProperty("value")) {
@@ -745,6 +751,24 @@ module.exports = (function(){
             return null;
         },
 
+        /**
+         * Add key-value pair that will be exported as is
+         * @param {string} name
+         * @param {*} value
+         */
+        addToExport: function(name, value) {
+            this.toExport[name] = value;
+        },
+
+        /**
+         * Add key-value pair that will be exported as is
+         * @param {string} name
+         * @param {*} value
+         */
+        addToStructExport: function(name, value) {
+            this.toStructExport[name] = value;
+        },
+
 
         exportData: function(currentParent, noChildren, noHelpers) {
 
@@ -754,15 +778,13 @@ module.exports = (function(){
                 return exportData(this, noChildren);
             }
 
-
             var self = this,
                 k,
-                exprt =  {
+                exprt =  extend({}, self.toExport, {
                     isApiItem: true,
                     type: self.type,
                     name:  self.name,
                     fullName: self.fullName,
-                    navName: self.navName,
                     file: self.file.exportPath,
                     originalFile: self.file.path,
                     fileType: self.file.ext,
@@ -775,7 +797,7 @@ module.exports = (function(){
                     booleanFlags: [],
                     children: [],
                     childTypes: []
-                };
+                });
 
             if (self.comment) {
                 exprt.line = self.comment.line;
@@ -820,6 +842,17 @@ module.exports = (function(){
             }
 
             return exprt;
+        },
+
+        exportToStructure: function() {
+            return extend(
+                {
+                    id: this.fullName,
+                    name: this.name
+                }, 
+                this.toStructExport,
+                true, false
+            );
         },
 
         exportChildren: function(items, noHelpers, plain) {

@@ -272,6 +272,16 @@ ul.level-0 > li.item-property-group-name {
   color: #212529;
 }
 
+.bd-sidenav .bd-sidenav {
+  padding-left: 16px;
+}
+
+.bd-toc-directory {
+  font-size: 12px;
+  display: inline-block;
+  width: 12px;
+}
+
 .bd-toc-link {
   display: block;
   padding: 0.25rem 1.5rem;
@@ -336,6 +346,7 @@ ul.level-0 > li.item-property-group-name {
   right: 0;
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
 }
 
 .page-loader-spinner {

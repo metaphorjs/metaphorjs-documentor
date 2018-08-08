@@ -1,0 +1,21 @@
+
+<mjs-if value=".item.isGroup">
+    <a href="#"
+        {init}="this.open = false"
+        (click)="this.open = !this.open"
+        class="bd-toc-sublink">
+        <span class="bd-toc-directory">&#128193;</span>
+        <span {bind}=".item.name"></span>
+    </a>
+    <ul class="nav bd-sidenav" 
+        {show}="this.open">
+        <li {each}="item in .item.children"
+            {include}="left-menu.entry"></li>
+    </ul>
+</mjs-if>
+<mjs-if value="!.item.isGroup">
+    <a [href]="'/item/' + .item.id" 
+        class="bd-toc-sublink" 
+        {bind}=".item.nameInPath || .item.name">
+    </a>
+</mjs-if>

@@ -337,7 +337,17 @@ ul.level-0 > li.item-property-group-name {
   .bd-sidenav {
     //display: none;
   }
+
+  .bd-sidenav .bd-sidenav {
+      padding-left: 16px;
+  }
   
+  .bd-toc-directory {
+    font-size: 12px;
+    display: inline-block;
+    width: 12px;      
+  }
+
   .bd-toc-link {
     display: block;
     padding: .25rem 1.5rem;

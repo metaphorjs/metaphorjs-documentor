@@ -1,7 +1,12 @@
 
-var Item = require("../Item.js");
+var Item = require("../Item.js"),
+    globalCache = require("../var/globalCache.js");
 
-module.exports = function(items, orderCfg) {
+module.exports = globalCache.add("sortItems", function(doc, items, orderCfg) {
+
+    if (!orderCfg) {
+        return items;
+    }
 
     var res = [];
 
@@ -41,4 +46,4 @@ module.exports = function(items, orderCfg) {
     });
 
     return res;
-};
+});
