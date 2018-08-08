@@ -909,8 +909,14 @@ module.exports = (function(){
                 else {
                     exprt.push(child.exportData(self, false, noHelpers));
                 }
-
             });
+
+            if (!plain) {
+                var sortGroups = self.doc.pget("sortExportChildrenGroups");
+                if (sortGroups) {
+                    exprt.children = sortGroups(self.doc, exprt.children);
+                }
+            }
 
             return exprt;
         },
