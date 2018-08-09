@@ -1,21 +1,21 @@
 
-var isArray = require("metaphorjs/src/func/isArray.js"),
-    copy = require("metaphorjs/src/func/copy.js"),
-    toBool = require("metaphorjs/src/func/toBool.js"),
-    nextUid = require("metaphorjs/src/func/nextUid.js");
+var toBool = require("metaphorjs/src/func/toBool.js"),
+    nextUid = require("metaphorjs/src/func/nextUid.js"),
+    trim = require("metaphorjs/src/func/trim.js"),
+    getCurly = require("../hooks/file/*/comment/getCurly.js");
 
 module.exports = (function() {
 
     var LINE_SIZE = 80;
 
     var defaults = {
-        "int": 0,
+        "int": 1,
         "string": "",
         "object": {},
         "array": [],
         "bool": true,
         "boolean": true,
-        "float": 0.0,
+        "float": 0.5,
         "datetime": "0000-00-00T00:00:00+00:00"
     };
 
@@ -134,7 +134,7 @@ module.exports = (function() {
     };
 
     var putComments = function(json, o, cache, lineSize) {
-        var key, item, r, comment, type;
+        var key, item, r, comment, type, fold;
 
         if (!json) {
             return "";
@@ -142,7 +142,10 @@ module.exports = (function() {
 
         for (key in cache) {
             item = cache[key];
+            type = item.type;
+
             r = new RegExp('^(\\s+)"' + key + '":\\s(.+)$', 'im');
+
             json = json.replace(r, function(match, pref, rest) {
                 var comment = buildComment(
                     item, 
@@ -153,8 +156,39 @@ module.exports = (function() {
                 if (comment) {
                     comment += "\n";
                 }
-                return comment + pref +'"'+ item.name +'": '+ rest;
+                return comment + pref +'"'+ key +'": '+ rest;
             });
+
+            fold = null;
+
+            if (type === "array" || type === "object") {
+                json = json.replace(r, function(match, pref, rest) {
+
+                    var inx = json.indexOf(key) + key.length,
+                        brakets = type === "array" ? "[]" : "{}",
+                        inxs = getCurly(json, inx, false, true, brakets),
+                        part = json.substring(inxs[0], inxs[1]);
+
+                    if (trim(part).length > 50) {
+                        fold = {
+                            inxs: inxs,
+                            part: part
+                        };
+                    }
+
+                    return pref +'"'+ key +'": '+ rest;
+                });
+            }
+
+            if (fold) {
+                json = json.substring(0, fold.inxs[0]) + 
+                         '/*fold-start '+key+'*/' +
+                            fold.part + 
+                        '/*fold-end '+key+'*/' +
+                        json.substr(fold.inxs[1]);
+            }
+            
+            json = json.replace(key, item.name);
         }
 
         return json;

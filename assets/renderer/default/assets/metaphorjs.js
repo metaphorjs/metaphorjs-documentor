@@ -10110,41 +10110,6 @@ var Template = function(){
             }
         },
 
-        /*findTemplate = function(tplId) {
-
-            var tpl;
-
-            if (typeof __MetaphorJsPrebuilt !== "undefined" &&
-                __MetaphorJsPrebuilt['__tpls'] &&
-                __MetaphorJsPrebuilt['__tpls'][tplId]) {
-                tpl = __MetaphorJsPrebuilt['__tpls'][tplId];
-                delete __MetaphorJsPrebuilt['__tpls'][tplId];
-                return processTextTemplate(tplId, tpl);
-            }
-
-            var tplNode = window.document.getElementById(tplId),
-                tag;
-
-            if (tplNode) {
-
-                tag = tplNode.tagName.toLowerCase();
-
-                if (tag === "script") {
-                    tpl = tplNode.innerHTML;
-                    tplNode.parentNode.removeChild(tplNode);
-                    return processTextTemplate(tplId, tpl);
-                }
-                else {
-                    if ("content" in tplNode) {
-                        return tplNode.content;
-                    }
-                    else {
-                        return toFragment(tplNode.childNodes);
-                    }
-                }
-            }
-        },*/
-
         loadTemplate = function(tplUrl) {
             if (!cache.exists(tplUrl)) {
                 return cache.add(tplUrl,
@@ -10164,8 +10129,6 @@ var Template = function(){
             }
             return str.substr(0,1) === '{' || str.substr(0,5) === 'this.';
         };
-
-    //cache.addFinder(findTemplate);
 
     if (typeof __MetaphorJsPrebuilt !== "undefined" &&
                 __MetaphorJsPrebuilt['__tpls']) {
@@ -10193,6 +10156,7 @@ var Template = function(){
         node:               null,
         tpl:                null,
         url:                null,
+        html:               null,
         ownRenderer:        true,
         initPromise:        null,
         tplPromise:         null,
@@ -10272,39 +10236,34 @@ var Template = function(){
                     }
                 }
 
-                /*if (self.ownRenderer === null) {
-                    if (self._watcher && !self.replace) {
-                        self.ownRenderer = true;
-                    }
-                    else if (self.shadow) {
-                        self.ownRenderer = true;
-                    }
-                    //else if (self.replace) {
-                        //self.ownRenderer = false;
-                    //}
-                }*/
-
-                 self.resolveTemplate();
-
-                //if (self._watcher && self.replace) {
-                //    self._watcher.unsubscribeAndDestroy(self.onChange, self);
-                //    self._watcher = null;
-                //}
+                self.resolveTemplate();
 
                 if (!self.deferRendering || !self.ownRenderer) {
                     self.tplPromise.done(self.applyTemplate, self);
                 }
+            }
+            else if (self.html) {
+                self._watcher = createWatchable(
+                    self.scope,
+                    self.html,
+                    self.onHtmlChange,
+                    self,
+                    {filterLookup: filterLookup});
 
-                if (self.ownRenderer && self.parentRenderer) {
-                    self.parentRenderer.on("destroy",
-                        self.onParentRendererDestroy,
-                        self);
-                }
+                self.initPromise    = new Promise;
+                self.onHtmlChange();
             }
             else {
                 if (!self.deferRendering && self.ownRenderer) {
                     self.doRender();
                 }
+            }
+
+            // moved from if (tpl)
+            if (self.ownRenderer && self.parentRenderer) {
+                self.parentRenderer.on("destroy",
+                    self.onParentRendererDestroy,
+                    self);
             }
 
             self.scope.$on("destroy", self.onScopeDestroy, self);
@@ -10407,6 +10366,28 @@ var Template = function(){
                 })
                 .fail(self.initPromise.reject, self.initPromise)
                 .fail(self.tplPromise.reject, self.tplPromise);
+        },
+
+        onHtmlChange: function() {
+            var self    = this,
+                el      = self.node;
+
+            if (self._renderer) {
+                self._renderer.$destroy();
+                self._renderer = null;
+            }
+
+            var htmlVal = self._watcher.getLastResult();
+
+            if (htmlVal) {
+                self._fragment = toFragment(htmlVal);
+                self.applyTemplate();
+            }
+            else if (el) {
+                while (el.firstChild) {
+                    el.removeChild(el.firstChild);
+                }
+            }
         },
 
         onChange: function() {
@@ -10573,7 +10554,12 @@ var Template = function(){
             }
 
             if (self._watcher) {
-                self._watcher.unsubscribeAndDestroy(self.onChange, self);
+                if (self.html) {
+                    self._watcher.unsubscribeAndDestroy(self.onHtmlChange, self);
+                }
+                else {
+                    self._watcher.unsubscribeAndDestroy(self.onChange, self);
+                }
             }
         }
 
@@ -14411,6 +14397,101 @@ DO NOT put class="{}" when using class.name="{}"
 
 
 
+/**
+ * @param {Element} el
+ * @param {String} selector
+ * @returns {boolean}
+ */
+var is = select.is;
+
+var delegates = {};
+
+
+
+
+function delegate(el, selector, event, fn) {
+
+    var key = selector + "-" + event,
+        listener    = function(e) {
+            e = normalizeEvent(e);
+            var trg = e.target;
+            while (trg) {
+                if (is(trg, selector)) {
+                    return fn(e);
+                }
+                trg = trg.parentNode;
+            }
+            return null;
+        };
+
+    if (!delegates[key]) {
+        delegates[key] = [];
+    }
+
+    delegates[key].push({el: el, ls: listener, fn: fn});
+
+    addListener(el, event, listener);
+};
+
+
+
+function undelegate(el, selector, event, fn) {
+
+    var key = selector + "-" + event,
+        i, l,
+        ds;
+
+    if (ds = delegates[key]) {
+        for (i = -1, l = ds.length; ++i < l;) {
+            if (ds[i].el === el && ds[i].fn === fn) {
+                removeListener(el, event, ds[i].ls);
+            }
+        }
+    }
+};
+
+
+
+
+Directive.registerAttribute("delegate", 1000, function(scope, node, expr){
+
+    var cfg = Watchable.eval(expr, scope),
+        cbs = [];
+
+    var setup = function(inx, mode) {
+
+        if (!cbs[inx]) {
+            cbs[inx]  = function(event) {
+                scope.$eventType = cfg[inx][0];
+                scope.$event = event;
+                cfg[inx][2].call(cfg[inx][3], scope.$event);
+                scope.$event = null;
+                scope.$eventType = null;
+                scope.$check();
+            };
+        }
+
+        var fn = mode == "up" ? delegate : undelegate;
+        fn(node, cfg[inx][1], cfg[inx][0], cbs[inx]);
+    };
+
+    var i, l;
+    for (i = 0, l = cfg.length; i < l; i++) {
+        setup(i, "up");
+    }
+
+    return function() {
+        var i, l;
+        for (i = 0, l = cfg.length; i < l; i++) {
+            setup(i, "down");
+        }
+        cfg = null;
+        cbs = null;
+    };
+});
+
+
+
 var evaluate = Watchable.eval;
 
 
@@ -15507,16 +15588,24 @@ Directive.registerAttribute("include", 1100,
     function(scope, node, tplExpr, parentRenderer, attr){
 
     var cfg = attr ? attr.config : {},
-        asis = toBool(cfg.asis);
+        asis = toBool(cfg.asis),
+        html = cfg.html,
+        tplCfg = {
+            scope: scope,
+            node: node,
+            parentRenderer: parentRenderer,
+            animate: !!cfg.animate,
+            ownRenderer: !asis // do not render if asis=true
+        };
 
-    var tpl = new Template({
-        scope: scope,
-        node: node,
-        url: tplExpr,
-        parentRenderer: parentRenderer,
-        animate: !!cfg.animate,
-        ownRenderer: !asis // do not render if asis=true
-    });
+    if (html) {
+        tplCfg['html'] = html;
+    }
+    else {
+        tplCfg['url'] = tplExpr;
+    }
+
+    var tpl = new Template(tplCfg);
 
     return false; // stop renderer
 });
@@ -17285,12 +17374,7 @@ Directive.registerTag("if", defineClass({
     onChange: function() {
         var self    = this,
             val     = self.watcher.getLastResult(),
-            parent  = self.prevEl.parentNode,
-            node    = self.node;
-
-        //if (self.initial) {
-            //parent.removeChild(node);
-        //}
+            parent  = self.prevEl.parentNode;
 
         if (val) {
             parent.insertBefore(toFragment(self.children), self.nextEl);
@@ -17298,11 +17382,11 @@ Directive.registerTag("if", defineClass({
         else if (!self.initial) {
             var i, l;
             for (i = 0, l = self.children.length; i < l; i++) {
-                parent.removeChild(self.children[i]);
+                if (parent.contains(self.children[i])) {
+                    parent.removeChild(self.children[i]);
+                }
             }
         }
-
-        //self.$super(val);
 
         if (self.initial) {
             self.initial = false;
@@ -20578,15 +20662,6 @@ function isVisible(el) {
     return el && !(el.offsetWidth <= 0 || el.offsetHeight <= 0);
 };
 
-
-
-/**
- * @param {Element} el
- * @param {String} selector
- * @returns {boolean}
- */
-var is = select.is;
-
 function ucfirst(str) {
     return str.substr(0, 1).toUpperCase() + str.substr(1);
 };
@@ -20598,52 +20673,6 @@ var getOuterWidth = getDimensions("outer", "Width");
 
 
 var getOuterHeight = getDimensions("outer", "Height");
-
-var delegates = {};
-
-
-
-
-function delegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        listener    = function(e) {
-            e = normalizeEvent(e);
-            var trg = e.target;
-            while (trg) {
-                if (is(trg, selector)) {
-                    return fn(e);
-                }
-                trg = trg.parentNode;
-            }
-            return null;
-        };
-
-    if (!delegates[key]) {
-        delegates[key] = [];
-    }
-
-    delegates[key].push({el: el, ls: listener, fn: fn});
-
-    addListener(el, event, listener);
-};
-
-
-
-function undelegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        i, l,
-        ds;
-
-    if (ds = delegates[key]) {
-        for (i = -1, l = ds.length; ++i < l;) {
-            if (ds[i].el === el && ds[i].fn === fn) {
-                removeListener(el, event, ds[i].ls);
-            }
-        }
-    }
-};
 
 
 
@@ -25226,14 +25255,14 @@ Component.$extend({
                 });
             });
         })
-        .then(function(){
+        /*.then(function(){
             return new Promise(function(resolve) {
                 raf(function(){
                     window.Prism.highlightAll();
                     resolve();
                 });
             });
-        })
+        })*/
         .then(function(){
             return new Promise(function(resolve) {
                 raf(function(){
@@ -25273,19 +25302,149 @@ View.$extend({
 });
 
 
+nsAdd("filter.highlightJson", function(input, scope, prop) {
+    
+    var hl = Prism.highlight(input, Prism.languages.javascript),
+        r = /\/\*fold-start ([^*]+)\*\//,
+        startSpan, endSpan, startReg, endReg,
+        start, end, key,
+        match;
+
+    while ((match = hl.match(r)) !== null) {
+        key = match[1];
+        startSpan = '<span class="token comment">/*fold-start '+key+'*/</span>';
+        endSpan = '<span class="token comment">/*fold-end '+key+'*/</span>';
+        startReg = new RegExp('<span class="token comment">/\\*fold-start '+key+'\\*/</span>[\\r\\n]');
+        endReg = new RegExp('([\\r\\n\\s]*)</div><span class="token comment">/\\*fold-end '+key+'\\*/</span>');
+        start = hl.indexOf(startSpan);
+        end = hl.indexOf(endSpan);
+
+        hl = hl.substring(0, start + startSpan.length + 1) + 
+            '<div {show}="this.show_'+key+'">' +
+            hl.substring(start + startSpan.length + 1, end) +
+            '</div>' +
+            hl.substr(end);
+
+        hl = hl.replace(
+            startReg, 
+            '<a class="code-fold-expander" '+
+                '{init}="this.show_'+key+' = false" '+
+                '(click)="this.show_'+key+' = !this.show_'+key+'"' +
+                '{class.collapsed}="!this.show_'+key+'"' +
+                '{class.expanded}="this.show_'+key+'"' +
+                'href="#">'+
+                '<span class="cfe-expand">+</span>'+
+                '<span class="cfe-collapse">-</span>'+
+            '</a>'
+        );
+
+        hl = hl.replace(endReg, function(match, space){
+            space = space.replace(/[\r\n]/g, '');
+            return '</div><span {show}="this.show_'+key+'">'+space+'</span>';
+        });
+    }
+
+    return hl;
+});
+
+
+
+var globalCache = Cache.global();
+
+
+
+var getCurly = globalCache.add("file.*.comment.getCurly", 
+    function(content, start, backwards, returnIndexes, brakets) {
+
+    var left, right,
+        i, l,
+        first, last,
+        char,
+        openChar = brakets ? brakets[0] : '{',
+        closeChar = brakets ? brakets[1] : '}';
+
+    if (!backwards) {
+
+        left    = 0;
+        right   = 0;
+        i       = start || 0;
+        l       = content.length;
+        first   = null;
+
+        for (; i < l; i++) {
+
+            char = content.charAt(i);
+
+            if (char === openChar) {
+                left++;
+                if (first === null) {
+                    first = i + 1;
+                }
+            }
+            else if (char === closeChar && first !== null) {
+                right++;
+            }
+
+            if (left > 0 && left == right) {
+                last = i;
+                break;
+            }
+        }
+    }
+    else {
+
+        left    = 0;
+        right   = 0;
+        i       = start || content.length - 1;
+        last    = null;
+
+        for (; i >= 0; i--) {
+
+            char = content.charAt(i);
+
+            if (char === closeChar) {
+                right++;
+                if (last === null) {
+                    last = i;
+                }
+            }
+            else if (char === openChar && last !== null) {
+                left++;
+            }
+
+            if (left > 0 && left == right) {
+                first = i + 1;
+                break;
+            }
+        }
+    }
+
+    if (first && last) {
+        if (returnIndexes) {
+            return [first, last];
+        }
+        else {
+            return content.substring(first, last);
+        }
+    }
+
+    return null;
+});
+
+
 
 var toJsonTemplate = (function() {
 
     var LINE_SIZE = 80;
 
     var defaults = {
-        "int": 0,
+        "int": 1,
         "string": "",
         "object": {},
         "array": [],
         "bool": true,
         "boolean": true,
-        "float": 0.0,
+        "float": 0.5,
         "datetime": "0000-00-00T00:00:00+00:00"
     };
 
@@ -25404,7 +25563,7 @@ var toJsonTemplate = (function() {
     };
 
     var putComments = function(json, o, cache, lineSize) {
-        var key, item, r, comment, type;
+        var key, item, r, comment, type, fold;
 
         if (!json) {
             return "";
@@ -25412,7 +25571,10 @@ var toJsonTemplate = (function() {
 
         for (key in cache) {
             item = cache[key];
+            type = item.type;
+
             r = new RegExp('^(\\s+)"' + key + '":\\s(.+)$', 'im');
+
             json = json.replace(r, function(match, pref, rest) {
                 var comment = buildComment(
                     item, 
@@ -25423,8 +25585,39 @@ var toJsonTemplate = (function() {
                 if (comment) {
                     comment += "\n";
                 }
-                return comment + pref +'"'+ item.name +'": '+ rest;
+                return comment + pref +'"'+ key +'": '+ rest;
             });
+
+            fold = null;
+
+            if (type === "array" || type === "object") {
+                json = json.replace(r, function(match, pref, rest) {
+
+                    var inx = json.indexOf(key) + key.length,
+                        brakets = type === "array" ? "[]" : "{}",
+                        inxs = getCurly(json, inx, false, true, brakets),
+                        part = json.substring(inxs[0], inxs[1]);
+
+                    if (trim(part).length > 50) {
+                        fold = {
+                            inxs: inxs,
+                            part: part
+                        };
+                    }
+
+                    return pref +'"'+ key +'": '+ rest;
+                });
+            }
+
+            if (fold) {
+                json = json.substring(0, fold.inxs[0]) + 
+                         '/*fold-start '+key+'*/' +
+                            fold.part + 
+                        '/*fold-end '+key+'*/' +
+                        json.substr(fold.inxs[1]);
+            }
+            
+            json = json.replace(key, item.name);
         }
 
         return json;
@@ -25575,6 +25768,10 @@ MetaphorJsExports['isAndroid'] = isAndroid;
 MetaphorJsExports['isIE'] = isIE;
 MetaphorJsExports['browserHasEvent'] = browserHasEvent;
 MetaphorJsExports['Input'] = Input;
+MetaphorJsExports['is'] = is;
+MetaphorJsExports['delegates'] = delegates;
+MetaphorJsExports['delegate'] = delegate;
+MetaphorJsExports['undelegate'] = undelegate;
 MetaphorJsExports['evaluate'] = evaluate;
 MetaphorJsExports['getStyle'] = getStyle;
 MetaphorJsExports['boxSizingReliable'] = boxSizingReliable;
@@ -25606,18 +25803,16 @@ MetaphorJsExports['Store'] = Store;
 MetaphorJsExports['StoreRenderer'] = StoreRenderer;
 MetaphorJsExports['setStyle'] = setStyle;
 MetaphorJsExports['isVisible'] = isVisible;
-MetaphorJsExports['is'] = is;
 MetaphorJsExports['ucfirst'] = ucfirst;
 MetaphorJsExports['getOuterWidth'] = getOuterWidth;
 MetaphorJsExports['getOuterHeight'] = getOuterHeight;
-MetaphorJsExports['delegates'] = delegates;
-MetaphorJsExports['delegate'] = delegate;
-MetaphorJsExports['undelegate'] = undelegate;
 MetaphorJsExports['getOffsetParent'] = getOffsetParent;
 MetaphorJsExports['getOffset'] = getOffset;
 MetaphorJsExports['getPosition'] = getPosition;
 MetaphorJsExports['Dialog'] = Dialog;
 MetaphorJsExports['generateTemplateNames'] = generateTemplateNames;
+MetaphorJsExports['globalCache'] = globalCache;
+MetaphorJsExports['getCurly'] = getCurly;
 MetaphorJsExports['toJsonTemplate'] = toJsonTemplate;
 
 }());

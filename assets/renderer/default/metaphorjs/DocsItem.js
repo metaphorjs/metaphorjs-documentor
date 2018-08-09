@@ -51,14 +51,14 @@ Component.$extend({
                 });
             });
         })
-        .then(function(){
+        /*.then(function(){
             return new Promise(function(resolve) {
                 raf(function(){
                     window.Prism.highlightAll();
                     resolve();
                 });
             });
-        })
+        })*/
         .then(function(){
             return new Promise(function(resolve) {
                 raf(function(){

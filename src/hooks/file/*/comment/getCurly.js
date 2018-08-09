@@ -1,12 +1,15 @@
 
 var globalCache = require("../../../../var/globalCache.js");
 
-module.exports = globalCache.add("file.*.comment.getCurly", function(content, start, backwards, returnIndexes) {
+module.exports = globalCache.add("file.*.comment.getCurly", 
+    function(content, start, backwards, returnIndexes, brakets) {
 
     var left, right,
         i, l,
         first, last,
-        char;
+        char,
+        openChar = brakets ? brakets[0] : '{',
+        closeChar = brakets ? brakets[1] : '}';
 
     if (!backwards) {
 
@@ -20,13 +23,13 @@ module.exports = globalCache.add("file.*.comment.getCurly", function(content, st
 
             char = content.charAt(i);
 
-            if (char == '{') {
+            if (char === openChar) {
                 left++;
                 if (first === null) {
                     first = i + 1;
                 }
             }
-            else if (char == '}' && first !== null) {
+            else if (char === closeChar && first !== null) {
                 right++;
             }
 
@@ -47,13 +50,13 @@ module.exports = globalCache.add("file.*.comment.getCurly", function(content, st
 
             char = content.charAt(i);
 
-            if (char == '}') {
+            if (char === closeChar) {
                 right++;
                 if (last === null) {
                     last = i;
                 }
             }
-            else if (char == '{' && last !== null) {
+            else if (char === openChar && last !== null) {
                 left++;
             }
 

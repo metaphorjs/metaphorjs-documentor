@@ -562,3 +562,46 @@ ul.level-0 > li.item-property-group-name {
     0%, 39%, 100% { opacity: 0; }
     40% { opacity: 1; } 
   }
+
+
+
+.code-fold {
+    display: none;
+}
+
+.code-fold-expander {
+    line-height: 12px;
+    border: 1px solid #aaa;
+    position: absolute;
+    left: 13px;
+    padding: 0 2px;
+    font-size: 12px;
+    color: #aaa;
+    text-decoration: none;
+    text-align: center;
+    margin-top: 3px;
+    cursor: pointer;
+
+    &:hover {
+        color: #aaa;
+        text-decoration: none;
+    }
+
+    &.collapsed {
+        .cfe-expand {
+            display: inline;
+        }
+        .cfe-collapse {
+            display: none;
+        }
+    }
+
+    &.expanded {
+        .cfe-expand {
+            display: none;
+        }
+        .cfe-collapse {
+            display: show;
+        }
+    }
+}
