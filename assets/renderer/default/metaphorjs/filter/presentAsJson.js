@@ -1,6 +1,8 @@
 var nsAdd = require("metaphorjs-namespace/src/func/nsAdd.js"),
     toJsonTemplate = require("metaphorjs-documentor/src/func/toJsonTemplate.js");
 
-nsAdd("filter.presentAsJson", function(input, scope, prop) {
-    return toJsonTemplate(input);
+nsAdd("filter.presentAsJson", function(input, scope, withFolding) {
+    return toJsonTemplate(input, {
+        withFolding: withFolding || false
+    });
 });

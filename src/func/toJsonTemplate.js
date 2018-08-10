@@ -133,7 +133,7 @@ module.exports = (function() {
         return lines.join("\n");
     };
 
-    var putComments = function(json, o, cache, lineSize) {
+    var putComments = function(json, o, cache, lineSize, withFolding) {
         var key, item, r, comment, type, fold;
 
         if (!json) {
@@ -180,7 +180,7 @@ module.exports = (function() {
                 });
             }
 
-            if (fold) {
+            if (withFolding && fold) {
                 json = json.substring(0, fold.inxs[0]) + 
                          '/*fold-start '+key+'*/' +
                             fold.part + 
@@ -194,7 +194,7 @@ module.exports = (function() {
         return json;
     };
 
-    return function(item) {
+    return function(item, opt) {
 
         if (item.$$jsonPresentation) {
             return item.$$jsonPresentation;
@@ -204,6 +204,7 @@ module.exports = (function() {
             o = {},
             cache = {};
 
+        opt = opt || {};
         type && (type = type[0]);
 
         if (type === "array") {
@@ -216,7 +217,7 @@ module.exports = (function() {
 
         var json = JSON.stringify(o, null, 2);
 
-        json = putComments(json, o, cache, LINE_SIZE);
+        json = putComments(json, o, cache, LINE_SIZE, opt.withFolding);
 
         item.$$jsonPresentation = json;
         return json;
