@@ -14397,101 +14397,6 @@ DO NOT put class="{}" when using class.name="{}"
 
 
 
-/**
- * @param {Element} el
- * @param {String} selector
- * @returns {boolean}
- */
-var is = select.is;
-
-var delegates = {};
-
-
-
-
-function delegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        listener    = function(e) {
-            e = normalizeEvent(e);
-            var trg = e.target;
-            while (trg) {
-                if (is(trg, selector)) {
-                    return fn(e);
-                }
-                trg = trg.parentNode;
-            }
-            return null;
-        };
-
-    if (!delegates[key]) {
-        delegates[key] = [];
-    }
-
-    delegates[key].push({el: el, ls: listener, fn: fn});
-
-    addListener(el, event, listener);
-};
-
-
-
-function undelegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        i, l,
-        ds;
-
-    if (ds = delegates[key]) {
-        for (i = -1, l = ds.length; ++i < l;) {
-            if (ds[i].el === el && ds[i].fn === fn) {
-                removeListener(el, event, ds[i].ls);
-            }
-        }
-    }
-};
-
-
-
-
-Directive.registerAttribute("delegate", 1000, function(scope, node, expr){
-
-    var cfg = Watchable.eval(expr, scope),
-        cbs = [];
-
-    var setup = function(inx, mode) {
-
-        if (!cbs[inx]) {
-            cbs[inx]  = function(event) {
-                scope.$eventType = cfg[inx][0];
-                scope.$event = event;
-                cfg[inx][2].call(cfg[inx][3], scope.$event);
-                scope.$event = null;
-                scope.$eventType = null;
-                scope.$check();
-            };
-        }
-
-        var fn = mode == "up" ? delegate : undelegate;
-        fn(node, cfg[inx][1], cfg[inx][0], cbs[inx]);
-    };
-
-    var i, l;
-    for (i = 0, l = cfg.length; i < l; i++) {
-        setup(i, "up");
-    }
-
-    return function() {
-        var i, l;
-        for (i = 0, l = cfg.length; i < l; i++) {
-            setup(i, "down");
-        }
-        cfg = null;
-        cbs = null;
-    };
-});
-
-
-
 var evaluate = Watchable.eval;
 
 
@@ -20662,6 +20567,15 @@ function isVisible(el) {
     return el && !(el.offsetWidth <= 0 || el.offsetHeight <= 0);
 };
 
+
+
+/**
+ * @param {Element} el
+ * @param {String} selector
+ * @returns {boolean}
+ */
+var is = select.is;
+
 function ucfirst(str) {
     return str.substr(0, 1).toUpperCase() + str.substr(1);
 };
@@ -20673,6 +20587,52 @@ var getOuterWidth = getDimensions("outer", "Width");
 
 
 var getOuterHeight = getDimensions("outer", "Height");
+
+var delegates = {};
+
+
+
+
+function delegate(el, selector, event, fn) {
+
+    var key = selector + "-" + event,
+        listener    = function(e) {
+            e = normalizeEvent(e);
+            var trg = e.target;
+            while (trg) {
+                if (is(trg, selector)) {
+                    return fn(e);
+                }
+                trg = trg.parentNode;
+            }
+            return null;
+        };
+
+    if (!delegates[key]) {
+        delegates[key] = [];
+    }
+
+    delegates[key].push({el: el, ls: listener, fn: fn});
+
+    addListener(el, event, listener);
+};
+
+
+
+function undelegate(el, selector, event, fn) {
+
+    var key = selector + "-" + event,
+        i, l,
+        ds;
+
+    if (ds = delegates[key]) {
+        for (i = -1, l = ds.length; ++i < l;) {
+            if (ds[i].el === el && ds[i].fn === fn) {
+                removeListener(el, event, ds[i].ls);
+            }
+        }
+    }
+};
 
 
 
@@ -25203,6 +25163,43 @@ App.$extend({
                 this.scope.$set("loading", false);
             }
         }
+    },
+
+    highlightAllUnprocessed: function() {
+
+        var p = new Promise,
+            pres = select("pre"),
+            counter = 0,
+            i, l,
+            j, jl,
+            pre, code;
+
+        for (i = 0, l = pres.length; i < l; i++) {
+
+            pre = pres[i];
+
+            for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
+                code = pre.childNodes[j];
+                if (code.nodeType && 
+                    code.tagName.toLowerCase() === "code" && 
+                    !getAttr(code, "prism-processed")) 
+                {
+                    counter++;
+                    setAttr(code, "prism-processed", "true");
+                    window.Prism.highlightElement(code, true, function(){
+                        counter--;
+                        if (counter === 0) {
+                            p.resolve();
+                        }
+                    });
+                }
+            }
+        }
+        if (counter === 0) {
+            p.resolve();
+        }
+
+        return p;
     }
 });
 
@@ -25244,7 +25241,7 @@ Component.$extend({
             async(function(){
                 self.scope.$app.setLoading(true, true);
                 resolve();
-            }, null, [], 200);
+            }, null, [], 100);
         })
         .then(function(){
             return new Promise(function(resolve){
@@ -25255,14 +25252,9 @@ Component.$extend({
                 });
             });
         })
-        /*.then(function(){
-            return new Promise(function(resolve) {
-                raf(function(){
-                    window.Prism.highlightAll();
-                    resolve();
-                });
-            });
-        })*/
+        .then(function(){
+            return self.scope.$app.highlightAllUnprocessed();
+        })
         .then(function(){
             return new Promise(function(resolve) {
                 raf(function(){
@@ -25768,10 +25760,6 @@ MetaphorJsExports['isAndroid'] = isAndroid;
 MetaphorJsExports['isIE'] = isIE;
 MetaphorJsExports['browserHasEvent'] = browserHasEvent;
 MetaphorJsExports['Input'] = Input;
-MetaphorJsExports['is'] = is;
-MetaphorJsExports['delegates'] = delegates;
-MetaphorJsExports['delegate'] = delegate;
-MetaphorJsExports['undelegate'] = undelegate;
 MetaphorJsExports['evaluate'] = evaluate;
 MetaphorJsExports['getStyle'] = getStyle;
 MetaphorJsExports['boxSizingReliable'] = boxSizingReliable;
@@ -25803,9 +25791,13 @@ MetaphorJsExports['Store'] = Store;
 MetaphorJsExports['StoreRenderer'] = StoreRenderer;
 MetaphorJsExports['setStyle'] = setStyle;
 MetaphorJsExports['isVisible'] = isVisible;
+MetaphorJsExports['is'] = is;
 MetaphorJsExports['ucfirst'] = ucfirst;
 MetaphorJsExports['getOuterWidth'] = getOuterWidth;
 MetaphorJsExports['getOuterHeight'] = getOuterHeight;
+MetaphorJsExports['delegates'] = delegates;
+MetaphorJsExports['delegate'] = delegate;
+MetaphorJsExports['undelegate'] = undelegate;
 MetaphorJsExports['getOffsetParent'] = getOffsetParent;
 MetaphorJsExports['getOffset'] = getOffset;
 MetaphorJsExports['getPosition'] = getPosition;

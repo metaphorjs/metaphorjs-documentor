@@ -1,6 +1,9 @@
 var App = require("metaphorjs/src/class/App.js"),
     mhistory = require("metaphorjs-history/src/lib/History.js"),
     Template = require("metaphorjs/src/class/Template.js"),
+    select = require("metaphorjs-select/src/func/select.js"),
+    setAttr = require("metaphorjs/src/func/dom/setAttr.js"),
+    getAttr = require("metaphorjs/src/func/dom/getAttr.js"),
     generateTemplateNames = require("metaphorjs-documentor/src/func/generateTemplateNames.js");
 
 App.$extend({
@@ -82,5 +85,42 @@ App.$extend({
                 this.scope.$set("loading", false);
             }
         }
+    },
+
+    highlightAllUnprocessed: function() {
+
+        var p = new Promise,
+            pres = select("pre"),
+            counter = 0,
+            i, l,
+            j, jl,
+            pre, code;
+
+        for (i = 0, l = pres.length; i < l; i++) {
+
+            pre = pres[i];
+
+            for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
+                code = pre.childNodes[j];
+                if (code.nodeType && 
+                    code.tagName.toLowerCase() === "code" && 
+                    !getAttr(code, "prism-processed")) 
+                {
+                    counter++;
+                    setAttr(code, "prism-processed", "true");
+                    window.Prism.highlightElement(code, true, function(){
+                        counter--;
+                        if (counter === 0) {
+                            p.resolve();
+                        }
+                    });
+                }
+            }
+        }
+        if (counter === 0) {
+            p.resolve();
+        }
+
+        return p;
     }
 });

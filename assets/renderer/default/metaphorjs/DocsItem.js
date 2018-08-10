@@ -40,7 +40,7 @@ Component.$extend({
             async(function(){
                 self.scope.$app.setLoading(true, true);
                 resolve();
-            }, null, [], 200);
+            }, null, [], 100);
         })
         .then(function(){
             return new Promise(function(resolve){
@@ -51,14 +51,9 @@ Component.$extend({
                 });
             });
         })
-        /*.then(function(){
-            return new Promise(function(resolve) {
-                raf(function(){
-                    window.Prism.highlightAll();
-                    resolve();
-                });
-            });
-        })*/
+        .then(function(){
+            return self.scope.$app.highlightAllUnprocessed();
+        })
         .then(function(){
             return new Promise(function(resolve) {
                 raf(function(){
