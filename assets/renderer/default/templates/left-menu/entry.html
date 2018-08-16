@@ -14,7 +14,7 @@
     </ul>
 </mjs-if>
 <mjs-if value="!.item.isGroup">
-    <a [href]="'/item/' + .item.id" 
+    <a [href]="this.$app.getItemUrl(this.item)" 
         class="bd-toc-sublink" 
         {bind}=".item.nameInPath || .item.name">
     </a>

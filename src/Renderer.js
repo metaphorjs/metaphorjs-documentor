@@ -49,7 +49,7 @@ module.exports = Base.$extend({
             self.doc.trigger("error", e);
         });
 
-        var md = self.doc.pget("markdown");
+        var md = self.doc.pget("content.markdown");
         MetaphorJs.ns.add("filter.markdown", function(input){
             if (typeof input != "string") {
                 return ""+input;
@@ -173,6 +173,7 @@ module.exports = Base.$extend({
     },
 
     writeOut: function(out, done) {
+
         if  (this.out) {
             fs.writeFileSync(this.out, out);
         }

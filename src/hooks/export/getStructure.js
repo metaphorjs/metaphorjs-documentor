@@ -1,9 +1,10 @@
-var globalCache = require("../var/globalCache.js"),
+var globalCache = require("../../var/globalCache.js"),
     extend = require("metaphorjs/src/func/extend.js");
 
-module.exports = globalCache.add("getStructure", function(doc, items){
+module.exports = globalCache.add("export.getStructure", function(doc, items){
     
-    var structure = {};
+    var structure = {},
+        typePos = doc.cfg.export.typePosition || {};
 
     var findGroupAmongChildren = function(children, groupName) {
         var i, l, child;
@@ -51,6 +52,7 @@ module.exports = globalCache.add("getStructure", function(doc, items){
             structure[type] = {
                 type: type,
                 groupName: typeProps.groupName,
+                where: typePos[type] || "top-menu",
                 children: []
             };
         }
@@ -68,5 +70,5 @@ module.exports = globalCache.add("getStructure", function(doc, items){
         ));
     });
 
-    return doc.pcall("sortStructure", doc, structure);
+    return doc.pcall("export.sortStructure", doc, structure);
 });

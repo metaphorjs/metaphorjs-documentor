@@ -3,8 +3,10 @@ var App = require("metaphorjs/src/class/App.js"),
     Template = require("metaphorjs/src/class/Template.js"),
     select = require("metaphorjs-select/src/func/select.js"),
     setAttr = require("metaphorjs/src/func/dom/setAttr.js"),
+    async = require("metaphorjs/src/func/async.js"),
     getAttr = require("metaphorjs/src/func/dom/getAttr.js"),
-    generateTemplateNames = require("metaphorjs-documentor/src/func/generateTemplateNames.js");
+    generateTemplateNames = require("metaphorjs-documentor/src/func/generateTemplateNames.js"),
+    nextUid = require("metaphorjs/src/func/nextUid.js");
 
 App.$extend({
     $class: "DocsApp",
@@ -43,12 +45,11 @@ App.$extend({
 
         self.makeItemMap();
         mhistory.init();
-
-        window.docsApp = self;
     },
 
     makeItemMap: function() {
         var map = {},
+            contentMap = {},
             self = this;
 
         var flattenItem = function(item) {
@@ -58,14 +59,49 @@ App.$extend({
             if (item.isApiItem) {
                 map[item.fullName] = item;
             }
+            if (item.isContentItem) {
+                contentMap[item.id] = item;
+            }
         };
 
-        self.scope.sourceTree.items.forEach(flattenItem);
+        if (self.scope.sourceTree.items) {
+            self.scope.sourceTree.items.forEach(flattenItem);
+        }
+        if (self.scope.sourceTree.content) {
+            self.scope.sourceTree.content.forEach(flattenItem);
+        }
         self.itemMap = map;
+        self.contentMap = contentMap;
     },
 
     getItem: function(id) {
         return this.itemMap[id];
+    },
+
+    getContentItem: function(id) {
+        return this.contentMap[id];
+    },
+
+    hasNav: function(where) {
+        var k;
+        for (k in this.scope.sourceTree.structure) {
+            if (this.scope.sourceTree.structure[k].where == where) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    getItemUrl: function(item) {
+        if (item.isGroup) {
+            return '#';
+        }
+        if (this.scope.multipage) {
+            return '/' + item.pathPrefix +'/'+ item.id;
+        }
+        else {
+            return '#' + item.id;
+        }
     },
 
     setLoading: function(state, ifNot) {
@@ -122,5 +158,23 @@ App.$extend({
         }
 
         return p;
+    },
+
+
+    initMenuItem: function() {
+        return nextUid();
+    },
+
+    toggleMenuItem: function(open, id) {
+        var self = this;
+        async(function(){
+            self.trigger("menu-toggle", id, !open)
+        });
+        
+        return !open;
+    },
+
+    goto: function(url) {
+        mhistory.push(url);
     }
 });

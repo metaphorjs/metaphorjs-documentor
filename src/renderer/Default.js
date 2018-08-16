@@ -155,6 +155,25 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             });
     },
 
+    renderHtml: function(html) {
+        var self    = this,
+            dir     = __dirname.split("/").pop(),
+            mjs     = dir === "dist" ? 
+                        "../assets/mjs-renderer.js" : 
+                        path.normalize(__dirname + "/../../assets/mjs-renderer.js"),
+            doc         = jsdom.jsdom(tpl),
+            MetaphorJs  = require(mjs)(doc.defaultView);
+
+        self.initMetaphor(MetaphorJs);
+        initMetaphorTemplates(MetaphorJs.Template);
+        self.initTemplates(MetaphorJs);
+
+        if (self.assets) {
+            self.initAssets(self.assets);
+        }
+
+        return MetaphorJs.render(html, doc);
+    },
 
 
     initTemplates: function(MetaphorJs) {

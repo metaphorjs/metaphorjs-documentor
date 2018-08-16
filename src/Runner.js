@@ -20,57 +20,83 @@ var Runner = Base.$extend({
      * @method
      * @param {object} runCfg {
      *  @type {string} profile Profile name in metaphorjs.json in docs section
-     *  @type {string} out Output directory or file
+     *  @type {object} renderer {
+     *      @type {string} type
+     *      @type {string} out Output directory or file
+     *      @type {object} data
+     *      @type {string|array} templates Paths to templates
+     *  }
+     *  @type {object} export {
+     *      @type {object} typePosition type=>position map
+     *  }
+     *  
      *  @type {string|array} hooks Paths to hooks dirs
      *  @type {string|array} files Paths to content files
      *  @type {string|array} src Paths to src dirs
-     *  @type {string|array} templates Paths to templates
-     *  @type {object} data Same as runData
-     *  @type {object} options Same as runOptions
-     *  @type {object} itemSort
-     *  @type {object} typeSort
+     *  @type {string} extension
+     *  @type {bool} includeExternal
+     *  @type {bool} hideIncludes
+     *  
      *  @type {object} contentSort
      * }
-     * @param {object} runData
-     * @param {object} runOptions
      * @param {function} errorCallback
      * @param {function} doneCallback
      */
-    run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
+    run: function(cfg, errorCallback, doneCallback) {
 
-        runCfg = runCfg || {};
-        runData = runData || {};
-        runOptions = runOptions || {};
+        //runCfg = runCfg || {};
+        //runData = runData || {};
+        //runOptions = runOptions || {};
+
+        cfg = cfg || {};
 
         var self        = this,
             args        = minimist(process.argv.slice(2), {boolean: true}),
-            profileName = runCfg.profile || args._[0] || "",
+            profileName = cfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
             jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
             profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
-                          jsonFile.docs[profileName] : {},
-            data        = extend({}, profile.data, runData, true, false),
-            cfg         = extend({}, profile, runCfg, true, false),
-            options     = extend({}, profile.options, runOptions, true, false),
+                            jsonFile.docs[profileName] : {},
+            //data        = extend({}, profile.data, runData, true, false),
+            defaults    = {
+                renderer: {
+                    data: {}
+                },
+                export: {
+                    typePosition: {}
+                }
+            },
+            cfg         = extend({}, defaults, profile, cfg, true, true),
+            //options     = extend({}, profile.options, runOptions, true, false),
             doc;//         = new Documentor;
 
-        delete cfg.data;
-        delete cfg.options;
+        //delete cfg.data;
+        //delete cfg.options;
 
         self.jsonFile   = jsonFile;
         self.json       = json;
 
-        extend(data, self.prepareArgsData(args), true, false);
-        extend(options, self.prepareArgsOptions(args), true, false);
-        extend(cfg, self.prepareArgsCfg(args), true, false);
+        
+
+        extend(cfg.renderer.data, self.prepareArgsData(args), true, false);
+        //extend(options, self.prepareArgsOptions(args), true, false);
+        //extend(cfg, self.prepareArgsCfg(args), true, false);
+
+        if (args.renderer) {
+            cfg.renderer.type = args.renderer;
+        }
+        if (args.out) {
+            cfg.renderer.out = args.out;
+        }
 
         self.doc = doc  = new Documentor({
-            itemSortCfg: cfg.itemSort,
-            typeSortCfg: cfg.typeSort,
-            contentSortCfg: cfg.contentSort
+            //itemSortCfg: cfg.itemSort,
+            //typeSortCfg: cfg.typeSort,
+            //contentSortCfg: cfg.contentSort
+            cfg: cfg
         });
 
-        if (doneCallback) {
+        /*if (doneCallback) {
             doc.on("done", doneCallback);
         }
 
@@ -80,7 +106,7 @@ var Runner = Base.$extend({
 
         doc.on("error", function(e) {
             throw e;
-        });
+        });*/
 
         if (cfg.init) {
             self.runInit(cfg, doc, jsonFile);
@@ -107,7 +133,7 @@ var Runner = Base.$extend({
             self.loadSrc(cfg, doc, jsonFile);
         }
 
-        var rendererCls = doc.getRenderer(cfg.renderer || "default");
+        var rendererCls = doc.getRenderer(cfg.renderer.type || "default");
 
         if (!rendererCls) {
             throw "Cannot find renderer " + rendererCls;
@@ -115,13 +141,12 @@ var Runner = Base.$extend({
 
         doc.prepare();
 
-        var renderer = new rendererCls(doc, extend({}, options, {
-            data: data,
+        var renderer = new rendererCls(doc, extend({}, cfg.renderer, {
             out: cfg.out,
             runner: self
         }, true, false));
 
-        renderer.render().done(function(){
+        return renderer.render().done(function(){
             self.doc.trigger("done");
         });
     },
@@ -209,21 +234,7 @@ var Runner = Base.$extend({
         return data;
     },
 
-    prepareArgsOptions: function(args) {
-        var options = {},
-            k;
-
-        for (k in args) {
-            if (k.indexOf("option-") === 0) {
-                options[k.replace("option-", "")] = args[k];
-                delete args[k];
-            }
-        }
-
-        return options;
-    },
-
-    prepareArgsCfg: function(args) {
+    /*prepareArgsCfg: function(args) {
 
         var cfg = {},
             k;
@@ -235,7 +246,7 @@ var Runner = Base.$extend({
         }
 
         return cfg;
-    },
+    },*/
 
     preparePath: function(name, jsonFile, isFile) {
 

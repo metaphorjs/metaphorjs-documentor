@@ -138,7 +138,6 @@ module.exports = (function(){
             return this.level == 0;
         },
 
-
         pcall: function(name) {
             arguments[0] = "item." + this.type + "." + arguments[0];
             if (this.file) {
@@ -170,6 +169,13 @@ module.exports = (function(){
                 this.props = this.file.pcall("getItemType", this.type, this.file);
             }
             return this.props;
+        },
+
+        /**
+         * @return {string}
+         */
+        getSortableName: function() {
+            return this.fullName || this.name;
         },
 
         /**
@@ -663,9 +669,11 @@ module.exports = (function(){
          *  @param {Item} item
          * }
          * @param {object} context
+         * @param {bool} includeSelf apply callback to itself too
+         * @param {array} args
          */
-        eachChild: function(fn, context) {
-            this.eachItem(fn, context, true);
+        eachChild: function(fn, context, includeSelf, args) {
+            this.eachItem(fn, context, true, includeSelf, args);
         },
 
         /**
@@ -675,30 +683,42 @@ module.exports = (function(){
          * }
          * @param {object} context
          * @param {bool} thisOnly Only among direct children
+         * @param {bool} includeSelf apply callback to itself too
+         * @param {array} args
          */
-        eachItem: function(fn, context, thisOnly) {
+        eachItem: function(fn, context, thisOnly, includeSelf, args) {
 
             var k, self = this;
+            args = args || [];
 
-            for (k in self.items) {
-                self.items[k].forEach(function(item) {
+            var exec = function(item) {
 
-                    if (typeof fn == "function") {
-                        fn.call(context, item);
+                if (typeof fn == "function") {
+                    fn.apply(context, [item].concat(args));
+                }
+                else {
+                    if (fn.indexOf(".") == -1 && item[fn]) {
+                        item[fn].apply(item, args); 
                     }
                     else {
-                        if (fn.indexOf(".") == -1 && item[fn]) {
-                            item[fn](); 
-                        }
-                        else {
-                            item.pcall(fn, item);
-                        }
+                        item.pcall.apply(item, [fn, item].concat(args));
                     }
+                }
 
-                    if (!thisOnly) {
-                        item.eachItem(fn, context);
-                    }
-                });
+                if (!thisOnly) {
+                    item.eachItem(fn, context, false, false, args);
+                }
+            };
+
+            if (includeSelf) {
+                var prevThisOnly = thisOnly;
+                thisOnly = true;
+                exec(self);
+                thisOnly = prevThisOnly;
+            }
+
+            for (k in self.items) {
+                self.items[k].forEach(exec);
             }
         },
 
@@ -848,7 +868,8 @@ module.exports = (function(){
             return extend(
                 {
                     id: this.fullName,
-                    name: this.name
+                    name: this.name,
+                    pathPrefix: "item"
                 }, 
                 this.toStructExport,
                 true, false

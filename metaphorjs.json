@@ -52,12 +52,7 @@
             "target": "assets/mjs-renderer.js",
             "files": [
                 ["metaphorjs/metaphorjs.json", "core"],
-                [
-                    "metaphorjs/src/func/run.js",
-                    {
-                        "as": "run"
-                    }
-                ],
+                ["metaphorjs/src/func/render.js", {"as": "render"}],
                 "metaphorjs/src/extra-directives/**",
                 "metaphorjs-model/src/directive/*",
                 "metaphorjs-dialog/src/class/dialog/Component.js",
@@ -76,12 +71,7 @@
             "target": "assets/renderer/default/assets/metaphorjs.js",
             "files": [
                 ["metaphorjs/metaphorjs.json", "core"],
-                [
-                    "metaphorjs/src/func/run.js",
-                    {
-                        "as": "run"
-                    }
-                ],
+                ["metaphorjs/src/func/run.js", {"as": "run"}],
                 "metaphorjs/src/extra-directives/**",
                 "metaphorjs-model/src/directive/*",
                 "metaphorjs-dialog/src/class/dialog/Component.js",

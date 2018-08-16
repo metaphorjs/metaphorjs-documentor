@@ -1,6 +1,6 @@
-var globalCache = require("../var/globalCache.js");
+var globalCache = require("../../var/globalCache.js");
 
-module.exports = globalCache.add("sortStructure", function(doc, structure){
+module.exports = globalCache.add("export.sortStructure", function(doc, structure){
 
     var byName = function(a, b){
         if (a.name == b.name) {

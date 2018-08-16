@@ -1,49 +1,14 @@
 
-var Base = require("./Base.js"),
-    fs = require("fs"),
+var fs = require("fs"),
     path = require("path"),
-    Item = require("./Item.js"),
-    Comment = require("./Comment.js"),
-    extend = require("metaphorjs/src/func/extend.js"),
-    hideLinks = require("./func/hideLinks.js");
+    File = require("../File.js"),
+    Item = require("../Item.js"),
+    Comment = require("../Comment.js"),
+    hideLinks = require("../func/hideLinks.js");
 
-module.exports = function(){
+module.exports = File.$extend({
 
-    var all = {};
-
-    /**
-     * @class
-     * @extends Base
-     */
-    var SourceFile = Base.$extend({
-
-        $class: "SourceFile",
-
-
-        /**
-         * @type string
-         */
-        path: null,
-
-        /**
-         * @type string
-         */
-        exportPath: null,
-
-        /**
-         * @type string
-         */
-        dir: null,
-
-        /**
-         * @type string
-         */
-        ext: null,
-
-        /**
-         * @type {Documentor}
-         */
-        doc: null,
+        $class: "file.Source",
 
         /**
          * @type {[]}
@@ -56,24 +21,10 @@ module.exports = function(){
         comments: null,
 
         /**
-         * @type {string}
-         */
-        content: null,
-
-        /**
          * @type {object}
          */
         tmp: null,
 
-        /**
-         * @type {object}
-         */
-        options: null,
-
-        /**
-         * @type {bool}
-         */
-        hidden: false,
 
         /**
          * @constructor
@@ -92,52 +43,19 @@ module.exports = function(){
 
             var self = this;
 
-            if (self.ext != "*") {
-
-                self.contextStack = [self.doc.root];
-                self.comments = [];
-                self.tmp = {};
-                self.dir = path.dirname(self.path);
-                self.ext = path.extname(self.path).substr(1);
-
-                self.hidden = self.options.hidden || false;
-
-                if (self.options.basePath) {
-                    self.exportPath = self.path.replace(self.options.basePath, "");
-                }
-                else {
-                    self.exportPath = self.path;
-                }
-            }
-
-        },
-
-        pcall: function(name) {
-            arguments[0] = "file." + this.ext + "." + arguments[0];
-            return this.doc.pcall.apply(this.doc, arguments);
-        },
-
-        pget: function(name, collect, passthru, exact, merge) {
-            arguments[0] = "file." + this.ext + "." + arguments[0];
-            return this.doc.pget.apply(this.doc, arguments);
+            self.$super.apply(self, arguments);
+            self.contextStack = [self.doc.root];
+            self.comments = [];
+            self.tmp = {};
         },
 
 
-        /**
-         * @method
-         * @returns {string}
-         */
-        getContent: function () {
-            if (!this.content) {
-                this.content = fs.readFileSync(this.path).toString();
-            }
-            return this.content;
-        },
 
-        parse: function () {
+
+
+        process: function () {
             this.parseComments();
             this.processComments();
-            this.content = '';
         },
 
         parseComments: function() {
@@ -510,27 +428,4 @@ module.exports = function(){
         }
 
 
-    }, {
-
-        get: function(filePath, doc, options) {
-
-
-            if (!all[filePath]) {
-                all[filePath] = new SourceFile({
-                    path: filePath,
-                    doc: doc,
-                    options: extend({}, options)
-                });
-            }
-            return all[filePath];
-        },
-
-        clear: function() {
-            all = {};
-        }
-
     });
-
-    return SourceFile;
-
-}();

@@ -1,7 +1,6 @@
 
 var Base = require("./Base.js"),
-    fs = require("fs"),
-    path = require("path"),
+    File = require("./File.js"),
     extend = require("metaphorjs/src/func/extend.js");
 
 /**
@@ -13,13 +12,13 @@ module.exports = Base.$extend({
     $class: "Content",
 
     id: null,
-    location: null,
     type: null,
-    groupName: null,
     content: null,
     title: null,
     file: null,
-    contentType: null,
+    toStructExport: null,
+    toExport: null,
+    props: null,
 
     /**
      * @constructor
@@ -27,53 +26,145 @@ module.exports = Base.$extend({
      *  @type {string} file
      *  @type {string} content
      *  @type {string} id
-     *  @type {string} location
-     *  @type {string} title
-     *  @type {string} groupName
-     *  @type {string} contentType
+     *  @type {string} type
+     *  @type {string} name
      * }
      */
     $init: function(cfg) {
 
         var self = this;
 
-        extend(self, cfg, true, false);
-
-        if (self.file && !self.contentType) {
-            self.contentType = path.extname(self.file).substr(1);
+        if (typeof self.file === "string") {
+            self.file = File.get(self.file, self.doc);
         }
 
+        self.toStructExport = {};
+        self.toExport = {};
         self.$super();
+
+        if (!self.type) {
+            var parseCfg = self.pcall("parse", self.file, self);
+            if (parseCfg) {
+                extend(self, parseCfg);
+            }
+        }
+        if (!self.type) {
+            self.type = "content";
+        }
+
+        if (!self.id) {
+            self.id = self.file.exportPath;
+        }
+
+        self.pcall("created", self);
+    },
+
+    pcall: function(name) {
+        arguments[0] = "content." + (this.type||'?') + "." + arguments[0];
+        if (this.file) {
+            return this.file.pcall.apply(this.file, arguments);
+        }
+        else {
+            arguments[0] = "*." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        }
+    },
+
+    pget: function(name, collect, passthru) {
+        arguments[0] = "content." + (this.type||'?') + "." + arguments[0];
+        if (this.file) {
+            return this.file.pget.apply(this.file, arguments);
+        }
+        else {
+            arguments[0] = "*." + arguments[0];
+            return this.doc.pcall.apply(this.doc, arguments);
+        }
+    },
+
+    /**
+     * @param {string} id
+     */
+    isThe: function(id) {
+        return this.id == id;
     },
 
     /**
      * @method
-     * @returns {string}
+     * @return {string}
      */
     getContent: function() {
-
-        if (this.file) {
-            return fs.readFileSync(this.file).toString().trim();
+        if (!this.content) {
+            this.content = this.file.getContent();
         }
-        else {
-            return this.content;
-        }
+        return this.content;
     },
 
+    /**
+     * Add key-value pair that will be exported as is
+     * @param {string} name
+     * @param {*} value
+     */
+    addToExport: function(name, value) {
+        this.toExport[name] = value;
+    },
+
+    /**
+     * Add key-value pair that will be exported as is
+     * @param {string} name
+     * @param {*} value
+     */
+    addToStructExport: function(name, value) {
+        this.toStructExport[name] = value;
+    },
+
+    /**
+     * @method
+     * @returns {object}
+     */
+    getTypeProps: function() {
+        if (!this.props) {
+            this.props = this.file.pcall("getContentsType", this.type, this.file);
+        }
+        return this.props;
+    },
+
+    /**
+     * @return {string}
+     */
+    getSortableName: function() {
+        return this.id;
+    },
+
+    /**
+     * @method
+     */
     exportData: function() {
 
         var self = this;
 
-        return {
+        return extend({}, self.toExport, {
             isContentItem: true,
             id: self.id,
-            title: self.title,
+            name: self.name,
             type: self.type,
             groupName: self.groupName,
             contentType: self.contentType,
             content: self.getContent()
-        };
+        });
+    },
 
+    exportToStructure: function() {
+        var self = this;
+
+        return extend(
+            {
+                id: this.id,
+                name: this.name,
+                pathPrefix: "content"
+            }, 
+            this.toStructExport,
+            true, false
+        );
     }
 
 });

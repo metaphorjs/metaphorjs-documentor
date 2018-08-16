@@ -7246,9 +7246,9 @@ var data = function(){
 
 
 
-function toFragment(nodes) {
+function toFragment(nodes, doc) {
 
-    var fragment = window.document.createDocumentFragment(),
+    var fragment = (doc || window.document).createDocumentFragment(),
         i, l;
 
     if (isString(nodes)) {
@@ -15235,6 +15235,12 @@ var EventHandler = defineClass({
                             break;
                         }
                     }
+                    if (cfg.preventDefault) {
+                        cfg.preventDefault = createGetter(cfg.preventDefault)(scope);
+                    }
+                    if (cfg.stopPropagation) {
+                        cfg.stopPropagation = createGetter(cfg.stopPropagation)(scope);
+                    }
                 }
 
                 if (!keep) {
@@ -16522,7 +16528,9 @@ Directive.registerAttribute("update-on", 1000,
     function(scope, node, expr, renderer, attr){
 
     var values = attr ? attr.values : null,
-        parts, k, part;
+        cfg = attr ? attr.config : {},
+        parts, k, part,
+        execFn;
 
     if (values) {
 
@@ -16536,6 +16544,19 @@ Directive.registerAttribute("update-on", 1000,
     }
 
     var cfgs = createGetter(expr)(scope);
+
+    if (cfg.code) {
+        var code = createFunc(cfg.code);
+        execFn = function() {
+            scope.$event = toArray(arguments);
+            code(scope);
+            scope.$event = null;
+            scope.$check();
+        };
+    }
+    else {
+        execFn = scope.$check;
+    }
 
     var toggle = function(mode) {
 
@@ -16551,7 +16572,7 @@ Directive.registerAttribute("update-on", 1000,
             }
 
             if (obj && event && (fn = (obj[mode] || obj['$' + mode]))) {
-                fn.call(obj, event, scope.$check, scope);
+                fn.call(obj, event, execFn, scope);
             }
         }
     };
@@ -25121,12 +25142,11 @@ App.$extend({
 
         self.makeItemMap();
         mhistory.init();
-
-        window.docsApp = self;
     },
 
     makeItemMap: function() {
         var map = {},
+            contentMap = {},
             self = this;
 
         var flattenItem = function(item) {
@@ -25136,14 +25156,49 @@ App.$extend({
             if (item.isApiItem) {
                 map[item.fullName] = item;
             }
+            if (item.isContentItem) {
+                contentMap[item.id] = item;
+            }
         };
 
-        self.scope.sourceTree.items.forEach(flattenItem);
+        if (self.scope.sourceTree.items) {
+            self.scope.sourceTree.items.forEach(flattenItem);
+        }
+        if (self.scope.sourceTree.content) {
+            self.scope.sourceTree.content.forEach(flattenItem);
+        }
         self.itemMap = map;
+        self.contentMap = contentMap;
     },
 
     getItem: function(id) {
         return this.itemMap[id];
+    },
+
+    getContentItem: function(id) {
+        return this.contentMap[id];
+    },
+
+    hasNav: function(where) {
+        var k;
+        for (k in this.scope.sourceTree.structure) {
+            if (this.scope.sourceTree.structure[k].where == where) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    getItemUrl: function(item) {
+        if (item.isGroup) {
+            return '#';
+        }
+        if (this.scope.multipage) {
+            return '/' + item.pathPrefix +'/'+ item.id;
+        }
+        else {
+            return '#' + item.id;
+        }
     },
 
     setLoading: function(state, ifNot) {
@@ -25200,8 +25255,77 @@ App.$extend({
         }
 
         return p;
+    },
+
+
+    initMenuItem: function() {
+        return nextUid();
+    },
+
+    toggleMenuItem: function(open, id) {
+        var self = this;
+        async(function(){
+            self.trigger("menu-toggle", id, !open)
+        });
+        
+        return !open;
+    },
+
+    goto: function(url) {
+        mhistory.push(url);
     }
 });
+
+
+
+Component.$extend({
+    $class: "DocsContent",
+    template: "content-component",
+
+    initComponent: function() {
+        var self = this;
+        self.scope.tpl = '';
+
+        self.contentId.on("change", self.onContentIdChange, self);
+        self.onContentIdChange(self.contentId.getValue() || self.findFirstItem());
+    },
+
+    onContentIdChange: function(contentId) {
+        var self = this;
+
+        if (!contentId) {
+            return;
+        }
+
+        return new Promise(function(resolve){
+            async(function(){
+                self.scope.$app.setLoading(true, true);
+                resolve();
+            }, null, [], 100);
+        })
+        .then(function(){
+            return new Promise(function(resolve){
+                raf(function(){
+                    self.scope.content = self.scope.$app.getContentItem(contentId);
+                    self.scope.$check();
+                    resolve();
+                });
+            });
+        })
+        .then(function(){
+            return self.scope.$app.highlightAllUnprocessed();
+        })
+        .then(function(){
+            return new Promise(function(resolve) {
+                raf(function(){
+                    self.scope.$app.setLoading(false);
+                    resolve();
+                });
+            });
+        });
+    }  
+});
+
 
 
 
@@ -25288,6 +25412,18 @@ View.$extend({
                         regexp: /item\/(.+)/
                     }
                 ]
+            },
+            {
+                regexp: /\/content\//,
+                cmp: "DocsContent",
+                id: "content",
+                default: true,
+                params: [
+                    {
+                        name: "contentId",
+                        regexp: /content\/(.+)/
+                    }
+                ]
             }
         ];
     }
@@ -25337,6 +25473,16 @@ nsAdd("filter.highlightJson", function(input, scope, prop) {
     }
 
     return hl;
+});
+
+
+nsAdd("filter.navFilter", function(input, scope, where) {
+    if (isArray(input)) {
+        return input.filter(function(nav){
+            return nav.value.where == where;
+        });
+    }
+    return [];
 });
 
 
@@ -25554,7 +25700,7 @@ var toJsonTemplate = (function() {
         return lines.join("\n");
     };
 
-    var putComments = function(json, o, cache, lineSize) {
+    var putComments = function(json, o, cache, lineSize, withFolding) {
         var key, item, r, comment, type, fold;
 
         if (!json) {
@@ -25601,7 +25747,7 @@ var toJsonTemplate = (function() {
                 });
             }
 
-            if (fold) {
+            if (withFolding && fold) {
                 json = json.substring(0, fold.inxs[0]) + 
                          '/*fold-start '+key+'*/' +
                             fold.part + 
@@ -25615,7 +25761,7 @@ var toJsonTemplate = (function() {
         return json;
     };
 
-    return function(item) {
+    return function(item, opt) {
 
         if (item.$$jsonPresentation) {
             return item.$$jsonPresentation;
@@ -25625,6 +25771,7 @@ var toJsonTemplate = (function() {
             o = {},
             cache = {};
 
+        opt = opt || {};
         type && (type = type[0]);
 
         if (type === "array") {
@@ -25637,7 +25784,7 @@ var toJsonTemplate = (function() {
 
         var json = JSON.stringify(o, null, 2);
 
-        json = putComments(json, o, cache, LINE_SIZE);
+        json = putComments(json, o, cache, LINE_SIZE, opt.withFolding);
 
         item.$$jsonPresentation = json;
         return json;
@@ -25645,8 +25792,10 @@ var toJsonTemplate = (function() {
 }());
 
 
-nsAdd("filter.presentAsJson", function(input, scope, prop) {
-    return toJsonTemplate(input);
+nsAdd("filter.presentAsJson", function(input, scope, withFolding) {
+    return toJsonTemplate(input, {
+        withFolding: withFolding || false
+    });
 });
 var MetaphorJsExports = {};
 MetaphorJsExports['MetaphorJs'] = MetaphorJs;

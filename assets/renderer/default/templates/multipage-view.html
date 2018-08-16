@@ -1,1 +1,4 @@
-<div class="col-12 col-md-8 col-xl-10" {view}="DocsView"></div>
+<div class="col-12" 
+    {class.col-md-8}="this.$app.hasNav('left-menu')"
+    {class.col-xl-10}="this.$app.hasNav('left-menu')"
+    {view}="DocsView"></div>

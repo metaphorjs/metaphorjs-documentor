@@ -1,18 +1,12 @@
 
-var Item = require("../Item.js"),
-    globalCache = require("../var/globalCache.js");
+var globalCache = require("../../var/globalCache.js");
 
-module.exports = globalCache.add("sortItems", function(doc, items, orderCfg) {
+module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
 
-    if (!orderCfg) {
-        return items;
-    }
+    var res = [],
+        all = false;
 
-    var res = [];
-
-    var all = false;
-
-    orderCfg.forEach(function(entry){
+    cfg.order.forEach(function(entry){
         
         if (entry === '*') {
             all = true;

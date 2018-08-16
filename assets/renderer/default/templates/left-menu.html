@@ -1,9 +1,10 @@
 
 
-<div class="col-12 col-md-4 col-xl-2 bd-sidebar">
+<div class="col-12 col-md-4 col-xl-2 bd-sidebar" 
+    {if}="this.$app.hasNav('left-menu')">
     <nav class="bd-links" id="bd-docs-nav">
         <div class="bd-toc-item" 
-             {each}="section in .sourceTree.structure | toArray">
+             {each}="section in .sourceTree.structure | toArray | navFilter:'left-menu'">
              <a class="bd-toc-link" 
                 href="#"
                 {bind}=".section.value.groupName"></a>

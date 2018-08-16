@@ -5,17 +5,21 @@ var Base = require("./Base.js"),
     getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
     undf = require("metaphorjs/src/var/undf.js"),
     path = require("path"),
-    fs = require("fs"),
-    SourceFile = require("./SourceFile.js"),
+    SourceFile = require("./file/Source.js"),
+    RootFile = require("./file/Root.js"),
+    File = require("./File.js"),
     Item = require("./Item.js"),
     Content = require("./Content.js"),
     Cache = require("metaphorjs/src/lib/Cache.js"),
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
+    ns = require("metaphorjs-namespace/src/var/ns.js"),
     nextUid = require("metaphorjs/src/func/nextUid.js");
 
 
 require("metaphorjs-observable/src/mixin/Observable.js");
+require("./file/Source.js");
+require("./file/Content.js");
 
 
 /**
@@ -34,10 +38,7 @@ module.exports = Base.$extend({
     id: null,
     map: null,
     content: null,
-    typeSortCfg: null,
-    itemSortCfg: null,
-    contentSortCfg: null,
-    sections: null,
+
 
     /**
      * @constructor
@@ -54,12 +55,11 @@ module.exports = Base.$extend({
         self.id         = nextUid();
         self.files      = {};
         self.map        = {};
-        self.content    = [];
-        self.sections   = ["top", "api", "bottom"];
+        self.content    = {};
         self.root       = new Item({
             doc:        self,
             type:       "root",
-            file:       new SourceFile({
+            file:       new RootFile({
                 ext:    "*",
                 doc:    self
             })
@@ -172,6 +172,17 @@ module.exports = Base.$extend({
 
     /**
      * @method
+     * @param {string} cls
+     * @returns {File}
+     */
+    getFileClass: function(cls) {
+        return this.hooks.get(cls) ||
+                globalCache.get(cls) ||
+                ns.get(cls);
+    },
+
+    /**
+     * @method
      * @param {Item} item
      */
     addUniqueItem: function(item) {
@@ -257,7 +268,7 @@ module.exports = Base.$extend({
 
         if (!self.files[filePath]) {
 
-            var file = SourceFile.get(filePath, self, extend({}, options, {
+            var file = File.get(filePath, self, extend({}, options, {
                 hidden: hidden
             }, true, false));
 
@@ -267,7 +278,7 @@ module.exports = Base.$extend({
 
             self.files[filePath] = file;
 
-            file.parse();
+            file.process();
         }
         else {
             // if file it not created but retrieved,
@@ -299,39 +310,69 @@ module.exports = Base.$extend({
         return this.files[path];
     },
 
+    /**
+     * @method
+     * @param {object} cfg
+     */
     addContent: function(cfg) {
         var self = this,
-            c = cfg instanceof Content ? cfg : new Content(cfg);
-        self.content.push(c);
-        self.pcall("contentAdded", self, c);
+            c = cfg instanceof Content ? cfg : new Content(extend({}, cfg, {
+                doc: self
+            })),
+            type = c.type;
+        
+        if (!self.content[type]) {
+            self.content[type] = [];
+        }
+        self.content[type].push(c);
+        c.pcall("added", c, self);
+    },
+
+    eachContent: function(fn, context, args) {
+        var k, self = this;
+        args = args || [];
+
+        var exec = function(c) {
+
+            if (typeof fn == "function") {
+                fn.call(context, [c].concat(args));
+            }
+            else {
+                if (fn.indexOf(".") == -1 && c[fn]) {
+                    c[fn].apply(c, args); 
+                }
+                else {
+                    c.pcall(fn, [c].concat(args));
+                }
+            }
+        };
+
+        for (k in self.content) {
+            self.content[k].forEach(exec);
+        }
     },
 
     prepare: function() {
 
         var self = this;
 
-        self.pcall("beforePrepare", self);
-
+        self.pcall("event.start", self);
+    
         self.eachItem("resolveFullName");
         self.eachItem("resolveInheritanceNames");
         self.eachItem("applyInheritance");
         self.eachItem("resolveOtherNames");
-
-        self.pcall("namesResolved", self);
-
-        self.pcall("prepareItems", self);
-        self.pcall("itemsPrepared", self);
-
         self.eachItem("finish");
+        self.pcall("event.itemsPrepared", self);
 
-        self.pcall("prepareContent", self);
-        self.pcall("contentPrepared", self);
+        self.eachItem("sortChildren", null, true, [self.cfg]);
+        self.pcall("event.itemsSorted", self);
 
-        self.pcall("file.*.sortItemTypes", self.root, self.typeSortCfg);
-        self.pcall("file.*.sortItems", self.root, self.itemSortCfg);
-        //self.pcall("sortContent", self, self.contentSortCfg);
+        self.contents = self.pcall("content.sortTypes", self.content, self.cfg, self);
+        self.pcall("event.contentSorted", self);
 
-        self.pcall("afterPrepare", self);
+        self.pcall("event.end", self);
+
     },
 
 
@@ -341,9 +382,11 @@ module.exports = Base.$extend({
      *  @param {Item} item
      * }
      * @param {object} context
+     * @param {bool} includeRoot
+     * @param {array} args
      */
-    eachItem: function(fn, context) {
-        this.root.eachItem(fn, context);
+    eachItem: function(fn, context, includeRoot, args) {
+        this.root.eachItem(fn, context, false, includeRoot, args);
     },
 
 
@@ -396,9 +439,9 @@ module.exports = Base.$extend({
 
         var self = this,
             exportData = self.pget("export"),
-            getStructure = self.pget("getStructure"),
-            sortItems = self.pget("sortItems"),
-            items = [];
+            getStructure = self.pget("export.getStructure"),
+            items = [],
+            k;
 
         if (exportData) {
             return exportData(self);
@@ -406,6 +449,7 @@ module.exports = Base.$extend({
 
         var exprt = {
             items: [],
+            content: [],
             structure: {}
         };
 
@@ -421,18 +465,19 @@ module.exports = Base.$extend({
             items.push(item);
         });
 
-        if (sortItems) {
-            items = sortItems(self, items, self.contentSortCfg);
-        }
-
         self.root.exportChildren(items, noHelpers, true)
             .forEach(function(ch){
                 exprt.items.push(ch);
             });
 
-        if (getStructure) {
-            exprt.structure = getStructure(self, items);
+        for (k in self.content) {
+            self.content[k].forEach(function(c){
+                exprt.content.push(c.exportData());
+                items.push(c);
+            });
         }
+        
+        exprt.structure = getStructure(self, items);
 
         return exprt;    
     },

@@ -19,6 +19,18 @@ View.$extend({
                         regexp: /item\/(.+)/
                     }
                 ]
+            },
+            {
+                regexp: /\/content\//,
+                cmp: "DocsContent",
+                id: "content",
+                default: true,
+                params: [
+                    {
+                        name: "contentId",
+                        regexp: /content\/(.+)/
+                    }
+                ]
             }
         ];
     }
