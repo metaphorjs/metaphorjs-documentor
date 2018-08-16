@@ -48,11 +48,17 @@ Component.$extend({
                     self.scope.item = self.scope.$app.getItem(itemId);
                     self.scope.$check();
                     resolve();
+                    console.log(1)
                 });
             });
         })
         .then(function(){
-            return self.scope.$app.highlightAllUnprocessed();
+            try {
+                return self.scope.$app.highlightAllUnprocessed();
+            }
+            catch (ex) {
+                return Promise.resolve();
+            }
         })
         .then(function(){
             return new Promise(function(resolve) {

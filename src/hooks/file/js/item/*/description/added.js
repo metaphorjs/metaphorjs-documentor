@@ -6,7 +6,7 @@ module.exports = globalCache.add("file.js.item.*.description.added", function(fl
     var ft;
 
     if (ft = flag.getProperty("fileType")) {
-        if (ft == "js") {
+        if (ft == "js" || ft == "json") {
             flag.setType("code");
         }
     }

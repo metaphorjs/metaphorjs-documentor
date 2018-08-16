@@ -25229,30 +25229,41 @@ App.$extend({
             j, jl,
             pre, code;
 
-        for (i = 0, l = pres.length; i < l; i++) {
+        try {
+            for (i = 0, l = pres.length; i < l; i++) {
 
-            pre = pres[i];
+                pre = pres[i];
 
-            for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
-                code = pre.childNodes[j];
-                if (code.nodeType && 
-                    code.tagName.toLowerCase() === "code" && 
-                    !getAttr(code, "prism-processed")) 
-                {
-                    counter++;
-                    setAttr(code, "prism-processed", "true");
-                    window.Prism.highlightElement(code, true, function(){
-                        counter--;
-                        if (counter === 0) {
-                            p.resolve();
-                        }
-                    });
+                for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
+                    code = pre.childNodes[j];
+                    if (code.nodeType && 
+                        code.tagName.toLowerCase() === "code" && 
+                        !getAttr(code, "prism-processed")) 
+                    {
+                        counter++;
+                        setAttr(code, "prism-processed", "true");
+                        window.Prism.highlightElement(code, true, function(){
+                            counter--;
+                            if (counter === 0) {
+                                p.resolve();
+                            }
+                        });
+                    }
                 }
             }
         }
+        catch (ex) {
+            console.log(ex);
+            counter = 0;
+        }
+
         if (counter === 0) {
             p.resolve();
         }
+
+        setTimeout(function(){
+            p.resolve();
+        }, 1000);
 
         return p;
     },
@@ -25373,11 +25384,17 @@ Component.$extend({
                     self.scope.item = self.scope.$app.getItem(itemId);
                     self.scope.$check();
                     resolve();
+                    console.log(1)
                 });
             });
         })
         .then(function(){
-            return self.scope.$app.highlightAllUnprocessed();
+            try {
+                return self.scope.$app.highlightAllUnprocessed();
+            }
+            catch (ex) {
+                return Promise.resolve();
+            }
         })
         .then(function(){
             return new Promise(function(resolve) {
@@ -25797,6 +25814,29 @@ nsAdd("filter.presentAsJson", function(input, scope, withFolding) {
         withFolding: withFolding || false
     });
 });
+
+var prismClass = function(fileType){
+
+    fileType = fileType.replace("language-", "");
+
+    if (fileType.indexOf('txt-') === 0) {
+        fileType = fileType.split('-')[1];
+    }
+
+    switch (fileType) {
+        case "js":
+        case "json":
+            return "language-javascript";
+        default:
+            return "language-" + fileType;
+    }
+};
+
+
+
+nsAdd("filter.prismClass", function(input, scope, where) {
+    return prismClass(input);
+});
 var MetaphorJsExports = {};
 MetaphorJsExports['MetaphorJs'] = MetaphorJs;
 MetaphorJsExports['isFunction'] = isFunction;
@@ -25955,5 +25995,6 @@ MetaphorJsExports['generateTemplateNames'] = generateTemplateNames;
 MetaphorJsExports['globalCache'] = globalCache;
 MetaphorJsExports['getCurly'] = getCurly;
 MetaphorJsExports['toJsonTemplate'] = toJsonTemplate;
+MetaphorJsExports['prismClass'] = prismClass;
 
 }());

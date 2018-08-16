@@ -2,6 +2,7 @@
 var Base = require("./Base.js"),
     extend = require("metaphorjs/src/func/extend.js"),
     fs = require("fs"),
+    prismClass = require("./func/prismClass.js"),
     Promise = require("metaphorjs-promise/src/lib/Promise.js"),
     toJsonTemplate = require("./func/toJsonTemplate.js"),
     eachLink = require("./func/eachLink.js");
@@ -81,20 +82,7 @@ module.exports = Base.$extend({
             });
         });
 
-        MetaphorJs.ns.add("filter.prismClass", function(fileType){
-
-            if (fileType.indexOf('txt-') === 0) {
-                fileType = fileType.split('-')[1];
-            }
-
-            switch (fileType) {
-                case "js":
-                case "json":
-                    return "javascript";
-                default:
-                    return fileType;
-            }
-        });
+        MetaphorJs.ns.add("filter.prismClass", prismClass);
 
         MetaphorJs.ns.add("filter.readFile", function(filePath){
 

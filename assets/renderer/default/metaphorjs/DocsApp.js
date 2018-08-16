@@ -132,30 +132,41 @@ App.$extend({
             j, jl,
             pre, code;
 
-        for (i = 0, l = pres.length; i < l; i++) {
+        try {
+            for (i = 0, l = pres.length; i < l; i++) {
 
-            pre = pres[i];
+                pre = pres[i];
 
-            for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
-                code = pre.childNodes[j];
-                if (code.nodeType && 
-                    code.tagName.toLowerCase() === "code" && 
-                    !getAttr(code, "prism-processed")) 
-                {
-                    counter++;
-                    setAttr(code, "prism-processed", "true");
-                    window.Prism.highlightElement(code, true, function(){
-                        counter--;
-                        if (counter === 0) {
-                            p.resolve();
-                        }
-                    });
+                for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
+                    code = pre.childNodes[j];
+                    if (code.nodeType && 
+                        code.tagName.toLowerCase() === "code" && 
+                        !getAttr(code, "prism-processed")) 
+                    {
+                        counter++;
+                        setAttr(code, "prism-processed", "true");
+                        window.Prism.highlightElement(code, true, function(){
+                            counter--;
+                            if (counter === 0) {
+                                p.resolve();
+                            }
+                        });
+                    }
                 }
             }
         }
+        catch (ex) {
+            console.log(ex);
+            counter = 0;
+        }
+
         if (counter === 0) {
             p.resolve();
         }
+
+        setTimeout(function(){
+            p.resolve();
+        }, 1000);
 
         return p;
     },
