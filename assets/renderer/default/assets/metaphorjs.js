@@ -25074,6 +25074,8 @@ Component.$extend({
 });
 
 
+var isBrowser = new Function("try {return this===window;}catch(e){ return false;}");
+
 var generateTemplateNames = function(name){
 
     var list        = [],
@@ -25141,7 +25143,10 @@ App.$extend({
         }
 
         self.makeItemMap();
-        mhistory.init();
+
+        if (isBrowser()) {
+            mhistory.init();
+        }
     },
 
     makeItemMap: function() {
@@ -25283,7 +25288,12 @@ App.$extend({
     },
 
     goto: function(url) {
-        mhistory.push(url);
+        if (url.substr(0,1) === '#') {
+            window.location.href = url;
+        }
+        else {
+            mhistory.push(url);
+        }
     }
 });
 
@@ -25291,11 +25301,13 @@ App.$extend({
 
 Component.$extend({
     $class: "DocsContent",
-    template: "content-component",
+    template: ".content.template",
 
     initComponent: function() {
         var self = this;
-        self.scope.tpl = '';
+        self.scope.content = {
+            template: null
+        };
 
         self.contentId.on("change", self.onContentIdChange, self);
         self.onContentIdChange(self.contentId.getValue() || self.findFirstItem());
@@ -25991,6 +26003,7 @@ MetaphorJsExports['getOffsetParent'] = getOffsetParent;
 MetaphorJsExports['getOffset'] = getOffset;
 MetaphorJsExports['getPosition'] = getPosition;
 MetaphorJsExports['Dialog'] = Dialog;
+MetaphorJsExports['isBrowser'] = isBrowser;
 MetaphorJsExports['generateTemplateNames'] = generateTemplateNames;
 MetaphorJsExports['globalCache'] = globalCache;
 MetaphorJsExports['getCurly'] = getCurly;

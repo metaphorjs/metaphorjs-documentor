@@ -18,7 +18,7 @@ var Runner = Base.$extend({
 
     /**
      * @method
-     * @param {object} runCfg {
+     * @param {object} cfg {
      *  @type {string} profile Profile name in metaphorjs.json in docs section
      *  @type {object} renderer {
      *      @type {string} type
@@ -39,14 +39,9 @@ var Runner = Base.$extend({
      *  
      *  @type {object} contentSort
      * }
-     * @param {function} errorCallback
-     * @param {function} doneCallback
+     * @returns {Promise}
      */
-    run: function(cfg, errorCallback, doneCallback) {
-
-        //runCfg = runCfg || {};
-        //runData = runData || {};
-        //runOptions = runOptions || {};
+    run: function(cfg) {
 
         cfg = cfg || {};
 
@@ -55,9 +50,7 @@ var Runner = Base.$extend({
             profileName = cfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
             jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
-            profile     = jsonFile && jsonFile.docs && jsonFile.docs[profileName] ?
-                            jsonFile.docs[profileName] : {},
-            //data        = extend({}, profile.data, runData, true, false),
+            profile,
             defaults    = {
                 renderer: {
                     data: {}
@@ -66,47 +59,30 @@ var Runner = Base.$extend({
                     typePosition: {}
                 }
             },
-            cfg         = extend({}, defaults, profile, cfg, true, true),
-            //options     = extend({}, profile.options, runOptions, true, false),
+            cfg,
             doc;//         = new Documentor;
 
-        //delete cfg.data;
-        //delete cfg.options;
+        if (jsonFile && jsonFile.docs) {
+            profile     = profileName ? jsonFile.docs[profileName] : jsonFile.docs;
+        }
+
+        cfg             = extend({}, defaults, profile, cfg, true, true);
 
         self.jsonFile   = jsonFile;
         self.json       = json;
 
-        
-
         extend(cfg.renderer.data, self.prepareArgsData(args), true, false);
-        //extend(options, self.prepareArgsOptions(args), true, false);
-        //extend(cfg, self.prepareArgsCfg(args), true, false);
 
         if (args.renderer) {
             cfg.renderer.type = args.renderer;
         }
         if (args.out) {
-            cfg.renderer.out = args.out;
+            cfg.out = args.out;
         }
 
         self.doc = doc  = new Documentor({
-            //itemSortCfg: cfg.itemSort,
-            //typeSortCfg: cfg.typeSort,
-            //contentSortCfg: cfg.contentSort
             cfg: cfg
         });
-
-        /*if (doneCallback) {
-            doc.on("done", doneCallback);
-        }
-
-        if (errorCallback) {
-            doc.on("error", errorCallback);
-        }
-
-        doc.on("error", function(e) {
-            throw e;
-        });*/
 
         if (cfg.init) {
             self.runInit(cfg, doc, jsonFile);
@@ -233,20 +209,6 @@ var Runner = Base.$extend({
 
         return data;
     },
-
-    /*prepareArgsCfg: function(args) {
-
-        var cfg = {},
-            k;
-
-        for (k in args) {
-            if (k != "_") {
-                cfg[k] = args[k];
-            }
-        }
-
-        return cfg;
-    },*/
 
     preparePath: function(name, jsonFile, isFile) {
 

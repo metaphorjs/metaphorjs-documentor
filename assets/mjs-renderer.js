@@ -7035,7 +7035,7 @@ ns.register("mixin.Provider", {
 
 
 
-defineClass({
+var App = defineClass({
 
     $class: "App",
     $mixins: ["mixin.Observable", "mixin.Provider"],
@@ -7246,9 +7246,9 @@ var data = function(){
 
 
 
-function toFragment(nodes) {
+function toFragment(nodes, doc) {
 
-    var fragment = window.document.createDocumentFragment(),
+    var fragment = (doc || window.document).createDocumentFragment(),
         i, l;
 
     if (isString(nodes)) {
@@ -10110,41 +10110,6 @@ var Template = function(){
             }
         },
 
-        /*findTemplate = function(tplId) {
-
-            var tpl;
-
-            if (typeof __MetaphorJsPrebuilt !== "undefined" &&
-                __MetaphorJsPrebuilt['__tpls'] &&
-                __MetaphorJsPrebuilt['__tpls'][tplId]) {
-                tpl = __MetaphorJsPrebuilt['__tpls'][tplId];
-                delete __MetaphorJsPrebuilt['__tpls'][tplId];
-                return processTextTemplate(tplId, tpl);
-            }
-
-            var tplNode = window.document.getElementById(tplId),
-                tag;
-
-            if (tplNode) {
-
-                tag = tplNode.tagName.toLowerCase();
-
-                if (tag === "script") {
-                    tpl = tplNode.innerHTML;
-                    tplNode.parentNode.removeChild(tplNode);
-                    return processTextTemplate(tplId, tpl);
-                }
-                else {
-                    if ("content" in tplNode) {
-                        return tplNode.content;
-                    }
-                    else {
-                        return toFragment(tplNode.childNodes);
-                    }
-                }
-            }
-        },*/
-
         loadTemplate = function(tplUrl) {
             if (!cache.exists(tplUrl)) {
                 return cache.add(tplUrl,
@@ -10164,8 +10129,6 @@ var Template = function(){
             }
             return str.substr(0,1) === '{' || str.substr(0,5) === 'this.';
         };
-
-    //cache.addFinder(findTemplate);
 
     if (typeof __MetaphorJsPrebuilt !== "undefined" &&
                 __MetaphorJsPrebuilt['__tpls']) {
@@ -10193,6 +10156,7 @@ var Template = function(){
         node:               null,
         tpl:                null,
         url:                null,
+        html:               null,
         ownRenderer:        true,
         initPromise:        null,
         tplPromise:         null,
@@ -10272,39 +10236,34 @@ var Template = function(){
                     }
                 }
 
-                /*if (self.ownRenderer === null) {
-                    if (self._watcher && !self.replace) {
-                        self.ownRenderer = true;
-                    }
-                    else if (self.shadow) {
-                        self.ownRenderer = true;
-                    }
-                    //else if (self.replace) {
-                        //self.ownRenderer = false;
-                    //}
-                }*/
-
-                 self.resolveTemplate();
-
-                //if (self._watcher && self.replace) {
-                //    self._watcher.unsubscribeAndDestroy(self.onChange, self);
-                //    self._watcher = null;
-                //}
+                self.resolveTemplate();
 
                 if (!self.deferRendering || !self.ownRenderer) {
                     self.tplPromise.done(self.applyTemplate, self);
                 }
+            }
+            else if (self.html) {
+                self._watcher = createWatchable(
+                    self.scope,
+                    self.html,
+                    self.onHtmlChange,
+                    self,
+                    {filterLookup: filterLookup});
 
-                if (self.ownRenderer && self.parentRenderer) {
-                    self.parentRenderer.on("destroy",
-                        self.onParentRendererDestroy,
-                        self);
-                }
+                self.initPromise    = new Promise;
+                self.onHtmlChange();
             }
             else {
                 if (!self.deferRendering && self.ownRenderer) {
                     self.doRender();
                 }
+            }
+
+            // moved from if (tpl)
+            if (self.ownRenderer && self.parentRenderer) {
+                self.parentRenderer.on("destroy",
+                    self.onParentRendererDestroy,
+                    self);
             }
 
             self.scope.$on("destroy", self.onScopeDestroy, self);
@@ -10407,6 +10366,28 @@ var Template = function(){
                 })
                 .fail(self.initPromise.reject, self.initPromise)
                 .fail(self.tplPromise.reject, self.tplPromise);
+        },
+
+        onHtmlChange: function() {
+            var self    = this,
+                el      = self.node;
+
+            if (self._renderer) {
+                self._renderer.$destroy();
+                self._renderer = null;
+            }
+
+            var htmlVal = self._watcher.getLastResult();
+
+            if (htmlVal) {
+                self._fragment = toFragment(htmlVal);
+                self.applyTemplate();
+            }
+            else if (el) {
+                while (el.firstChild) {
+                    el.removeChild(el.firstChild);
+                }
+            }
         },
 
         onChange: function() {
@@ -10573,7 +10554,12 @@ var Template = function(){
             }
 
             if (self._watcher) {
-                self._watcher.unsubscribeAndDestroy(self.onChange, self);
+                if (self.html) {
+                    self._watcher.unsubscribeAndDestroy(self.onHtmlChange, self);
+                }
+                else {
+                    self._watcher.unsubscribeAndDestroy(self.onChange, self);
+                }
             }
         }
 
@@ -12871,7 +12857,7 @@ function resolveComponent(cmp, cfg, scope, node, args) {
 
 
 
-defineClass({
+var View = defineClass({
 
     $class: "View",
 
@@ -15249,6 +15235,12 @@ var EventHandler = defineClass({
                             break;
                         }
                     }
+                    if (cfg.preventDefault) {
+                        cfg.preventDefault = createGetter(cfg.preventDefault)(scope);
+                    }
+                    if (cfg.stopPropagation) {
+                        cfg.stopPropagation = createGetter(cfg.stopPropagation)(scope);
+                    }
                 }
 
                 if (!keep) {
@@ -15507,16 +15499,24 @@ Directive.registerAttribute("include", 1100,
     function(scope, node, tplExpr, parentRenderer, attr){
 
     var cfg = attr ? attr.config : {},
-        asis = toBool(cfg.asis);
+        asis = toBool(cfg.asis),
+        html = cfg.html,
+        tplCfg = {
+            scope: scope,
+            node: node,
+            parentRenderer: parentRenderer,
+            animate: !!cfg.animate,
+            ownRenderer: !asis // do not render if asis=true
+        };
 
-    var tpl = new Template({
-        scope: scope,
-        node: node,
-        url: tplExpr,
-        parentRenderer: parentRenderer,
-        animate: !!cfg.animate,
-        ownRenderer: !asis // do not render if asis=true
-    });
+    if (html) {
+        tplCfg['html'] = html;
+    }
+    else {
+        tplCfg['url'] = tplExpr;
+    }
+
+    var tpl = new Template(tplCfg);
 
     return false; // stop renderer
 });
@@ -16528,7 +16528,9 @@ Directive.registerAttribute("update-on", 1000,
     function(scope, node, expr, renderer, attr){
 
     var values = attr ? attr.values : null,
-        parts, k, part;
+        cfg = attr ? attr.config : {},
+        parts, k, part,
+        execFn;
 
     if (values) {
 
@@ -16542,6 +16544,19 @@ Directive.registerAttribute("update-on", 1000,
     }
 
     var cfgs = createGetter(expr)(scope);
+
+    if (cfg.code) {
+        var code = createFunc(cfg.code);
+        execFn = function() {
+            scope.$event = toArray(arguments);
+            code(scope);
+            scope.$event = null;
+            scope.$check();
+        };
+    }
+    else {
+        execFn = scope.$check;
+    }
 
     var toggle = function(mode) {
 
@@ -16557,7 +16572,7 @@ Directive.registerAttribute("update-on", 1000,
             }
 
             if (obj && event && (fn = (obj[mode] || obj['$' + mode]))) {
-                fn.call(obj, event, scope.$check, scope);
+                fn.call(obj, event, execFn, scope);
             }
         }
     };
@@ -17175,6 +17190,45 @@ run();
 
 
 
+var jsdom = require("jsdom");
+
+var render = function(opt, doc) {
+
+    if (typeof opt === "string") {
+        opt = {
+            html: opt
+        };
+    }
+
+    if (!opt.html) {
+        return Promise.resolve("");
+    }
+
+    var document = doc || opt.document || jsdom.jsdom(''),
+        id = nextUid(),
+        frag = toFragment(opt.html, document),
+        p = new Promise,
+        start = "<" + id,
+        end = id + ">",
+        startCmt = document.createComment(start),
+        endCmt = document.createComment(end);
+
+    frag.insertBefore(startCmt, frag.firstChild);
+    frag.appendChild(endCmt);
+    document.appendChild(frag);
+
+    initApp(document.documentElement, opt.appClass, opt.appData, true)
+        .done(function(){
+            var html = jsdom.serializeDocument(document),
+                inx1 = html.indexOf(start),
+                inx2 = html.indexOf(end);
+            
+            p.resolve(html.substring(inx1 + start.length, inx2));
+        });
+
+    return p;
+};
+
 
 
 
@@ -17295,12 +17349,7 @@ Directive.registerTag("if", defineClass({
     onChange: function() {
         var self    = this,
             val     = self.watcher.getLastResult(),
-            parent  = self.prevEl.parentNode,
-            node    = self.node;
-
-        //if (self.initial) {
-            //parent.removeChild(node);
-        //}
+            parent  = self.prevEl.parentNode;
 
         if (val) {
             parent.insertBefore(toFragment(self.children), self.nextEl);
@@ -17308,11 +17357,11 @@ Directive.registerTag("if", defineClass({
         else if (!self.initial) {
             var i, l;
             for (i = 0, l = self.children.length; i < l; i++) {
-                parent.removeChild(self.children[i]);
+                if (parent.contains(self.children[i])) {
+                    parent.removeChild(self.children[i]);
+                }
             }
         }
-
-        //self.$super(val);
 
         if (self.initial) {
             self.initial = false;
@@ -20557,7436 +20606,781 @@ Directive.getDirective("attr", "each")
 
 
 
+var isBrowser = new Function("try {return this===window;}catch(e){ return false;}");
 
-function setStyle(el, name, value) {
+var generateTemplateNames = function(name){
 
-    if (!el || !el.style) {
-        return;
-    }
+    var list        = [],
+        path        = name.split("."),
+        max         = path.length - 2,
+        last        = path.length - 1,
+        exts        = [path[0], '*'],
+        tmp, i, j, ext, e;
 
-    var props,
-        style = el.style,
-        k;
+    for (e = 0; e < 2; e++) {
 
-    if (typeof name === "string") {
-        props = {};
-        props[name] = value;
-    }
-    else {
-        props = name;
-    }
+        ext = exts[e];
+        tmp = path.slice();
+        tmp[0] = ext;
+        list.push(tmp.join("."));
 
-    for (k in props) {
-        style[k] = props[k];
-    }
-};
-/**
- * @param {Element} el
- * @returns {boolean}
- */
-function isVisible(el) {
-    return el && !(el.offsetWidth <= 0 || el.offsetHeight <= 0);
-};
+        for (j = 1; j <= max; j++) {
 
-
-
-/**
- * @param {Element} el
- * @param {String} selector
- * @returns {boolean}
- */
-var is = select.is;
-
-function ucfirst(str) {
-    return str.substr(0, 1).toUpperCase() + str.substr(1);
-};
-
-
-
-var getOuterWidth = getDimensions("outer", "Width");
-
-
-
-var getOuterHeight = getDimensions("outer", "Height");
-
-var delegates = {};
-
-
-
-
-function delegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        listener    = function(e) {
-            e = normalizeEvent(e);
-            var trg = e.target;
-            while (trg) {
-                if (is(trg, selector)) {
-                    return fn(e);
-                }
-                trg = trg.parentNode;
-            }
-            return null;
-        };
-
-    if (!delegates[key]) {
-        delegates[key] = [];
-    }
-
-    delegates[key].push({el: el, ls: listener, fn: fn});
-
-    addListener(el, event, listener);
-};
-
-
-
-function undelegate(el, selector, event, fn) {
-
-    var key = selector + "-" + event,
-        i, l,
-        ds;
-
-    if (ds = delegates[key]) {
-        for (i = -1, l = ds.length; ++i < l;) {
-            if (ds[i].el === el && ds[i].fn === fn) {
-                removeListener(el, event, ds[i].ls);
+            for (i = last; i > last - j; i--) {
+                tmp[i] = "*";
+                list.push(tmp.join("."));
             }
         }
     }
-};
 
-
-
-defineClass({
-
-    $class: "dialog.position.Abstract",
-    dialog: null,
-    positionBase: null,
-    correct: "solid",
-
-    $init: function(dialog) {
-        var self = this;
-        self.dialog = dialog;
-        extend(self, dialog.getCfg().position, true, false);
-
-        self.onWindowResizeDelegate = bind(self.onWindowResize, self);
-        self.onWindowScrollDelegate = bind(self.onWindowScroll, self);
-
-        var pt = self.preferredType || self.type;
-        if (typeof pt == "string") {
-            var pts = self.getAllPositions(),
-                inx;
-            if ((inx = pts.indexOf(pt)) != -1) {
-                pts.splice(inx, 1);
-                pts.unshift(pt);
-            }
-            self.preferredType = pts;
-        }
-        else if (!pt) {
-            self.preferredType = self.getAllPositions();
-        }
-
-        dialog.on("reposition", self.onReposition, self);
-        dialog.on("show-after-delay", self.onShowAfterDelay, self);
-        dialog.on("hide-after-delay", self.onHideAfterDelay, self);
-
-        if (dialog.isVisible()) {
-            self.onShowAfterDelay();
-        }
-
-    },
-
-
-    getPositionBase: function() {
-
-        var self = this,
-            dlg = self.dialog;
-
-        if (self.positionBase) {
-            return self.positionBase;
-        }
-        var b;
-        if (b = dlg.getCfg().position.base) {
-            if (typeof b == "string") {
-                self.positionBase = select(b).shift();
-            }
-            else {
-                self.positionBase = b;
-            }
-            return self.positionBase;
-        }
-        return null;
-    },
-
-    getBoundary: function() {
-
-        var self    = this,
-            base    = self.getPositionBase(),
-            sx      = self.screenX || 0,
-            sy      = self.screenY || 0,
-            w, h,
-            st, sl,
-            ofs;
-
-        if (base) {
-            ofs = getOffset(base);
-            w = getOuterWidth(base);
-            h = getOuterHeight(base);
-            return {
-                x: ofs.left + sx,
-                y: ofs.top + sy,
-                x1: ofs.left + w - sx,
-                y1: ofs.top + h - sy,
-                w: w,
-                h: h
-            };
-        }
-        else {
-            w = getWidth(window);
-            h = getHeight(window);
-            st = getScrollTop(window);
-            sl = getScrollLeft(window);
-            return {
-                x: sl + sx,
-                y: st + sy,
-                x1: sl + w - sx,
-                y1: st + h - sy,
-                w: w,
-                h: h
-            };
-        }
-    },
-
-
-    getPrimaryPosition: function(pos) {
-        return false;
-    },
-    getSecondaryPosition: function(pos) {
-        return false;
-    },
-
-    getAllPositions: function() {
-        return [];
-    },
-
-    correctPosition: function(e) {
-
-        var self        = this,
-            pri         = self.getPrimaryPosition(),
-            strategy    = self.correct;
-
-        if (!pri || !strategy) {
-            return;
-        }
-
-        var dlg         = self.dialog,
-            boundary    = self.getBoundary(),
-            size        = dlg.getDialogSize(),
-            pts         = self.preferredType,
-            pt          = pts[0],
-            i, l;
-
-        if (strategy && strategy != "solid") {
-            if (self.type != pt && self.checkIfFits(e, pt, boundary, size, false)) {
-                self.changeType(pt);
-                return self.fitToBoundary(self.getCoords(e), boundary, size);
-            }
-
-            if (self.checkIfFits(e, self.type, boundary, size, false)) {
-                return self.fitToBoundary(self.getCoords(e), boundary, size);
-            }
-        }
-        if (strategy && strategy != "position-only") {
-            for (i = 0, l = pts.length; i < l; i++) {
-                if (self.checkIfFits(e, pts[i], boundary, size, true)) {
-                    self.changeType(pts[i]);
-                    return self.getCoords(e);
-                }
-            }
-        }
-
-        return self.getCoords(e);
-    },
-
-    checkIfFits: function(e, position, boundary, size, fully) {
-
-        var self    = this,
-            coords  = self.getCoords(e, position, true);
-
-        // leave only basic positions here
-        if (!fully && self.getSecondaryPosition(position)) {
-            return false;
-        }
-
-        if (fully) {
-            return !(coords.x < boundary.x ||
-                     coords.y < boundary.y ||
-                     coords.x + size.width > boundary.x1 ||
-                     coords.y + size.height > boundary.y1);
-        }
-        else {
-            var pri = self.getPrimaryPosition(position);
-            switch (pri) {
-                case "t":
-                    return coords.y >= boundary.y;
-                case "r":
-                    return coords.x + size.width <= boundary.x1;
-                case "b":
-                    return coords.y + size.height <= boundary.y1;
-                case "l":
-                    return coords.x >= boundary.x;
-            }
-        }
-    },
-
-    fitToBoundary: function(coords, boundary, size) {
-
-        var self = this,
-            base = self.getPositionBase(),
-            x = base ? 0 : boundary.x,
-            y = base ? 0 : boundary.y,
-            x1 = base ? boundary.w : boundary.x1,
-            y1 = base ? boundary.h : boundary.y1,
-            xDiff = 0,
-            yDiff = 0,
-            pointer = self.dialog.getPointer();
-
-        if (coords.x < x) {
-            xDiff = coords.x - x;
-            coords.x = x;
-        }
-        if (coords.y < y) {
-            yDiff = coords.y - y;
-            coords.y = y;
-        }
-        if (coords.x + size.width > x1) {
-            xDiff = (coords.x + size.width) - x1;
-            coords.x -= xDiff;
-        }
-        if (coords.y + size.height > y1) {
-            yDiff = (coords.y + size.height) - y1;
-            coords.y -= yDiff;
-        }
-
-        pointer.setCorrectionOffset(xDiff, yDiff);
-        pointer.reposition();
-
-        return coords;
-    },
-
-    changeType: function(type) {
-        var self = this,
-            dlg = self.dialog,
-            pointer = dlg.getPointer();
-
-        self.type = type;
-        pointer.setType(null, null);
-    },
-
-    onReposition: function(dlg, e) {
-
-        var self    = this,
-            coords;
-
-        if (self.screenX !== false || self.screenY !== false) {
-            coords  = self.correctPosition(e);
-        }
-        else {
-            coords  = self.getCoords(e);
-        }
-
-        self.apply(coords);
-    },
-
-    getCoords: function(e){
-        return {
-            left: 0,
-            top: 0
-        }
-    },
-
-    apply: function(coords) {
-
-        if (!coords) {
-            return;
-        }
-
-        if (isNaN(coords.x) || isNaN(coords.y)) {
-            return;
-        }
-
-        var self    = this,
-            dlg     = self.dialog,
-            axis    = dlg.getCfg().position.axis,
-            pos     = {};
-
-        axis != "y" && (pos.left = coords.x + "px");
-        axis != "x" && (pos.top = coords.y + "px");
-
-        setStyle(dlg.getElem(), pos);
-    },
-
-    onWindowResize: function(e) {
-        this.dialog.reposition(normalizeEvent(e));
-    },
-
-    onWindowScroll: function(e) {
-        this.dialog.reposition(normalizeEvent(e));
-    },
-
-    onShowAfterDelay: function() {
-        var self = this;
-
-        if (self.resize || self.screenX || self.screenY) {
-            addListener(window, "resize", self.onWindowResizeDelegate);
-        }
-
-        if (self.scroll || self.screenX || self.screenY) {
-            addListener(self.dialog.getScrollEl(self.scroll), "scroll", self.onWindowScrollDelegate);
-        }
-    },
-
-    onHideAfterDelay: function() {
-
-        var self = this;
-
-        if (self.resize || self.screenX || self.screenY) {
-            removeListener(window, "resize", self.onWindowResizeDelegate);
-        }
-
-        if (self.scroll || self.screenX || self.screenY) {
-            removeListener(self.dialog.getScrollEl(self.scroll), "scroll", self.onWindowScrollDelegate);
-        }
-    },
-
-    destroy: function() {
-
-        var self = this,
-            dlg = self.dialog;
-
-        removeListener(window, "resize", self.onWindowResizeDelegate);
-        removeListener(dlg.getScrollEl(self.scroll), "scroll", self.onWindowScrollDelegate);
-
-        dlg.un("reposition", self.onReposition, self);
-        dlg.un("show-after-delay", self.onShowAfterDelay, self);
-        dlg.un("hide-after-delay", self.onHideAfterDelay, self);
-
-        if (dlg.isVisible()) {
-            self.onHideAfterDelay();
-        }
-    }
-
-
-
-});
-
-
-
-
-
-
-function getOffsetParent(node) {
-
-    var html = window.document.documentElement,
-        offsetParent = node.offsetParent || html;
-
-    while (offsetParent && (offsetParent != html &&
-                              getStyle(offsetParent, "position") == "static")) {
-        offsetParent = offsetParent.offsetParent;
-    }
-
-    return offsetParent || html;
-
-};
-
-
-
-function getOffset(node) {
-
-    var box = {top: 0, left: 0},
-        html = window.document.documentElement;
-
-    // Make sure it's not a disconnected DOM node
-    if (!isAttached(node) || node === window) {
-        return box;
-    }
-
-    // Support: BlackBerry 5, iOS 3 (original iPhone)
-    // If we don't have gBCR, just use 0,0 rather than error
-    if (node.getBoundingClientRect ) {
-        box = node.getBoundingClientRect();
-    }
-
-    return {
-        top: box.top + getScrollTop() - html.clientTop,
-        left: box.left + getScrollLeft() - html.clientLeft
-    };
-};
-
-
-
-function getPosition(node, to) {
-
-    var offsetParent, offset,
-        parentOffset = {top: 0, left: 0},
-        html = window.document.documentElement;
-
-    if (node === window || node === html) {
-        return parentOffset;
-    }
-
-    // Fixed elements are offset from window (parentOffset = {top:0, left: 0},
-    // because it is its only offset parent
-    if (getStyle(node, "position" ) == "fixed") {
-        // Assume getBoundingClientRect is there when computed position is fixed
-        offset = node.getBoundingClientRect();
-    }
-    else if (to) {
-        var thisOffset = getOffset(node),
-            toOffset = getOffset(to),
-            position = {
-                left: thisOffset.left - toOffset.left,
-                top: thisOffset.top - toOffset.top
-            };
-
-        if (position.left < 0) {
-            position.left = 0;
-        }
-        if (position.top < 0) {
-            position.top = 0;
-        }
-        return position;
-    }
-    else {
-        // Get *real* offsetParent
-        offsetParent = getOffsetParent(node);
-
-        // Get correct offsets
-        offset = getOffset(node);
-
-        if (offsetParent !== html) {
-            parentOffset = getOffset(offsetParent);
-        }
-
-        // Add offsetParent borders
-        parentOffset.top += getStyle(offsetParent, "borderTopWidth", true);
-        parentOffset.left += getStyle(offsetParent, "borderLeftWidth", true);
-    }
-
-    // Subtract parent offsets and element margins
-    return {
-        top: offset.top - parentOffset.top - getStyle(node, "marginTop", true),
-        left: offset.left - parentOffset.left - getStyle(node, "marginLeft", true)
-    };
-};
-
-
-
-
-
-defineClass({
-
-    $class: "dialog.position.Target",
-    $extends: "dialog.position.Abstract",
-
-    getCoords: function(e, type, absolute) {
-
-        var self    = this,
-            dlg     = self.dialog,
-            cfg     = dlg.getCfg(),
-            target  = dlg.getTarget();
-
-        if (!target) {
-            return null;
-        }
-
-        type    = type || self.type;
-
-        var pBase   = self.getPositionBase(),
-            size    = dlg.getDialogSize(),
-            offset  = pBase && !absolute ?
-                        getPosition(target, pBase) :
-                            getOffset(target),
-            tsize   = dlg.getTargetSize(),
-            pos     = {},
-            pri     = type.substr(0, 1),
-            sec     = type.substr(1),
-            offsetX = cfg.position.offsetX,
-            offsetY = cfg.position.offsetY,
-            pntOfs  = dlg.pointer.getDialogPositionOffset(type);
-
-        switch (pri) {
-            case "t": {
-                pos.y   = offset.top - size.height - offsetY;
-                break;
-            }
-            case "r": {
-                pos.x   = offset.left + tsize.width + offsetX;
-                break;
-            }
-            case "b": {
-                pos.y   = offset.top + tsize.height + offsetY;
-                break;
-            }
-            case "l": {
-                pos.x   = offset.left - size.width - offsetX;
-                break;
-            }
-        }
-
-        switch (sec) {
-            case "t": {
-                pos.y   = offset.top + offsetY;
-                break;
-            }
-            case "r": {
-                pos.x   = offset.left + tsize.width - size.width - offsetX;
-                break;
-            }
-            case "b": {
-                pos.y   = offset.top + tsize.height - size.height - offsetY;
-                break;
-            }
-            case "l": {
-                pos.x   = offset.left + offsetX;
-                break;
-            }
-            case "rc": {
-                pos.x   = offset.left + tsize.width + offsetX;
-                break;
-            }
-            case "lc": {
-                pos.x   = offset.left - size.width - offsetX;
-                break;
-            }
-            case "": {
-                switch (pri) {
-                    case "t":
-                    case "b": {
-                        pos.x   = offset.left + (tsize.width / 2) -
-                                    (size.width / 2);
-                        break;
-                    }
-                    case "r":
-                    case "l": {
-                        pos.y   = offset.top + (tsize.height / 2) -
-                                    (size.height / 2);
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        if (pntOfs) {
-            pos.x += pntOfs.x;
-            pos.y += pntOfs.y;
-        }
-
-        return pos;
-    },
-
-    getPrimaryPosition: function(pos) {
-        return (pos || this.type).substr(0, 1);
-    },
-
-    getSecondaryPosition: function(pos) {
-        return (pos || this.type).substr(1);
-    },
-
-    getAllPositions: function() {
-        return ["t", "r", "b", "l", "tl", "tr", "rt", "rb",
-                "br", "bl", "lb", "lt", "tlc", "trc", "brc", "blc"];
-    }
-
-});
-
-
-
-
-
-
-
-
-
-defineClass({
-
-    $class: "dialog.position.Mouse",
-    $extends: "dialog.position.Target",
-    correct: "position",
-
-    $init: function(dialog) {
-
-        var self = this;
-
-        self.onMouseMoveDelegate = bind(self.onMouseMove, self);
-        self.$super(dialog);
-    },
-
-    getCoords: function(e, type, absolute) {
-
-        if (!e) {
-            return null;
-        }
-
-        var self    = this,
-            origType= type || self.type,
-            dlg     = self.dialog,
-            cfg     = dlg.getCfg(),
-            size    = dlg.getDialogSize(),
-            base    = self.getPositionBase(),
-            pos     = {},
-            type    = (type || self.type).substr(1),
-            offsetX = cfg.position.offsetX,
-            offsetY = cfg.position.offsetY,
-            axis    = cfg.position.axis,
-            pntOfs  = dlg.getPointer().getDialogPositionOffset(origType),
-            absOfs  = {x: 0, y: 0};
-
-        if (!absolute && base) {
-            var baseOfs = getOffset(base);
-            absOfs.x = baseOfs.left;
-            absOfs.y = baseOfs.top;
-        }
-
-        switch (type) {
-            case "": {
-                pos     = self.get.call(dlg.$$callbackContext, dlg, e, type, absolute);
-                break;
-            }
-            case "c": {
-                pos.y   = e.pageY - absOfs.y - (size.height / 2);
-                pos.x   = e.pageX - absOfs.x - (size.width / 2);
-                break;
-            }
-            case "t": {
-                pos.y   = e.pageY - absOfs.y - size.height - offsetY;
-                pos.x   = e.pageX - absOfs.x - (size.width / 2);
-                break;
-            }
-            case "r": {
-                pos.y   = e.pageY - absOfs.y - (size.height / 2);
-                pos.x   = e.pageX - absOfs.x + offsetX;
-                break;
-            }
-            case "b": {
-                pos.y   = e.pageY - absOfs.y + offsetY;
-                pos.x   = e.pageX - absOfs.x - (size.width / 2);
-                break;
-            }
-            case "l": {
-                pos.y   = e.pageY - absOfs.y - (size.height / 2);
-                pos.x   = e.pageX - absOfs.x - size.width - offsetX;
-                break;
-            }
-            case "rt": {
-                pos.y   = e.pageY - absOfs.y - size.height - offsetY;
-                pos.x   = e.pageX - absOfs.x + offsetX;
-                break;
-            }
-            case "rb": {
-                pos.y   = e.pageY - absOfs.y + offsetY;
-                pos.x   = e.pageX - absOfs.x + offsetX;
-                break;
-            }
-            case "lt": {
-                pos.y   = e.pageY - absOfs.y - size.height - offsetY;
-                pos.x   = e.pageX - absOfs.x - size.width - offsetX;
-                break;
-            }
-            case "lb": {
-                pos.y   = e.pageY - absOfs.y + offsetY;
-                pos.x   = e.pageX - absOfs.x - size.width - offsetX;
-                break;
-            }
-        }
-
-        if (pntOfs) {
-            pos.x += pntOfs.x;
-            pos.y += pntOfs.y;
-        }
-
-        if (axis) {
-            var tp = self.$super(e, type);
-            if (tp) {
-                if (axis == "x") {
-                    pos.y = tp.y;
-                }
-                else {
-                    pos.x = tp.x;
-                }
-            }
-        }
-
-        return pos;
-    },
-
-    onShowAfterDelay: function() {
-        var self = this;
-        self.$super();
-        addListener(window.document.documentElement, "mousemove", self.onMouseMoveDelegate);
-    },
-
-    onHideAfterDelay: function() {
-        var self = this;
-        self.$super();
-        removeListener(window.document.documentElement, "mousemove", self.onMouseMoveDelegate);
-    },
-
-    onMouseMove: function(e) {
-        this.dialog.reposition(normalizeEvent(e));
-    },
-
-    getPrimaryPosition: function(pos) {
-        return (pos || this.type).substr(1, 1);
-    },
-
-    getSecondaryPosition: function(pos) {
-        return (pos || this.type).substr(2);
-    },
-
-    getAllPositions: function() {
-        return ["mt", "mr", "mb", "ml", "mrt", "mrb", "mlb", "mlt"];
-    }
-});
-
-
-
-
-
-
-
-defineClass({
-
-    $class: "dialog.position.Window",
-    $extends: "dialog.position.Abstract",
-
-
-    getCoords: function(e, type) {
-
-        var self    = this,
-            dlg     = self.dialog,
-            pBase   = self.getPositionBase() || window,
-            size    = dlg.getDialogSize(),
-            pos     = {},
-            type    = (type || self.type).substr(1),
-            offsetX = self.offsetX,
-            offsetY = self.offsetY,
-            st      = getScrollTop(pBase),
-            sl      = getScrollLeft(pBase),
-            ww      = getOuterWidth(pBase),
-            wh      = getOuterHeight(pBase);
-
-        switch (type) {
-            case "c": {
-                pos.y   = (wh / 2) - (size.height / 2) + st;
-                pos.x   = (ww / 2) - (size.width / 2) + sl;
-                break;
-            }
-            case "t": {
-                pos.y   = st + offsetY;
-                pos.x   = (ww / 2) - (size.width / 2) + sl;
-                break;
-            }
-            case "r": {
-                pos.y   = (wh / 2) - (size.height / 2) + st;
-                pos.x   = ww - size.width + sl - offsetX;
-                break;
-            }
-            case "b": {
-                pos.y   = wh - size.height + st - offsetY;
-                pos.x   = (ww / 2) - (size.width / 2) + sl;
-                break;
-            }
-            case "l": {
-                pos.y   = (wh / 2) - (size.height / 2) + st;
-                pos.x   = sl + offsetX;
-                break;
-            }
-            case "rt": {
-                pos.y   = st + offsetY;
-                pos.x   = ww - size.width + sl - offsetX;
-                break;
-            }
-            case "rb": {
-                pos.y   = wh - size.height + st - offsetY;
-                pos.x   = ww - size.width + sl - offsetX;
-                break;
-            }
-            case "lt": {
-                pos.y   = st + offsetY;
-                pos.x   = sl + offsetX;
-                break;
-            }
-            case "lb": {
-                pos.y   = wh - size.height + st - offsetY;
-                pos.x   = sl + offsetX;
-                break;
-            }
-        }
-
-        return pos;
-    },
-
-    getPrimaryPosition: function(type) {
-        return (type || this.type).substr(1, 1);
-    },
-
-    getSecondaryPosition: function(type) {
-        return (type || this.type).substr(2);
-    },
-
-
-    getAllPositions: function() {
-        return ["wt", "wr", "wb", "wl", "wrt", "wrb", "wlb", "wlt", "wc"];
-    },
-
-    correctPosition: function(e) {
-        return this.getCoords(e);
-    }
-
-});
-
-
-
-
-
-
-
-defineClass({
-
-    $class: "dialog.position.Custom",
-    $extends: "dialog.position.Abstract",
-
-    getCoords: function(e) {
-
-        var dlg = this.dialog;
-        return this.get.call(dlg.$$callbackContext, dlg, e);
-    }
-});
-
-
-
-
-
-defineClass({
-
-    $class: "dialog.pointer.Abstract",
-    enabled: null,
-    node: null,
-    correctX: 0,
-    correctY: 0,
-
-    $init: function(dialog, cfg) {
-
-        var self = this;
-
-        extend(self, cfg, true, false);
-
-        self.origCfg    = cfg;
-        self.dialog     = dialog;
-        self.opposite   = {t: "b", r: "l", b: "t", l: "r"};
-        self.names      = {t: 'top', r: 'right', b: 'bottom', l: 'left'};
-        self.sides      = {t: ['l','r'], r: ['t','b'], b: ['r','l'], l: ['b','t']};
-
-        if (self.enabled !== false && cfg.size) {
-            self.enabled = true;
-        }
-        else {
-            self.enabled = false;
-        }
-    },
-
-    enable: function() {
-        var self = this;
-        if (!self.enabled) {
-            self.enabled = true;
-            self.render();
-            if (self.dialog.isVisible()) {
-                self.dialog.reposition();
-            }
-        }
-    },
-
-    disable: function() {
-        var self = this;
-        if (self.enabled) {
-            self.remove();
-            self.enabled = false;
-            if (self.dialog.isVisible()) {
-                self.dialog.reposition();
-            }
-        }
-    },
-
-    getElem: function() {
-        return this.node;
-    },
-
-    getSize: function() {
-        return this.enabled ? this.size : 0;
-    },
-
-    setCorrectionOffset: function(x, y) {
-        this.correctX = x;
-        this.correctY = y;
-    },
-
-    getCorrectionValue: function(type, value, position) {
-
-        if (!value) {
-            return 0;
-        }
-
-        var self    = this,
-            pri     = position.substr(0,1),
-            sec     = position.substr(1,1),
-            tsize   = self.dialog.getDialogSize(),
-            width   = self.width,
-            sprop   = pri == "t" || pri == "b" ? "width" : "height",
-            min,
-            max;
-
-        switch (sec) {
-            case "":
-                max = (tsize[sprop] / 2) - (width / 2);
-                min = -max;
-                break;
-            case "l":
-                min = 0;
-                max = tsize[sprop] - (width / 2);
-                break;
-            case "r":
-                min = -(tsize[sprop] - (width / 2));
-                max = 0;
-                break;
-        }
-
-        value = value < 0 ? Math.max(min, value) : Math.min(max, value);
-
-        if ((pri == "t" || pri == "b") && type == "x") {
-            return value;
-        }
-        if ((pri == "l" || pri == "r") && type == "y") {
-            return value;
-        }
-
-        return 0;
-    },
-
-    getDialogPositionOffset: function(position) {
-        var self    = this,
-            pp      = (self.detectPointerPosition(position) || "").substr(0,1),
-            dp      = self.dialog.getPosition().getPrimaryPosition(position),
-            ofs     = {x: 0, y: 0};
-
-        if (!self.enabled) {
-            return ofs;
-        }
-
-        if (pp == self.opposite[dp]) {
-            ofs[pp == "t" || pp == "b" ? "y" : "x"] =
-                pp == "b" || pp == "r" ? -self.size : self.size;
-        }
-
-        return ofs;
-    },
-
-    detectPointerPosition: function(dialogPosition) {
-
-        var self = this,
-            pri, sec, thr;
-
-        if (self.position && !dialogPosition) {
-            if (isFunction(self.position)) {
-                return self.position.call(self.dialog.$$callbackContext, self.dialog, self.origCfg);
-            }
-            return self.position;
-        }
-
-        pri = self.dialog.getPosition().getPrimaryPosition(dialogPosition);
-        sec = self.dialog.getPosition().getSecondaryPosition(dialogPosition);
-        thr = sec.substr(1, 1);
-
-        if (!pri) {
-            return null;
-        }
-
-        var position = self.opposite[pri];
-
-        if (sec) {
-            sec = sec.substr(0, 1);
-            if (thr == "c") {
-                position += self.opposite[sec];
-            }
-            else {
-                position += sec;
-            }
-        }
-
-        return position;
-    },
-
-    detectPointerDirection: function(position) {
-
-        var self = this;
-
-        if (self.direction) {
-            if (isFunction(self.direction)) {
-                return self.direction.call(self.dialog.$$callbackContext, self.dialog, position, self.origCfg);
-            }
-            return self.direction;
-        }
-        return position;
-    },
-
-    update: function(){
-        var self = this;
-        self.remove();
-        self.render();
-        self.append();
-        if (self.dialog.isVisible()) {
-            self.dialog.reposition();
-        }
-    },
-
-
-
-    setType: function(position, direction) {
-        var self = this;
-        self.position = position;
-        self.direction = direction;
-        self.update();
-        self.reposition();
-    },
-
-
-    render: function() {},
-
-    destroy: function() {
-        var self = this;
-        self.remove();
-    },
-
-    reposition: function() {
-
-    },
-
-    append: function() {
-
-        var self = this;
-        if (!self.enabled) {
-            return;
-        }
-        if (!self.node) {
-            self.render();
-        }
-        if (!self.node) {
-            return;
-        }
-
-        self.reposition();
-
-        var parent = self.dialog.getElem();
-        if (parent) {
-            parent.appendChild(self.node);
-        }
-    },
-
-    remove: function(){
-
-        var self = this,
-            node = self.node;
-
-        if (node) {
-
-            if (node.parentNode) {
-                node.parentNode.removeChild(node);
-            }
-
-            self.node = null;
-        }
-    }
-});
-
-
-
-
-
-
-(function(){
-
-    var ie6             = null,
-        defaultProps    = {
-            backgroundColor: 'transparent',
-            width: 			'0px',
-            height: 		'0px',
-            position: 		'absolute',
-            fontSize: 	    '0px', // ie6
-            lineHeight:     '0px' // ie6
-        };
-
-
-    return defineClass({
-
-        $class: "dialog.pointer.Html",
-        $extends: "dialog.pointer.Abstract",
-
-        node: null,
-        sub: null,
-
-        $init: function(dialog, cfg) {
-
-            if (ie6 === null) {
-                ie6 = window.document.all && !window.XMLHttpRequest
-            }
-
-            var self = this;
-
-            self.$super(dialog, cfg);
-
-            self.width = self.width || self.size * 2;
-
-            if (self.inner) {
-                self.enabled = true;
-            }
-        },
-
-
-
-        createInner: function() {
-            var self        = this,
-                newcfg 		= extend({}, self.origCfg);
-
-            newcfg.size 	= self.size - (self.border * 2);
-            newcfg.width	= self.width - (self.border * 4);
-
-            newcfg.border = 0;
-            newcfg.borderColor = null;
-            newcfg.borderCls = null;
-            newcfg.offset = 0;
-            newcfg.inner = self.border;
-
-            self.sub = factory("dialog.pointer.Html", self.dialog, newcfg);
-        },
-
-
-        getBorders: function(position, direction, color) {
-
-            var self        = this,
-                borders 	= {},
-                pri 		= position.substr(0,1),
-                dpri        = direction.substr(0,1),
-                dsec        = direction.substr(1),
-                style       = ie6 ? "dotted" : "solid",
-                names       = self.names,
-                sides       = self.sides,
-                opposite    = self.opposite;
-
-            // in ie6 "solid" wouldn't make transparency :(
-
-            // this is always height : border which is opposite to direction
-            borders['border'+ucfirst(names[opposite[pri]])] = self.size + "px solid "+color;
-            // border which is similar to direction is always 0
-            borders['border'+ucfirst(names[pri])] = "0 "+style+" transparent";
-
-            if (!dsec) {
-                // if pointer's direction matches pointer primary position (p: l|lt|lb, d: l)
-                // then we set both side borders to a half of the width;
-                var side = Math.floor(self.width / 2);
-                borders['border' + ucfirst(names[sides[dpri][0]])] = side + "px "+style+" transparent";
-                borders['border' + ucfirst(names[sides[dpri][1]])] = side + "px "+style+" transparent";
-            }
-            else {
-                // if pointer's direction doesn't match with primary position (p: l|lt|lb, d: t|b)
-                // we set the border opposite to direction to the full width;
-                borders['border'+ucfirst(names[dsec])] = "0 solid transparent";
-                borders['border'+ucfirst(names[opposite[dsec]])] = self.width + "px "+style+" transparent";
-            }
-
-            return borders;
-        },
-
-        getOffsets: function(position, direction) {
-
-            var self    = this,
-                offsets = {},
-                names   = self.names,
-                opposite= self.opposite,
-                pri		= position.substr(0,1),
-                auto 	= (pri == 't' || pri == 'b') ? "r" : "b";
-
-            offsets[names[pri]] = self.inner ? 'auto' : -self.size+"px";
-            offsets[names[auto]] = "auto";
-
-            if (!self.inner) {
-
-                var margin;
-
-                switch (position) {
-                    case 't': case 'r': case 'b': case 'l':
-                        if (direction != position) {
-                            if (direction == 'l' || direction == 't') {
-                                margin = self.offset;
-                            }
-                            else {
-                                margin = -self.width + self.offset;
-                            }
-                        }
-                        else {
-                            margin = -self.width/2 + self.offset;
-                        }
-                        break;
-
-                    case 'bl': case 'tl': case 'lt': case 'rt':
-                        margin = self.offset;
-                        break;
-
-                    default:
-                        margin = -self.width - self.offset;
-                        break;
-                }
-
-                offsets['margin' + ucfirst(names[opposite[auto]])] = margin + "px";
-
-                var positionOffset;
-
-                switch (position) {
-                    case 't': case 'r': case 'b': case 'l':
-                        positionOffset = '50%';
-                        break;
-
-                    case 'tr': case 'rb': case 'br': case 'lb':
-                        positionOffset = '100%';
-                        break;
-
-                    default:
-                        positionOffset = 0;
-                        break;
-                }
-
-                offsets[names[opposite[auto]]]  = positionOffset;
-
-                var pfxs = getAnimationPrefixes(),
-                    transformPfx = pfxs.transform,
-                    transform = "",
-                    cx = self.correctX,
-                    cy = self.correctY;
-
-                if (transformPfx) {
-
-                    if (cx) {
-                        transform += " translateX(" + self.getCorrectionValue("x", cx, position) + "px)";
-                    }
-                    if (cy) {
-                        transform += " translateY(" + self.getCorrectionValue("y", cy, position) + "px)";
-                    }
-
-                    offsets[transformPfx] = transform;
-                }
-            }
-            else {
-
-                var innerOffset,
-                    dpri    = direction.substr(0, 1),
-                    dsec    = direction.substr(1);
-
-                if (dsec) {
-                    if (dsec == 'l' || dsec == 't') {
-                        innerOffset = self.inner + 'px';
-                    }
-                    else {
-                        innerOffset = -self.width - self.inner + 'px';
-                    }
-                }
-                else {
-                    innerOffset = Math.floor(-self.width / 2) + 'px';
-                }
-
-                offsets[names[opposite[auto]]]  = innerOffset;
-                offsets[names[opposite[dpri]]] = -(self.size + (self.inner * 2)) + 'px';
-            }
-
-
-            return offsets;
-        },
-
-        render: function() {
-
-            var self = this;
-
-            if (!self.enabled) {
-                return;
-            }
-
-            if (self.node) {
-                return;
-            }
-
-            var position    = self.detectPointerPosition();
-            if (!position) {
-                return;
-            }
-
-            if (self.border && !self.sub) {
-                self.createInner();
-            }
-
-            self.node   = window.document.createElement('div');
-            var cmt     = window.document.createComment(" ");
-
-            self.node.appendChild(cmt);
-
-            setStyle(self.node, defaultProps);
-            addClass(self.node, self.borderCls || self.cls);
-
-            if (self.sub) {
-                self.sub.render();
-                self.node.appendChild(self.sub.getElem());
-            }
-        },
-
-        reposition: function() {
-
-            var self        = this,
-                position    = self.detectPointerPosition(),
-                direction   = self.detectPointerDirection(position);
-
-            if (!self.node) {
-                return;
-            }
-
-            setStyle(self.node, self.getBorders(position, direction, self.borderColor || self.color));
-            setStyle(self.node, self.getOffsets(position, direction));
-
-            if (self.sub) {
-                self.sub.reposition();
-            }
-        },
-
-        update: function() {
-            var self = this;
-            if (self.sub) {
-                self.sub.$destroy();
-                self.sub = null;
-            }
-            self.remove();
-            self.node = null;
-            self.render();
-            self.append();
-
-            if (self.dialog.isVisible()) {
-                self.dialog.reposition();
-            }
-        },
-
-        destroy: function() {
-
-            var self = this;
-
-            if (self.sub) {
-                self.sub.$destroy();
-                self.sub = null;
-            }
-
-            self.$super();
-        },
-
-        remove: function() {
-
-            var self = this;
-
-            if (self.sub) {
-                self.sub.remove();
-            }
-
-            self.$super();
-        }
+    return list.filter(function(value, index, self){
+        return self.indexOf(value) === index;
     });
-}());
+};
 
 
-
-
-
-
-
-
-
-defineClass({
-
-    $class:         "dialog.Overlay",
-    dialog:         null,
-    enabled:		false,
-    color:			'#000',
-    opacity:		.5,
-    cls:			null,
-    animateShow:	false,
-    animateHide:	false,
-
-    $mixins:        ["mixin.Observable"],
-
-    $init: function(dialog) {
-
-        var self = this;
-
-        self.dialog = dialog;
-        self.onClickDelegate = bind(self.onClick, self);
-        extend(self, dialog.getCfg().overlay, true, false);
-
-        self.$$observable.createEvent("click", false);
-
-        if (self.enabled) {
-            self.enabled = false;
-            self.enable();
-        }
-    },
-
-    getElem: function() {
-        var self = this;
-        if (self.enabled && !self.node) {
-            self.render();
-        }
-        return self.node;
-    },
-
-    enable: function() {
-        var self = this;
-        if (!self.enabled) {
-            self.enabled = true;
-        }
-    },
-
-    disable: function() {
-        var self = this;
-        if (self.enabled) {
-            self.remove();
-            self.enabled = false;
-        }
-    },
-
-    show: function(e) {
-        var self = this;
-
-        if (!self.enabled) {
-            return;
-        }
-
-        if (self.animateShow) {
-            self.animate("show", e);
-        }
-        else {
-            self.node.style.display = "block";
-        }
-    },
-
-    hide: function(e) {
-        var self = this;
-        if (self.node) {
-            if (self.animateHide) {
-                self.animate("hide", e);
-            }
-            else {
-                self.node.style.display = "none";
-            }
-        }
-    },
-
-    render: function() {
-
-        var self = this;
-
-        if (!self.enabled) {
-            return;
-        }
-
-        var node = window.document.createElement("div"),
-            cfg = self.dialog.getCfg();
-
-        setStyle(node, {
-            display:            "none",
-            position: 			"fixed",
-            left:				0,
-            top:				0,
-            right:              0,
-            bottom:             0,
-            opacity:			self.opacity,
-            backgroundColor: 	self.color
-        });
-
-        addListener(node, "click", self.onClickDelegate);
-
-        if (cfg.render.zIndex) {
-            setStyle(node, "zIndex", cfg.render.zIndex);
-        }
-        if (self.cls) {
-            addClass(node, self.cls);
-        }
-
-        self.node = node;
-    },
-
-    remove: function() {
-        var self = this,
-            dialog = self.dialog,
-            node = self.node;
-
-        if (node) {
-            raf(function() {
-                //if (!dialog.isVisible() && node.parentNode) {
-                if (node.parentNode) {
-                    node.parentNode.removeChild(node);
-                }
-            });
-        }
-    },
-
-    append: function() {
-        var self = this,
-            cfg = self.dialog.getCfg(),
-            to = cfg.render.appendTo || window.document.body;
-
-        if (!self.enabled) {
-            return;
-        }
-
-        if (!self.node) {
-            self.render();
-        }
-
-        to.appendChild(self.node);
-    },
-
-    animate: function(type, e) {
-        var self = this,
-            node = self.node,
-            a;
-
-        a = type == "show" ? self.animateShow : self.animateHide;
-
-        if (isFunction(a)) {
-            a   = a(self, e);
-        }
-
-        if (isBool(a)) {
-            a = type;
-        }
-        else if (isString(a)) {
-            a = [a];
-        }
-
-        return animate(node, a, function(){
-            if (type == "show") {
-
-                var p = new Promise;
-
-                raf(function(){
-                    node.style.display = "";
-                    p.resolve();
-                });
-
-                return p;
-            }
-        }, false);
-    },
-
-    onClick: function(e) {
-
-        var self = this;
-
-        var res = self.trigger("click", self.dialog, self, e);
-
-        if (res === false) {
-            return null;
-        }
-
-        if (self.modal) {
-            e = normalizeEvent(e);
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-        return null;
-    },
-
-    destroy: function() {
-
-        var self = this;
-        self.remove();
-
-    }
-});
-
-
-
-defineClass({
-    $class: "dialog.Manager",
-    all: null,
-    groups: null,
+App.$extend({
+    $class: "DocsApp",
+    loading: 0,
 
     $init: function() {
-        this.all = {};
-        this.groups = {};
+        var self = this;
+
+        self.$super.apply(self, arguments);
+
+        self.scope.loading = false;
+
+        //initMetaphorTemplates(Template);
+        Template.cache.addFinder(function(id){
+
+            var names = generateTemplateNames(id),
+            i, l,
+            tplNode;
+
+            for (i = 0, l = names.length; i < l; i++) {
+                tplNode = window.document.getElementById(names[i]);
+                if (tplNode) {
+                    return tplNode.innerHTML;
+                }
+            }
+        });
+
+        var data = window.docsData;
+
+        if (data) {
+            var k;
+            for (k in data) {
+                self.scope[k] = data[k];
+            }
+        }
+
+        self.makeItemMap();
+
+        if (isBrowser()) {
+            mhistory.init();
+        }
     },
 
-    register: function(dialog) {
+    makeItemMap: function() {
+        var map = {},
+            contentMap = {},
+            self = this;
 
-        var id      = dialog.getInstanceId(),
-            grps    = dialog.getGroup(),
-            self    = this,
-            all     = self.all,
-            groups  = self.groups,
-            i, len,
-            g;
-
-        all[id]     = dialog;
-
-        for (i = 0, len = grps.length; i < len; i++) {
-            g   = grps[i];
-            if (!groups[g]) {
-                groups[g]   = {};
+        var flattenItem = function(item) {
+            if (item.isApiGroup) {
+                item.items.forEach(flattenItem);
             }
-            groups[g][id] = true;
-        }
+            if (item.isApiItem) {
+                map[item.fullName] = item;
+            }
+            if (item.isContentItem) {
+                contentMap[item.id] = item;
+            }
+        };
 
-        dialog.on("destroy", this.unregister, this);
+        if (self.scope.sourceTree.items) {
+            self.scope.sourceTree.items.forEach(flattenItem);
+        }
+        if (self.scope.sourceTree.content) {
+            self.scope.sourceTree.content.forEach(flattenItem);
+        }
+        self.itemMap = map;
+        self.contentMap = contentMap;
     },
 
-    unregister: function(dialog) {
-
-        var id  = dialog.getInstanceId();
-        delete this.all[id];
+    getItem: function(id) {
+        return this.itemMap[id];
     },
 
-    hideAll: function(dialog) {
-
-        var id      = dialog.getInstanceId(),
-            grps    = dialog.getGroup(),
-            self    = this,
-            all     = self.all,
-            groups  = self.groups,
-            i, len, gid,
-            ds, did;
-
-        for (i = 0, len = grps.length; i < len; i++) {
-            gid     = grps[i];
-            ds      = groups[gid];
-            for (did in ds) {
-                if (!all[did]) {
-                    delete ds[did];
-                }
-                else if (did != id && !all[did].isHideAllIgnored()) {
-                    all[did].hide(null, true, true);
-                }
-            }
-        }
-    }
-
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-var Dialog = (function(){
-
-    var manager = factory("dialog.Manager");
-
-    var defaultEventProcessor = function(dlg, e, type, returnMode){
-        if (type === "show" || !returnMode) {
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-    };
-
-    var getEventConfig = function(e, action, dlgEl) {
-
-        var type    = e.type,
-            trg     = e.target,
-            cfg     = null,
-            data;
-
-        while (trg && trg !== dlgEl) {
-
-            data    = getAttr(trg, "data-" + action + "-" + type);
-
-            if (data) {
-                cfg = createGetter(data)({});
-                break;
-            }
-
-            trg     = trg.parentNode;
-        }
-
-        return cfg;
-    };
-
-    /*
-     * Shorthands
-     */
-
-    var fixShorthand = function(options, level1, level2, type) {
-        var value   = options[level1],
-            yes     = false;
-
-        if (value === undf) {
-            return;
-        }
-
-        switch (type) {
-            case "string": {
-                yes     = isString(value);
-                break;
-            }
-            case "function": {
-                yes     = isFunction(value);
-                break;
-            }
-            case "number": {
-                yes     = isNumber(value) || value == parseInt(value);
-                break;
-            }
-            case "dom": {
-                yes     = value && (value.tagName || value.nodeName) ? true : false;
-                break;
-            }
-            case "jquery": {
-                yes     = value && value.jquery ? true : false;
-                if (yes) {
-                    value = value.get(0);
-                }
-                break;
-            }
-            case "boolean": {
-                if (value === true || value === false) {
-                    yes = true;
-                }
-                break;
-            }
-            default: {
-                if (type === true && value === true) {
-                    yes = true;
-                }
-                if (type === false && value === false) {
-                    yes = true;
-                }
-            }
-        }
-        if (yes) {
-            options[level1] = {};
-            options[level1][level2] = value;
-        }
-    };
-
-    var fixShorthands   = function(options) {
-
-        if (!options) {
-            return {};
-        }
-
-        fixShorthand(options, "content", "value", "string");
-        fixShorthand(options, "content", "value", "boolean");
-        fixShorthand(options, "content", "fn", "function");
-        fixShorthand(options, "ajax", "url", "string");
-        fixShorthand(options, "cls", "dialog", "string");
-        fixShorthand(options, "render", "tpl", "string");
-        fixShorthand(options, "render", "fn", "function");
-        fixShorthand(options, "render", "el", "dom");
-        fixShorthand(options, "render", "el", "jquery");
-        fixShorthand(options, "show", "events", false);
-        fixShorthand(options, "show", "events", "string");
-        fixShorthand(options, "hide", "events", false);
-        fixShorthand(options, "hide", "events", "string");
-        fixShorthand(options, "toggle", "events", false);
-        fixShorthand(options, "toggle", "events", "string");
-        fixShorthand(options, "position", "type", "string");
-        fixShorthand(options, "position", "type", false);
-        fixShorthand(options, "position", "get", "function");
-        fixShorthand(options, "overlay", "enabled", "boolean");
-        fixShorthand(options, "pointer", "position", "string");
-        fixShorthand(options, "pointer", "size", "number");
-
-        return options;
-    };
-
-
-    /**
-     * @type {object}
-     * @md-tmp defaults
-     * @md-stack add
-     */
-    var defaults    = {
-
-        /**
-         * Target element(s) which trigger dialog's show and hide.<br>
-         * If {Element}: will be used as a single target,<br>
-         * if selector: will be used as dynamic target.<br>
-         * Dynamic targets work like this:<br>
-         * you provide delegates: {someElem: {click: someClass}} -- see "show" function<br>
-         * when show() is called, target will be determined from the event using
-         * the selector.
-         * @type {string|Element}
-         */
-        target:         null,
-
-        /**
-         * One or more group names.
-         * @type {string|array}
-         */
-        group:          null,
-
-        /**
-         * If dialog is modal, overlay will be forcefully enabled.
-         * @type {bool}
-         */
-        modal:			false,
-
-        /**
-         * Use link's href attribute as ajax.url or as render.el
-         * @type {bool}
-         */
-        useHref:        false,
-
-
-        /**
-         * If neither content value nor ajax url are provided,
-         * plugin will try to read target's attribute values: 'tooltip', 'title' and 'alt'.
-         * (unless attr is specified).<br>
-         * <em>shorthand</em>: string -> content.value<br>
-         * <em>shorthand</em>: false -> content.value<br>
-         * <em>shorthand</em>: function -> content.fn<br>
-         * @type {object|string|function}
-         * @md-stack add
-         */
-        content: {
-
-            /**
-             * Dialog's text content. Has priority before readContent/loadContent.
-             * If set to false, no content will be automatically set whether via fn() or attributes.
-             * @type {string|boolean}
-             */
-            value: 			'',
-
-            /**
-             * Must return content value
-             * @function
-             * @param {Element} target
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @returns string
-             */
-            fn:				null,
-
-            /**
-             * This function receives new content and returns string value (processed content).
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {string} mode
-             *      empty string - content has come from content.value or setContent()<br>
-             *      'attribute' - content has been read from target attributes<br>
-             *      'ajax' - data returned by ajax request
-             *      @default '' | 'attribute' | 'ajax'
-             *
-             * @param {string} content
-             * @returns string
-             */
-            prepare:		null,
-
-            /**
-             * Get content from this attribute (belongs to target)
-             * @type {string}
-             * @md-stack remove
-             */
-            attr:           null
-        },
-
-
-        /**
-         * All these options are passed to $.ajax().
-         * You can provide more options in this section
-         * but 'success' will be overriden (use content.prepare for data processing).<br>
-         * <em>shorthand</em>: string -> ajax.url
-         * @type {string|object}
-         * @md-stack add
-         */
-        ajax: {
-
-            /**
-             * Url to load content from.
-             * @type {string}
-             */
-            url: 			null,
-
-            /**
-             * Pass this data along with xhr.
-             * @type {object}
-             */
-            data: 			null,
-
-            /**
-             * @type {string}
-             */
-            dataType: 		'text',
-
-            /**
-             * @type {string}
-             * @md-stack remove
-             */
-            method: 		'GET'
-        },
-
-        /**
-         * Classes to apply to the dialog.
-         * <em>shorthand</em>: string -> cls.dialog
-         * @type {string|object}
-         * @md-stack add
-         */
-        cls: {
-            /**
-             * Base class.
-             * @type {string}
-             */
-            dialog:         null,
-            /**
-             * Only applied when dialog is visible.
-             * @type {string}
-             */
-            visible:        null,
-            /**
-             * Only applied when dialog is hidden.
-             * @type {string}
-             */
-            hidden:         null,
-            /**
-             * Only applied when dialog is performing ajax request.
-             * @type {string}
-             * @md-stack remove
-             */
-            loading:        null
-        },
-
-        /**
-         * <p>Selector is used when dialog has inner structure and you
-         * want to change its content.</p>
-         * <pre><code class="language-javascript">
-         * {
-         *      render: {
-         *          tpl: '&lt;div&gt;&lt;div class=&quot;content&quot;&gt;&lt;/div&gt;&lt;/div&gt;'
-         *      },
-         *      selector: {
-         *          content: '.content'
-         *      }
-         * }
-         * </code></pre>
-         * <p>If no selector provided, setContent will replace all inner html.
-         * Another thing relates to structurally complex content:</p>
-         *
-         * <pre><code class="language-javascript">
-         * setContent({title: "...", body: "..."});
-         * selector: {
-         *      title:  ".title",
-         *      body:   ".body"
-         * }
-         * </code></pre>
-         * @type {object}
-         * @md-stack add
-         */
-        selector:           {
-            /**
-             * Dialog's content selector.
-             * @type {string}
-             * @md-stack remove
-             */
-            content:        null
-        },
-
-        /**
-         * Object {buttonId: selector}
-         * @type {object|null}
-         */
-        buttons: null,
-
-
-        /**
-         * <p><em>shorthand</em>: string -> render.tpl<br>
-         * <em>shorthand</em>: function -> render.fn<br>
-         * <em>shorthand</em>: dom element -> render.el<br>
-         * @type {object|string|function|Element}
-         * @md-stack add
-         */
-        render: {
-            /**
-             * Dialog's template
-             * @type {string}
-             */
-            tpl: 			'<div></div>',
-
-            /**
-             * Call this function to get dialog's template.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @returns {string|Element}
-             */
-            fn: 			null,
-
-            /**
-             * Selector or existing element instead of template.
-             * @type {string|Element}
-             */
-            el: 			null,
-
-            /**
-             * Apply this zIndex.
-             * @type {number}
-             */
-            zIndex:			null,
-
-            /**
-             * false - render immediately, true - wait for the first event.
-             * @type {bool}
-             */
-            lazy: 			true,
-
-            /**
-             * Object to pass to elem.css()
-             * @type {object}
-             */
-            style:          null,
-
-            /**
-             * If set, the element will be appended to specified container.<br>
-             * If set to false, element will not be appended anywhere (works with "el").
-             * @type {string|Element|bool}
-             */
-            appendTo:		null,
-
-            /**
-             * Dialog's id attribute.
-             * @type {string}
-             */
-            id:				null,
-
-            /**
-             * If set to true, element's show() and hide() will never be called. Use
-             * "visible" and "hidden" classes instead.
-             * @type {boolean}
-             */
-            keepVisible:    false,
-
-            /**
-             * When destroying dialog's elem, keep it in DOM.
-             * Useful when you return it in fn() on every show()
-             * and have lifetime = 0.
-             * @type {boolean}
-             */
-            keepInDOM:      false,
-
-            /**
-             * Number of ms for the rendered object to live
-             * after its been hidden. 0 to destroy elem immediately.
-             * @type {number}
-             * @md-stack remove
-             */
-            lifetime:       null
-        },
-
-        /**
-         * Event actions.
-         * @type {object}
-         * @md-stack add
-         */
-        events: {
-
-            /**
-             * @type {object}
-             * @md-stack add
-             */
-            show: {
-
-                /**
-                 * You can also add any event you use to show/hide dialog.
-                 * @type {object}
-                 * @md-stack add
-                 */
-                "*": {
-
-                    /**
-                     * @type {function}
-                     * @md-stack remove 2
-                     */
-                    process: defaultEventProcessor
-                }
-            },
-
-            /**
-             * @type {object}
-             * @md-stack add
-             */
-            hide: {
-
-                /**
-                 * You can also add any event you use to show/hide dialog.
-                 * @type {object}
-                 * @md-stack add
-                 */
-                "*": {
-
-                    /**
-                     * Must return "returnValue" which will be in its turn
-                     * returned from event handler. If you provide this function
-                     * preventDefault and stopPropagation options are ignored.
-                     * @function
-                     * @param {Dialog} dialog
-                     * @param {Event} event
-                     * @md-stack remove 3
-                     */
-                    process: defaultEventProcessor
-                }
-            }
-        },
-
-        /**
-         * <p><em>shorthand</em>: false -> show.events<br>
-         * <em>shorthand</em>: string -> show.events._target</p>
-         * @type {string|bool|object}
-         * @md-stack add
-         */
-        show: {
-            /**
-             * Delay dialog's appearance. Milliseconds.
-             * @type {number}
-             */
-            delay: 			null,
-
-            /**
-             * True to hide all other tooltips.
-             * If "group" specified, will hide only
-             * those dialogs that belong to that group.
-             * @type {bool}
-             */
-            single:			false,
-
-            /**
-             * Works for show, hide and toggle
-             * <pre><code class="language-javascript">
-             * events: false // disable all
-             *
-             * events: eventName || [eventName, eventName, ...]
-             * // same as events: {"_target": ...}
-             *
-             * events: {
-             *  "body":         eventName || [eventName, eventName, ...],
-             *  "_self":        same, // dialog itself
-             *  "_target":      same, // target element
-             *  "_document":    same,
-             *  "_window":      same,
-             *  "_html":        same,
-             *  "_overlay":     same, // overlay element (works with hiding)
-             *  ">.selector":   same // selector inside dialog
-             * }
-             *
-             * events: {
-             *  "(body|_self|_target|...)": {
-             *      eventName: ".selector"
-             *  }
-             *  // $("body|_self|_target|...").delegate(".selector", eventName)
-             *  // this one is for dynamic targets
-             * }
-             * </code></pre>
-             * @type {string|bool|object}
-             */
-            events:			null,
-
-            /**
-             * <p>true -- ["mjs-show"] or ["mjs-hide"]<br>
-             * string -- class name -> [class]<br>
-             * array -- [{properties before}, {properties after}]<br>
-             * array -- [class, class]<br>
-             * object --
-             * .fn -- string: "fadeIn", "fadeOut", etc. (optional) requires jQuery<br>
-             * .fn -- function(Element, completeCallback)
-             * .stages -- [class, class] (optional)
-             * .before -- {} apply css properties before animation (optional)
-             * .after -- {} animate these properties (optional) requires jQuery
-             * .options - {} jQuery's .animate() options
-             * .context -- fn's this object
-             * .duration -- used when .fn is string
-             * .skipDisplayChange -- do not set style.display = "" on start
-             * function(){}<br>
-             * function must return any of the above:</p>
-             * <pre><code class="language-javascript">
-             * animate: function(dlg, e) {
-             *      return {
-             *          before: {
-             *             width: '200px'
-             *          },
-             *          after: {
-             *              width: '400px'
-             *          },
-             *          options: {
-             *             step: function() {
-             *               dlg.reposition();
-             *             }
-             *          }
-             *      };
-             * }
-             * </code></pre>
-             * @type {bool|string|array|function}
-             */
-            animate:		false,
-
-            /**
-             * Ignore {show: {single: true}} on other dialogs.
-             * @type {bool}
-             */
-            ignoreHideAll:	false,
-
-            /**
-             * true - automatically set focus on input fields on buttons;
-             * string - selector
-             * @type {bool|string}
-             */
-            focus:          false,
-
-            /**
-             * Prevent scrolling
-             * true = "body"
-             * @type {bool|string|Element}
-             */
-            preventScroll:  false,
-
-            /**
-             * When showing, set css display to this value
-             * @type {string}
-             * @md-stack remove
-             */
-            display: "block"
-        },
-
-
-        /**
-         * <p><em>shorthand</em>: false -> hide.events<br>
-         * <em>shorthand</em>: string -> hide.events._target</p>
-         * @type {bool|string|object}
-         * @md-stack add
-         */
-        hide: {
-            /**
-             * Milliseconds. Delay hiding for this amount of time.
-             * @type {number}
-             */
-            delay:			null,
-
-            /**
-             * Milliseconds. Dialog will be shown no longer than for that time.
-             * @type {number}
-             */
-            timeout: 		null,
-
-            /**
-             * See show.events
-             * @type {string|bool|object}
-             */
-            events: 		null,
-
-            /**
-             * Destroy dialog after hide.
-             * @type {bool}
-             */
-            destroy:        false,
-
-            /**
-             * Remove element from DOM after hide
-             * @type {bool}
-             */
-            remove:         false,
-
-            /**
-             * See show.animate
-             * @type {bool|string|array|function}
-             */
-            animate:		false,
-
-            /**
-             * true: hide anyway even if showing is delayed,<br>
-             * false: ignore hide events until tooltip is shown.
-             * @type {bool}
-             * @md-stack remove
-             */
-            cancelShowDelay:true
-        },
-
-        /**
-         * This option is required when you want to show and hide on the same event.<br>
-         * <em>shorthand</em>: false -> toggle.events<br>
-         * <em>shorthand</em>: string -> toggle.events._target
-         * @type {bool|string|object}
-         * @md-stack add
-         */
-        toggle: {
-            /**
-             * See show.events
-             * @type {string|bool|object}
-             * @md-stack remove
-             */
-            events: 		null
-        },
-
-        /**
-         * <p><em>shorthand</em>: false -> position.type<br>
-         * <em>shorthand</em>: string -> position.type<br>
-         * <em>shorthand</em>: function -> position.get
-         * @type {bool|string|function|object}
-         * @md-stack add
-         */
-        position: {
-
-            /**
-             * false -- do not apply position<br>
-             * function(api) - must return one of the following:<br>
-             * "auto" - detect position automatically<br>
-             *
-             * <b>relative to target:</b><br>
-             * t | r | b | l -- simple positions aligned by center<br>
-             * tr | rt | rb | br | bl | lb | lt | tl -- aligned by side<br>
-             * trc | brc | blc | tlc -- corner positions<br>
-             *
-             * <b>relative to mouse:</b><br>
-             * m -- works only with get(). get() function will be called on mousemove<br>
-             * mt | mr | mb | ml -- following the mouse, aligned by center<br>
-             * mrt | mrb | mlb | mlt -- following the mouse, corner positions<br>
-             *
-             * <b>window positions:</b><br>
-             * wc | wt | wr | wb | wl<br>
-             * wrt | wrb | wlt | wlb
-             *
-             * Defaults to 't'
-             * @type {bool|string}
-             */
-            type:			't',
-
-            /**
-             * @type {string}
-             */
-            preferredType:  null,
-
-            /**
-             * Add this offset to dialog's x position
-             * @type {number}
-             */
-            offsetX: 		0,
-
-            /**
-             * Add this offset to dialog's y position
-             * @type {number}
-             */
-            offsetY:		0,
-
-            /**
-             * Follow the mouse only by this axis;
-             * second coordinate will be relative to target
-             * @type {string}
-             */
-            axis: 			null,
-
-            /**
-             * Overrides position.type<br>
-             * If this function is provided, offsets are not applied.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Event} event
-             * @returns {object} {
-             *      @type {number} x If object contains only one coordinate - x or y -
-             *                       the other one will not be updated.
-             *      @type {number} y
-             *      @type {number} top If object does not contain x and y, it will be applied
-             *                          as is.
-             *      @type {number} right
-             *      @type {number} bottom
-             *      @type {number} left
-             * }
-             */
-            get:			null,
-
-            /**
-             * Prevent from rendering off the screen.<br>
-             * Set to maximum distance between tooltip and window edge.
-             * @type {number|bool}
-             */
-            screenX:		false,
-
-            /**
-             * Prevent from rendering off the screen.<br>
-             * Set to maximum distance between tooltip and window edge.
-             * @type {number|bool}
-             */
-            screenY:		false,
-
-            /**
-             * Calculate position relative to this element (defaults to window)
-             * @type {string|Element}
-             */
-            base:           null,
-
-            /**
-             * Monitor window/selector/element scroll.
-             * @type {bool|string|Element}
-             */
-            scroll:         false,
-
-            /**
-             * Monitor window resize.
-             * @type {bool}
-             * @md-stack remove
-             */
-            resize:         true
-        },
-
-        /**
-         * Pointer will only work if size > 0 or el is not null<br>
-         * <em>shorthand</em>: string -> pointer.position<br>
-         * <em>shorthand</em>: number -> pointer.size
-         * @type {object|string|number}
-         * @md-stack add
-         */
-        pointer: {
-
-            /**
-             * t / r / b / l<br>
-             * tr / lt / lb / br / bl / lb / lt<br>
-             * null - opposite to dialog's position
-             * @type {string}
-             */
-            position: 		null,
-
-            /**
-             * t / r / b / l<br>
-             * null - opposite to primary position
-             * @type {string}
-             */
-            direction: 		null,
-
-            /**
-             * Number of pixels (triangle's height)
-             * @type {number}
-             */
-            size: 			0,
-
-            /**
-             * Number of pixels (triangle's width), by default equals to size.
-             * @type {number}
-             */
-            width:			null,
-
-            /**
-             * '#xxxxxx'
-             * @type {string}
-             */
-            color: 			null,
-
-            /**
-             * Shift pointer's position by this number of pixels.
-             * Shift direction will depend on position:<br>
-             * t / tl / b / bl - right shift<br>
-             * tr / br - left shift<br>
-             * r / l / rt / lt - top shift<br>
-             * rb / lb - bottom shift
-             * @type {number}
-             */
-            offset: 		0,
-
-            /**
-             * Number of pixels.
-             * @type {number}
-             */
-            border:			0,
-
-            /**
-             * '#xxxxxx'
-             * @type {string}
-             */
-            borderColor:	null,
-
-            /**
-             * Custom pointer.<br>
-             * If you provide custom pointer el,
-             * border, direction and color will not be applied.<br>
-             * pointer.cls will be applied.
-             * @type {string|Element}
-             */
-            el:             null,
-
-            /**
-             * Apply this class to pointer.
-             * @type {string}
-             */
-            cls:            null,
-
-            /**
-             * Apply this class to pointerBorder element.
-             * @type {string}
-             * @md-stack remove
-             */
-            borderCls:      null
-        },
-
-        /**
-         * <p><em>shorthand</em>: boolean -> overlay.enabled<br></p>
-         * @type {bool|object}
-         * @md-stack add
-         */
-        overlay:			{
-
-            /**
-             * Enable overlay.
-             * @type {bool}
-             */
-            enabled:		false,
-
-            /**
-             * @type {string}
-             */
-            color:			'#000',
-
-            /**
-             * @type {number}
-             */
-            opacity:		.5,
-
-            /**
-             * @type {string}
-             */
-            cls:			null,
-
-            /**
-             * Same animation rules as in show.animate.
-             * @type {bool}
-             */
-            animateShow:	false,
-
-            /**
-             * Same animation rules as in show.animate.
-             * @type {bool}
-             * @md-stack remove
-             */
-            animateHide:	false
-        },
-
-        /**
-         * Callbacks are case insensitive.<br>
-         * You can use camel case if you like.
-         * @type {object}
-         * @md-stack add
-         */
-        callback: {
-
-            /**
-             * 'this' object for all callbacks, including render.fn, position.get, etc.
-             * @type {object}
-             */
-            context:			null,
-
-            /**
-             * When content has changed.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {string} content
-             */
-            "content-change": 	null,
-
-            /**
-             * Before dialog appeared.<br>
-             * Return false to cancel showing.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Event} event
-             */
-            "before-show": 		null,
-
-            /**
-             * Immediately after dialog appeared.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Event} event
-             */
-            show: 				null,
-
-            /**
-             * Before dialog disappears.<br>
-             * Return false to cancel hiding.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Event} event
-             */
-            "before-hide": 		null,
-
-            /**
-             * Immediately after dialog has been hidden.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Event} event
-             */
-            hide: 				null,
-
-            /**
-             * After dialog has been rendered.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             */
-            render: 			null,
-
-            /**
-             * After dialog's html element has been removed.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             */
-            lifetime:           null,
-
-            /**
-             * Called when dynamic target changes (on hide it always changes to null).
-             * Also called from setTarget().
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {Element} newTarget
-             * @param {Element|null} prevTarget
-             */
-            "target-change":       null,
-
-            /**
-             * One handler for all configured buttons. Called on click, enter and space.
-             * @function
-             * @param {MetaphorJs.lib.Dialog} dialog
-             * @param {string} buttonId
-             * @param {Event} event
-             * @md-stack finish
-             */
-            button:             null
-        }
-
-    };
-
-
-
-
-    var Dialog = defineClass({
-
-        $class:             "Dialog",
-        $mixins:            ["mixin.Observable"],
-
-        id:                 null,
-        node:               null,
-        overlay:            null,
-        pointer:            null,
-        cfg:                null,
-        position:           null,
-
-        target:             null,
-        dynamicTarget:      false,
-        dynamicTargetEl:    null,
-
-        visible:            false,
-        enabled:            true,
-        frozen:             false,
-        rendered:           false,
-
-        bindSelfOnRender:   false,
-
-        hideTimeout:        null,
-        hideDelay:          null,
-        showDelay:          null,
-        destroyDelay:       null,
-
-        images:             0,
-
-        positionGetType:    null,
-        positionClass:      null,
-        positionAttempt:    0,
-
-        $constructor: function() {
-
-            this.$$events = {
-                "before-show": {
-                    returnResult: false
-                },
-                "before-hide": {
-                    returnResult: false
-                }
-            };
-
-            this.$super.apply(this, arguments);
-
-        },
-
-        $init: function(cfg) {
-
-            cfg = cfg || {};
-            var preset  = cfg.preset,
-                self    = this;
-
-            cfg.preset  = null;
-            cfg         = extend({}, defaults,
-                                fixShorthands(Dialog.defaults),
-                                fixShorthands(Dialog[preset]),
-                                fixShorthands(cfg),
-                                    true, true);
-
-            self.cfg    = cfg;
-            self.id     = nextUid();
-
-            self.onPreventScrollDelegate = bind(self.onPreventScroll, self);
-            self.onButtonClickDelegate = bind(self.onButtonClick, self);
-            self.onButtonKeyupDelegate = bind(self.onButtonKeyup, self);
-            self.showDelegate = bind(self.show, self);
-            self.hideDelegate = bind(self.hide, self);
-            self.toggleDelegate = bind(self.toggle, self);
-            self.onImageLoadDelegate = bind(self.onImageLoad, self);
-
-            manager.register(self);
-
-            if (cfg.modal) {
-                cfg.overlay.enabled = true;
-            }
-            self.overlay    = factory("dialog.Overlay", self);
-
-            var pointerCls = ucfirst(cfg.pointer.$class || "Html");
-            self.pointer    = factory("dialog.pointer." + pointerCls, self, cfg.pointer);
-
-            if (isFunction(cfg.position.type)) {
-                self.positionGetType = cfg.position.type;
-            }
-
-            self.setTarget(cfg.target);
-
-            if (cfg.target && cfg.useHref) {
-                var href = getAttr(self.getTarget(), "href");
-                if (href.substr(0, 1) === "#") {
-                    cfg.render.el = href;
-                }
-                else {
-                    cfg.ajax.url = href;
-                }
-            }
-
-            if (!cfg.render.lazy) {
-                self.render();
-            }
-
-            self.trigger("init", self);
-            self.setHandlers("bind");
-        },
-
-
-        /* **** General api **** */
-
-
-        /**
-         * @returns {Element}
-         */
-        getElem: function() {
-            return this.node;
-        },
-
-        /**
-         * @returns {string}
-         */
-        getInstanceId: function() {
-            return this.id;
-        },
-
-        /**
-         * Get dialog's config.
-         * @access public
-         * @return {object}
-         */
-        getCfg: function() {
-            return this.cfg;
-        },
-
-        /**
-         * Get dialog's pointer object
-         * @returns {dialog.pointer.Abstract}
-         */
-        getPointer: function() {
-            return this.pointer;
-        },
-
-
-        /**
-         * Get dialog's overlay object
-         * @returns {dialog.Overlay}
-         */
-        getOverlay: function() {
-            return this.overlay;
-        },
-
-
-        /**
-         * @access public
-         * @return {boolean}
-         */
-        isEnabled: function() {
-            return this.enabled;
-        },
-
-        /**
-         * @access public
-         * @return {boolean}
-         */
-        isVisible: function() {
-            return this.visible;
-        },
-
-        /**
-         * @access public
-         * @returns {boolean}
-         */
-        isHideAllIgnored: function() {
-            return this.cfg.show.ignoreHideAll;
-        },
-
-        /**
-         * @access public
-         * @return {boolean}
-         */
-        isFrozen: function() {
-            return this.frozen;
-        },
-
-        /**
-         * @returns {boolean}
-         */
-        isRendered: function() {
-            return this.rendered;
-        },
-
-        /**
-         * Enable dialog
-         * @access public
-         * @method
-         */
-        enable: function() {
-            this.enabled = true;
-        },
-
-        /**
-         * Disable dialog
-         * @access public
-         * @method
-         */
-        disable: function() {
-            this.hide();
-            this.enabled = false;
-        },
-
-        /**
-         * The difference between freeze and disable is that
-         * disable always hides dialog and freeze makes current
-         * state permanent (if it was shown, it will stay shown
-         * until unfreeze() is called).
-         * @access public
-         * @method
-         */
-        freeze: function() {
-            this.frozen   = true;
-        },
-
-        /**
-         * Unfreeze dialog
-         * @access public
-         * @method
-         */
-        unfreeze: function() {
-            this.frozen   = false;
-        },
-
-        /**
-         * Get groups.
-         * @access public
-         * @return {[]}
-         */
-        getGroup: function() {
-            var cfg = this.cfg;
-            if (!cfg.group) {
-                return [""];
-            }
-            else {
-                return isString(cfg.group) ?
-                       [cfg.group] : cfg.group;
-            }
-        },
-
-        /**
-         * Show/hide
-         * @access public
-         * @param {Event} e Optional
-         * @param {bool} immediately Optional
-         */
-        toggle: function(e, immediately) {
-
-            var self = this;
-
-            // if switching between dynamic targets
-            // we need not to hide tooltip
-            if (e && e.stopPropagation && self.dynamicTarget) {
-
-                if (self.visible && self.isDynamicTargetChanged(e)) {
-                    return self.show(e);
-                }
-            }
-
-            return self[self.visible ? 'hide' : 'show'](e, immediately);
-        },
-
-
-        /* **** Events **** */
-
-        resetHandlers: function(fn, context) {
-
-            var self = this;
-            self.setHandlers("unbind");
-            self.bindSelfOnRender = false;
-
-            if (fn) {
-                fn.call(context, self, self.getCfg());
-            }
-
-            self.setHandlers("bind");
-        },
-
-        setHandlers: function(mode, only) {
-
-            var self    = this,
-                cfg     = self.cfg,
-                fns     = ["show", "hide", "toggle"],
-                lfn     = mode === "bind" ? addListener : removeListener,
-                dfn     = mode === "bind" ? delegate : undelegate,
-                fn,
-                fnCfg,
-                selector,
-                e, i, len,
-                evs, el,
-                j, jl;
-
-            while (fn = fns.shift()) {
-
-                fnCfg   = cfg[fn].events;
-
-                if (fnCfg === false) {
-                    continue;
-                }
-
-                if (isString(fnCfg) || isArray(fnCfg)) {
-                    if (self.dynamicTarget) {
-                        var tmp     = {};
-                        tmp[fnCfg]  = cfg.target;
-                        fnCfg       = {
-                            "_html": tmp
-                        }
-                    }
-                    else {
-                        fnCfg   = {"_target": fnCfg};
-                    }
-                }
-
-                for (selector in fnCfg) {
-
-                    if (only) {
-                        if (only === '_self') {
-                            if (selector !== '_self' &&
-                                selector !== "_overlay" &&
-                                selector.substr(0,1) !== '>') {
-                                continue;
-                            }
-                        }
-                        else if (selector !== only) {
-                            continue;
-                        }
-                    }
-
-                    if ((selector === '_self' ||
-                            selector === '_overlay' ||
-                            selector.substr(0,1) === '>')
-                        && !self.node) {
-
-                        self.bindSelfOnRender = true;
-                        continue;
-                    }
-
-                    evs         = fnCfg[selector];
-
-                    if (!evs) {
-                        continue;
-                    }
-
-                    switch (selector) {
-                        case "_target":
-                            el  = [self.getTarget()];
-                            break;
-
-                        case "_self":
-                            el  = [self.node];
-                            break;
-
-                        case "_window":
-                            el  = [window];
-                            break;
-
-                        case "_document":
-                            el  = [window.document];
-                            break;
-
-                        case "_html":
-                            el  = [window.document.documentElement];
-                            break;
-
-                        case "_overlay":
-                            el  = [self.overlay.getElem()];
-                            break;
-
-                        default:
-                            el  = selector.substr(0,1) === '>' ?
-                                  select(selector.substr(1), self.node) :
-                                  select(selector);
-
-                    }
-
-                    if (!el || !el.length) {
-                        continue;
-                    }
-
-                    if (isString(evs)) {
-                        evs     = [evs];
-                    }
-
-                    if (isArray(evs)) {
-                        for (i = 0, len = evs.length; i < len; i++) {
-                            for (j = -1, jl = el.length; ++j < jl; lfn(el[j], evs[i], self[fn+"Delegate"])){}
-                        }
-                    }
-                    else {
-                        for (e in evs) {
-                            for (j = -1, jl = el.length; ++j < jl; dfn(el[j], evs[e], e, self[fn+"Delegate"])){}
-                        }
-                    }
-                }
-            }
-        },
-
-
-
-
-        onPreventScroll: function(e) {
-            normalizeEvent(e).preventDefault();
-        },
-
-        onButtonClick: function(e) {
-
-            var target  = normalizeEvent(e).target,
-                btnId   = data(target, "metaphorjsTooltip-button-id");
-
-            if (btnId) {
-                this.trigger("button", this, btnId, e);
-            }
-        },
-
-        onButtonKeyup: function(e) {
-            if (e.keyCode === 13 || e.keyCode === 32) {
-                var target  = e.target,
-                    btnId   = data(target, "metaphorjsTooltip-button-id");
-
-                if (btnId) {
-                    this.trigger("button", this, btnId, normalizeEvent(e));
-                }
-            }
-        },
-
-        getEventConfig: function(e, action) {
-
-            var self    = this,
-                ecfg    = getEventConfig(e, action, self.node),
-                cfg     = self.cfg;
-
-            if (!ecfg && cfg.events[action]) {
-                ecfg   = cfg.events[action][e.type] || cfg.events[action]['*'];
-            }
-
-            return ecfg;
-        },
-
-
-        /* **** Show **** */
-
-        /**
-         * Show dialog
-         * @access public
-         * @param {Event} e Optional. True to skip delay.
-         * @param {bool} immediately Optional
-         */
-        show: function(e, immediately) {
-
-            // if called as an event handler, we do not return api
-            var self        = this,
-                cfg         = self.cfg,
-                returnValue	= null,
-                scfg        = cfg.show,
-                returnMode  = null;
-
-            if (e) {
-                e = normalizeEvent(e);
-            }
-
-            // if tooltip is disabled, we do not stop propagation and do not return false.s
-            if (!self.isEnabled()) {
-                returnMode = "disabled";
-            }
-
-            // if tooltip is already shown
-            // and hide timeout was set.
-            // we need to restart timer
-            if (!returnMode && self.visible && self.hideTimeout) {
-
-                window.clearTimeout(self.hideTimeout);
-                self.hideTimeout = async(self.hide, self, null, cfg.hide.timeout);
-
-                returnMode = "hidetimeout";
-            }
-
-            // if tooltip was delayed to hide
-            // we cancel it.
-            if (!returnMode && self.hideDelay) {
-
-                window.clearTimeout(self.hideDelay);
-                self.hideDelay     = null;
-                self.visible       = true;
-
-                returnMode = "hidedelay";
-            }
-
-
-            // various checks: tooltip should be enabled,
-            // should not be already shown, it should
-            // have some content, or empty content is allowed.
-            // also if beforeShow() returns false, we can't proceed
-            // if tooltip was frozen, we do not show or hide
-            if (!returnMode && self.frozen) {
-                returnMode = "frozen";
-            }
-
-            // cancel delayed destroy
-            // so that we don't have to re-render dialog
-            if (self.destroyDelay) {
-                window.clearTimeout(self.destroyDelay);
-                self.destroyDelay = null;
-            }
-
-
-            var dtChanged   = false;
-
-            // if we have a dynamicTarget
-            if (e && self.dynamicTarget) {
-                dtChanged = self.changeDynamicTarget(e);
-            }
-
-            if (self.visible) {
-                if (!dtChanged) {
-                    returnMode = returnMode || "visible";
-                }
-                else {
-                    self.reposition(e);
-                    returnMode = "reposition";
-                }
-            }
-
-            if (!returnMode || dtChanged) {
-                // if tooltip is not rendered yet we render it
-                if (!self.node) {
-                    self.render();
-                }
-                else if (dtChanged) {
-                    self.changeDynamicContent();
-                }
-            }
-
-
-            // if beforeShow callback returns false we stop.
-            if (!returnMode && self.trigger('before-show', self, e) === false) {
-                returnMode = "beforeshow";
-            }
-
-            var ecfg;
-
-            if (e && (ecfg = self.getEventConfig(e, "show"))) {
-
-                if (ecfg.process) {
-                    returnValue	= ecfg.process(self, e, "show", returnMode);
-                }
-                else {
-                    ecfg.stopPropagation && e.stopPropagation();
-                    ecfg.preventDefault && e.preventDefault();
-                    returnValue = ecfg.returnValue;
-                }
-            }
-
-            if (returnMode) {
-                return returnValue;
-            }
-
-            // first, we stop all current animations
-            stopAnimation(self.node);
-
-            // as of this moment we mark dialog as visible so that hide() were able
-            // to work. also, all next steps should check for this state
-            // in case if tooltip case hidden back during the process
-            self.visible = true;
-
-            if (scfg.single) {
-                manager.hideAll(self);
-            }
-
-            self.toggleTitleAttribute(false);
-
-            if (scfg.delay && !immediately) {
-                self.showDelay = async(self.showAfterDelay, self, [e], scfg.delay);
-            }
-            else {
-                self.showAfterDelay(e, immediately);
-            }
-
-            return returnValue;
-        },
-
-
-        showAfterDelay: function(e, immediately) {
-
-            var self = this,
-                cfg = self.cfg;
-
-            self.showDelay = null;
-
-            // if tooltip was already hidden, we can't proceed
-            if (!self.visible) {
-                return;
-            }
-
-            self.trigger('show-after-delay', self, e);
-
-            if (cfg.hide.remove) {
-                self.appendElem();
-            }
-
-            self.reposition(e);
-
-
-            if (cfg.show.preventScroll) {
-                var ps = cfg.show.preventScroll,
-                    i, l;
-                if (ps === true) {
-                    ps = "body";
-                }
-                ps = select(ps);
-                for (i = -1, l = ps.length; ++i < l;
-                     addListener(ps[i], "mousewheel", self.onPreventScrollDelegate) &&
-                     addListener(ps[i], "touchmove", self.onPreventScrollDelegate)
-                ){}
-            }
-
-            self.overlay.show();
-
-            if (cfg.show.animate && !immediately) {
-                self.animate("show").done(function() {
-                    self.showAfterAnimation(e);
-                });
-            }
-            else {
-                raf(function(){
-                    self.showAfterAnimation(e);
-                });
-            }
-        },
-
-        showAfterAnimation: function(e) {
-
-            var self = this,
-                cfg = self.cfg,
-                node = self.node;
-
-            // if tooltip was already hidden, we can't proceed
-            if (!self.visible) {
-                return;
-            }
-
-            // now we can finally show the dialog (if it wasn't shown already
-            // during the animation
-            removeClass(node, cfg.cls.hidden);
-            addClass(node, cfg.cls.visible);
-
-            if (!cfg.render.keepVisible) {
-                node.style.display = cfg.show.display || "block";
-            }
-
-
-            // if it has to be shown only for a limited amount of time,
-            // we set timeout.
-            if (cfg.hide.timeout) {
-                self.hideTimeout = async(self.hide, self, null, cfg.hide.timeout);
-            }
-
-            if (cfg.show.focus) {
-                async(self.setFocus, self, null, 20);
-            }
-
-            self.trigger('show', self, e);
-        },
-
-
-
-
-
-        /* **** Hide **** */
-
-
-        /**
-         * Hide dialog
-         * @access public
-         * @param {Event} e Optional.
-         * @param {bool} immediately Optional. True to skip delay.
-         * @param {bool} cancelShowDelay Optional. If showing already started but was delayed -
-         * cancel that delay.
-         */
-        hide: function(e, immediately, cancelShowDelay) {
-
-            var self            = this,
-                returnValue	    = null,
-                returnMode      = null,
-                cfg             = self.cfg;
-
-            self.hideTimeout    = null;
-
-            // if the timer was set to hide the tooltip
-            // but then we needed to close tooltip immediately
-            if (!self.visible && self.hideDelay && immediately) {
-                window.clearTimeout(self.hideDelay);
-                self.hideDelay     = null;
-                self.visible       = true;
-            }
-
-            // various checks
-            if (!self.node || !self.visible || !self.isEnabled()) {
-                returnMode = !self.node ? "noelem" : (!self.visible ? "hidden" : "disabled");
-            }
-
-            // if tooltip is still waiting to be shown after delay timeout,
-            // we cancel this timeout and return.
-            if (self.showDelay && !returnMode) {
-
-                if (cfg.hide.cancelShowDelay || cancelShowDelay) {
-                    window.clearTimeout(self.showDelay);
-                    self.showDelay     = null;
-                    self.visible       = false;
-
-                    returnMode = "cancel";
-                }
-                else {
-                    returnMode = "delay";
-                }
-            }
-
-            // if tooltip was frozen, we do not show or hide
-            if (self.frozen && !returnMode) {
-                returnMode = "frozen";
-            }
-
-            // lets see what the callback will tell us
-            if (!returnMode && self.trigger('before-hide', self, e) === false) {
-                returnMode = "beforehide";
-            }
-
-            var ecfg;
-            if (e && e.stopPropagation && (ecfg = self.getEventConfig(e, "hide"))) {
-
-                if (ecfg.process) {
-                    returnValue = ecfg.process(self, e, "hide", returnMode);
-                }
-                else {
-                    if (ecfg.stopPropagation) e.stopPropagation();
-                    if (ecfg.preventDefault) e.preventDefault();
-                    returnValue = ecfg.returnValue;
-                }
-            }
-
-            if (returnMode) {
-                return returnValue;
-            }
-
-            // now we can stop all current animations
-            stopAnimation(self.node);
-
-            // and change the state
-            self.visible = false;
-
-            self.toggleTitleAttribute(true);
-
-            if (self.dynamicTarget) {
-                self.resetDynamicTarget();
-            }
-
-            if (cfg.hide.delay && !immediately) {
-                self.hideDelay = async(self.hideAfterDelay, self, [e], cfg.hide.delay);
-            }
-            else {
-                self.hideAfterDelay(e, immediately);
-            }
-
-            return returnValue;
-        },
-
-
-        hideAfterDelay: function(e, immediately) {
-
-            var self = this,
-                cfg = self.cfg;
-
-            self.hideDelay = null;
-
-            if (self.visible) {
-                return;
-            }
-
-            self.trigger('hide-after-delay', self, e);
-
-
-            if (cfg.show.preventScroll) {
-                var ps = cfg.show.preventScroll,
-                    i, l;
-                if (ps === true) {
-                    ps = "body";
-                }
-                ps = select(ps);
-                for (i = -1, l = ps.length; ++i < l;
-                     removeListener(ps[i], "mousewheel", self.onPreventScrollDelegate) &&
-                     removeListener(ps[i], "touchmove", self.onPreventScrollDelegate)
-                ){}
-            }
-
-            self.overlay.hide();
-
-            if (cfg.hide.animate && !immediately) {
-                self.animate("hide").done(function() {
-                    self.hideAfterAnimation(e);
-                });
-            }
-            else {
-                raf(function(){
-                    self.hideAfterAnimation(e);
-                });
-            }
-        },
-
-        hideAfterAnimation: function(e) {
-
-            var self = this,
-                cfg = self.cfg,
-                node = self.node;
-
-            // we need to check if the tooltip was returned to visible state
-            // while hiding animation
-            if (self.visible) {
-                return;
-            }
-
-            removeClass(node, cfg.cls.visible);
-            addClass(node, cfg.cls.hidden);
-
-            if (!cfg.render.keepVisible) {
-                node.style.display = "none";
-            }
-
-            self.trigger('hide', self, e);
-
-            var lt = cfg.render.lifetime;
-
-            if (lt !== null) {
-                if (lt === 0) {
-                    self.destroyElem();
-                }
-                else {
-                    self.destroyDelay = async(self.destroyElem, self, null, lt);
-                }
-            }
-
-            if (node && cfg.hide.destroy) {
-                raf(function(){
-                    data(node, cfg.instanceName, null);
-                    self.$destroy();
-                });
-            }
-            else if (node && cfg.hide.remove) {
-                raf(function(){
-                    self.removeElem();
-                });
-            }
-        },
-
-
-
-        /* **** Render **** */
-
-
-
-
-        render: function() {
-
-            var self = this,
-                cfg = self.cfg,
-                elem;
-
-            // if already rendered, we return
-            if (self.node) {
-                return;
-            }
-
-
-            var rnd	    = cfg.render,
-                cls     = cfg.cls;
-
-
-            // custom rendering function
-            if (rnd.fn) {
-                var res = rnd.fn.call(self.$$callbackContext, self);
-                rnd[isString(res) ? 'tpl' : 'el'] = res;
-            }
-
-
-            if (rnd.el) {
-                if (isString(rnd.el)) {
-                    elem = select(rnd.el).shift();
-                    rnd.keepInDOM = true;
-                }
-                else {
-                    elem = rnd.el;
-                }
-            }
-            else {
-                var tmp = window.document.createElement("div");
-                tmp.innerHTML = rnd.tpl;
-                elem = tmp.firstChild;
-            }
-
-
-            if (!elem) {
-                elem = window.document.createElement("div");
-            }
-
-            self.node = elem;
-
-            if (rnd.id) {
-                setAttr(elem, 'id', rnd.id);
-            }
-
-            if (!cfg.render.keepVisible) {
-                elem.style.display = "none";
-            }
-
-            addClass(elem, cls.dialog);
-            addClass(elem, cls.hidden);
-
-            if (rnd.style) {
-                setStyle(elem, rnd.style);
-            }
-
-
-            self.overlay.render();
-
-
-            if (!cfg.hide.remove) {
-                self.appendElem();
-            }
-            else {
-                if (elem.parentNode) {
-                    elem.parentNode.removeChild(elem);
-                }
-            }
-
-            if (rnd.zIndex) {
-                setStyle(elem, {zIndex: rnd.zIndex});
-            }
-
-            var cnt = cfg.content;
-
-            if (cnt.value !== false) {
-                if (cnt.value) {
-                    self.setContent(cnt.value);
-                }
-                else {
-                    if (cnt.fn) {
-                        self.setContent(cnt.fn.call(self.$$callbackContext, self));
-                    }
-                    else {
-                        self[cfg.ajax.url ? 'loadContent' : 'readContent']();
-                    }
-                }
-            }
-
-            self.pointer.render();
-            self.pointer.append();
-
-            if (cfg.buttons) {
-                var btnId, btn;
-                for (btnId in cfg.buttons) {
-                    btn = select(cfg.buttons[btnId], elem).shift();
-                    if (btn) {
-                        data(btn, "metaphorjsTooltip-button-id", btnId);
-                        addListener(btn, "click", self.onButtonClickDelegate);
-                        addListener(btn, "keyup", self.onButtonKeyupDelegate);
-                    }
-                }
-            }
-
-            if (self.bindSelfOnRender) {
-                self.setHandlers('bind', '_self');
-                self.bindSelfOnRender = false;
-            }
-
-            self.rendered = true;
-
-            self.trigger('render', self);
-        },
-
-
-
-
-
-
-
-
-        /* **** Position **** */
-
-        setPositionType: function(type) {
-            var self    = this,
-                cls     = self.getPositionClass(type);
-
-            self.cfg.position.type = type;
-
-            if (self.positionClass !== cls || !self.position) {
-                if (self.position) {
-                    self.position.$destroy();
-                    self.position = null;
-                }
-                if (cls) {
-                    self.position = factory(cls, self);
-                }
-            }
-            else {
-                self.position.type = type;
-            }
-
-            if (self.isVisible()) {
-                self.reposition();
-            }
-        },
-
-        getPosition: function(e) {
-
-            var self = this,
-                cfgPos = self.cfg.position;
-
-            if (!self.position) {
-
-                if (!self.positionGetType && cfgPos.type !== "custom") {
-                    if (isFunction(cfgPos.get) && cfgPos.type !== "m") {
-                        cfgPos.type = "custom";
-                    }
-                }
-
-                var type    = self.positionGetType ?
-                                self.positionGetType.call(self.$$callbackContext, self, e) :
-                                cfgPos.type,
-                    cls     = self.getPositionClass(type);
-
-
-
-                cfgPos.type     = type;
-
-                if (cls === false) {
-                    return;
-                }
-
-                if (self.positionClass !== cls) {
-                    self.position   = factory(self.getPositionClass(type), self);
-                }
-                else {
-                    self.position.type = type;
-                }
-            }
-
-            return self.position;
-        },
-
-        getPositionClass: function(type) {
-
-            if (!type) {
-                return false;
-            }
-
-            if (isFunction(type) || type === "custom") {
-                return "dialog.position.Custom";
-            }
-
-            var fc = type.substr(0, 1);
-
-            if (!fc) {
-                return false;
-            }
-            else if (fc === "w") {
-                return "dialog.position.Window";
-            }
-            else if (fc === "m") {
-                return "dialog.position.Mouse";
-            }
-            else {
-                return "dialog.position.Target";
-            }
-        },
-
-
-        /**
-         * Usually called internally from show().
-         * @access public
-         * @param {Event} e Optional.
-         */
-        reposition: function(e) {
-            var self = this;
-
-            if (self.repositioning) {
-                return;
-            }
-
-            self.repositioning = true;
-
-            e && (e = normalizeEvent(e));
-
-            self.getPosition(e);
-            self.trigger("before-reposition", self, e);
-            self.getPosition(e);
-            self.trigger("reposition", self, e);
-
-            self.repositioning = false;
-        },
-
-
-
-        /* **** Target **** */
-
-        /**
-         * Get dialog's target.
-         * @access public
-         * @return {Element}
-         */
-        getTarget: function() {
-            return this.dynamicTarget ? this.dynamicTargetEl : this.target;
-        },
-
-
-        /**
-         * Set new dialog's target.
-         * @access public
-         * @param newTarget Element {
-             *     @required
-         * }
-         */
-        setTarget: function(newTarget) {
-
-            if (!newTarget) {
-                return;
-            }
-
-            var self    = this,
-                change  = false,
-                prev    = self.target;
-
-            if (self.target) {
-                self.setHandlers('unbind', '_target');
-                change = true;
-            }
-            else if (self.dynamicTarget) {
-                change = true;
-            }
-
-            var isStr = isString(newTarget);
-
-            if (isStr && newTarget.substr(0,1) !== "#") {
-                self.dynamicTarget = true;
-                self.target        = null;
-            }
-            else {
-                if (isStr) {
-                    newTarget       = select(newTarget).shift();
-                }
-                self.dynamicTarget = false;
-                self.target        = newTarget;
-            }
-
-            if (change) {
-                self.setHandlers('bind', '_target');
-                self.trigger("target-change", self, newTarget, prev);
-            }
-        },
-
-
-        resetDynamicTarget: function() {
-            var self = this,
-                curr = self.dynamicTargetEl;
-            if (curr) {
-                self.setHandlers("unbind", "_target");
-                self.trigger("target-change", self, null, curr);
-            }
-        },
-
-        isDynamicTargetChanged: function(e) {
-
-            var self    = this,
-                cfg     = self.cfg,
-                dt	    = cfg.target,
-                t	    = e.target,
-                curr    = self.dynamicTargetEl;
-
-            while (t && !is(t, dt)) {
-                t   = t.parentNode;
-            }
-
-            if (!t) {
-                return false;
-            }
-
-            return !curr || curr !== t;
-        },
-
-        changeDynamicTarget: function(e) {
-
-            var self    = this,
-                cfg     = self.cfg,
-                dt	    = cfg.target,
-                t	    = e.target,
-                curr    = self.dynamicTargetEl;
-
-            while (t && !is(t, dt)) {
-                t   = t.parentNode;
-            }
-
-            if (!t) {
-                return false;
-            }
-
-            if (!curr || curr !== t) {
-
-                if (curr) {
-                    self.setHandlers("unbind", "_target");
-                }
-
-                self.dynamicTargetEl = t;
-
-                self.setHandlers("bind", "_target");
-                self.trigger("target-change", self, t, curr);
+    getContentItem: function(id) {
+        return this.contentMap[id];
+    },
+
+    hasNav: function(where) {
+        var k;
+        for (k in this.scope.sourceTree.structure) {
+            if (this.scope.sourceTree.structure[k].where == where) {
                 return true;
             }
-            else {
-                return false;
+        }
+        return false;
+    },
+
+    getItemUrl: function(item) {
+        if (item.isGroup) {
+            return '#';
+        }
+        if (this.scope.multipage) {
+            return '/' + item.pathPrefix +'/'+ item.id;
+        }
+        else {
+            return '#' + item.id;
+        }
+    },
+
+    setLoading: function(state, ifNot) {
+        if (state) {
+            if (ifNot && this.loading > 0) {
+                return;
             }
-        },
-
-
-
-
-
-
-
-
-
-        /* **** Content **** */
-
-        /**
-         * @access public
-         * @return {Element}
-         */
-        getContentElem: function() {
-            var self = this,
-                node = self.node;
-
-            if (!node) {
-                return null;
+            this.loading++;
+            if (this.loading > 1) {
+                return;
             }
-
-            if (self.cfg.selector.content) {
-                var el = select(self.cfg.selector.content, node).shift();
-                return el || node;
+            this.scope.$set("loading", true);
+        }
+        else if (this.loading > 0) {
+            this.loading--;
+            if (this.loading === 0) {
+                this.scope.$set("loading", false);
             }
-            else {
-                return node;
-            }
-        },
+        }
+    },
 
+    highlightAllUnprocessed: function() {
 
-        /**
-         * Set new content.
-         * @access public
-         * @param {string|object} content {
-             *      See "selector" option
-             *      @required
-         * }
-         * @param {string} mode "", "attribute", "ajax" -- optional (used internally). See
-         * content.prepare option.
-         */
-        setContent: function(content, mode) {
+        var p = new Promise,
+            pres = select("pre"),
+            counter = 0,
+            i, l,
+            j, jl,
+            pre, code;
 
-            mode = mode || '';
+        try {
+            for (i = 0, l = pres.length; i < l; i++) {
 
-            var self    = this,
-                node    = self.node,
-                cfg     = self.cfg,
-                pnt     = self.pointer;
+                pre = pres[i];
 
-            if (!node) {
-                cfg.content.value = content;
-                return self;
-            }
-
-            if (cfg.content.prepare) {
-                content = cfg.content.prepare.call(self.$$callbackContext, self, mode, content);
-            }
-
-            var contentElem = self.getContentElem(),
-                fixPointer  = self.rendered && !cfg.selector.content && pnt,
-                pntEl       = fixPointer && pnt.getElem();
-
-            if (fixPointer && pntEl) {
-                try {
-                    node.removeChild(pntEl);
-                }
-                catch (thrownError) {}
-            }
-
-            if (!isString(content)) {
-                for (var i in content) {
-                    var sel     = cfg.selector[i];
-                    if (sel) {
-                        var cel = select(sel, contentElem).shift();
-                        if (cel) {
-                            cel.innerHTML = content[i];
-                        }
+                for (j = 0, jl = pre.childNodes.length; j < jl; j++) {
+                    code = pre.childNodes[j];
+                    if (code.nodeType && 
+                        code.tagName.toLowerCase() === "code" && 
+                        !getAttr(code, "prism-processed")) 
+                    {
+                        counter++;
+                        setAttr(code, "prism-processed", "true");
+                        window.Prism.highlightElement(code, true, function(){
+                            counter--;
+                            if (counter === 0) {
+                                p.resolve();
+                            }
+                        });
                     }
                 }
             }
-            else {
-                contentElem.innerHTML = content;
-            }
-
-            // if there a pointer, and this is not initial content set,
-            // and there is no selector for content
-            // we must restore pointer after dialog's inner html
-            // has been replaced with new content
-            if (fixPointer && pntEl) {
-                try {
-                    node.appendChild(pntEl);
-                }
-                catch (thrownError){}
-            }
-
-            var imgs = select("img", contentElem),
-                l;
-
-            self.images = imgs.length;
-
-            for (i = -1, l = imgs.length; ++i < l; addListener(imgs[i], "load", self.onImageLoadDelegate)){}
-
-            self.trigger('content-change', self, content, mode);
-            self.onContentChange();
-        },
-
-        /**
-         * Force dialog to re-read content from attributes.
-         * @access public
-         * @method
-         */
-        readContent: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                el 			= self.getTarget(),
-                content;
-
-            if (el) {
-                if (cfg.content.attr) {
-                    content = getAttr(el, cfg.content.attr);
-                }
-                else {
-                    content = getAttr(el, 'tooltip') ||
-                              getAttr(el, 'title') ||
-                              getAttr(el, 'alt');
-                }
-            }
-
-            if (content) {
-                self.setContent(content, 'attribute');
-            }
-        },
-
-        /**
-         * Load content via ajax.
-         * @access public
-         * @param {object} options Merged with cfg.ajax
-         */
-        loadContent: function(options) {
-
-            var self = this,
-                cfg = self.cfg;
-
-            addClass(self.node, cfg.cls.loading);
-            var opt = extend({}, cfg.ajax, options, true, true);
-            self.trigger('before-ajax', self, opt);
-            return ajax(opt).done(self.onAjaxLoad, self);
-        },
-
-        onAjaxLoad: function(data) {
-            var self = this;
-            removeClass(self.node, self.cfg.cls.loading);
-            self.setContent(data, 'ajax');
-        },
-
-        onImageLoad: function() {
-            this.images--;
-            this.onContentChange();
-        },
-
-        onContentChange: function() {
-            if (this.visible) {
-                this.reposition();
-            }
-        },
-
-        changeDynamicContent: function() {
-            var self = this,
-                cfg = self.cfg;
-            if (cfg.content.fn) {
-                self.setContent(cfg.content.fn.call(self.$$callbackContext, self));
-            }
-            else if (cfg.content.attr) {
-                self.readContent();
-            }
-        },
-
-        toggleTitleAttribute: function(state) {
-
-            var self = this,
-                trg = self.getTarget(),
-                title;
-
-            if (trg) {
-                if (state === false) {
-                    data(trg, "tmp-title", getAttr(trg, "title"));
-                    removeAttr(trg, 'title');
-                }
-                else if (title = data(trg, "tmp-title")) {
-                    setAttr(trg, "title", title);
-                }
-            }
-        },
-
-        /* **** Dimension **** */
-
-
-        getDialogSize: function() {
-
-            var self    = this;
-
-            if (!self.rendered) {
-                self.render();
-            }
-
-            var cfg     = self.cfg,
-                node    = self.node,
-                hidden  = cfg.cls.hidden ? hasClass(node, cfg.cls.hidden) : !isVisible(node),
-                size,
-                left    = node.style.left;
-
-            if (hidden) {
-                setStyle(node, {left: "-1000px"});
-                node.style.display = cfg.show.display;
-            }
-
-            size    = {
-                width:      getOuterWidth(node),
-                height:     getOuterHeight(node)
-            };
-
-            if (hidden) {
-                setStyle(node, {left: left});
-                node.style.display = "none";
-            }
-
-            return size;
-        },
-
-        getTargetSize: function() {
-
-            var self    = this,
-                target  = self.getTarget();
-
-            if (!target) {
-                return null;
-            }
-
-            return {
-                width:      getOuterWidth(target),
-                height:     getOuterHeight(target)
-            };
-        },
-
-
-        /* **** Misc **** */
-
-
-        /**
-         * Set focus based on focus setting.
-         * @access public
-         * @method
-         */
-        setFocus: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                af      = cfg.show.focus,
-                node    = self.node,
-                i,
-                input;
-
-            if (af === true) {
-                input   = select("input", node).concat(select("textarea", node));
-                if (input.length > 0) {
-                    input[0].focus();
-                }
-                else if (cfg.buttons) {
-                    for (i in cfg.buttons) {
-                        var btn = select(cfg.buttons[i], node).shift();
-                        btn && btn.focus();
-                        break;
-                    }
-                }
-            }
-            else {
-                var el = select(af, node).shift();
-                el && el.focus();
-            }
-        },
-
-        getScrollEl: function(cfgScroll) {
-            if (cfgScroll === true || cfgScroll === false) {
-                return window;
-            }
-            else if (typeof cfgScroll === "string") {
-                return select(cfgScroll).shift();
-            }
-            else {
-                return cfgScroll;
-            }
-        },
-
-
-        animate: function(section, e) {
-
-            var self = this,
-                cfg = self.cfg,
-                node = self.node,
-                a,
-                skipDisplay;
-
-            a 	= cfg[section].animate;
-
-            if (isFunction(a)) {
-                a   = a(self, e);
-            }
-
-            skipDisplay = a.skipDisplayChange || false;
-
-            if (isBool(a)) {
-                a = section;
-            }
-            else if (isString(a)) {
-                a = [a];
-            }
-
-            return animate(node, a, function(){
-                if (section === "show" && !skipDisplay) {
-
-                    var p = new Promise;
-
-                    raf(function(){
-                        node.style.display = cfg.show.display || "block";
-                        p.resolve();
-                    });
-
-                    return p;
-                }
-            }, false);
-        },
-
-        removeElem: function() {
-
-            var self = this,
-                node = self.node;
-
-            self.overlay.remove();
-
-            if (node && node.parentNode) {
-                raf(function(){
-                    if (!self.visible) {
-                        node.parentNode.removeChild(node);
-                    }
-                });
-            }
-        },
-
-        appendElem: function() {
-
-
-
-            var self    = this,
-                cfg     = self.cfg,
-                body    = window.document.body,
-                rnd	    = cfg.render,
-                to      = rnd.appendTo || body;
-
-            self.overlay.append();
-
-            if (self.node && cfg.render.appendTo !== false) {
-                to.appendChild(self.node);
-            }
-        },
-
-
-        /* **** Destroy **** */
-
-        destroyElem: function() {
-
-            var self = this,
-                node = self.node;
-
-            self.setHandlers("unbind", "_self");
-            self.bindSelfOnRender = true;
-
-            self.pointer.remove();
-            self.overlay.remove();
-
-            if (node) {
-                if (!self.cfg.render.keepInDOM) {
-                    node.parentNode && node.parentNode.removeChild(node);
-                }
-                self.node = null;
-            }
-
-            self.trigger("lifetime", self);
-        },
-
-        /**
-         * Destroy dialog.
-         * @access public
-         * @method
-         */
-        destroy: function() {
-
-            var self = this;
-
-            self.setHandlers("unbind");
-
-            self.trigger("destroy", self);
-            self.destroyElem();
-
-
-            self.overlay && self.overlay.$destroy();
-            self.pointer && self.pointer.$destroy();
-            self.position && self.position.$destroy();
+        }
+        catch (ex) {
+            console.log(ex);
+            counter = 0;
         }
 
-    }, {
-        defaults: null
-    });
+        if (counter === 0) {
+            p.resolve();
+        }
+
+        setTimeout(function(){
+            p.resolve();
+        }, 1000);
+
+        return p;
+    },
 
 
+    initMenuItem: function() {
+        return nextUid();
+    },
 
-    return Dialog;
+    toggleMenuItem: function(open, id) {
+        var self = this;
+        async(function(){
+            self.trigger("menu-toggle", id, !open)
+        });
+        
+        return !open;
+    },
 
-}());
+    goto: function(url) {
+        if (url.substr(0,1) === '#') {
+            window.location.href = url;
+        }
+        else {
+            mhistory.push(url);
+        }
+    }
+});
 
 
 
 Component.$extend({
-
-    $class: "dialog.Component",
-
-    dialog: null,
-    dialogPreset: null,
-    dialogCfg: null,
-
-    dialogNode: null,
-
-    hidden: true,
-
-    target: null,
-    isTooltip: false,
-
-    $init: function(cfg) {
-
-        var self = this;
-
-        if (self.isTooltip) {
-            self.target = cfg.node;
-            cfg.node = null;
-        }
-
-        self.$super(cfg);
-    },
+    $class: "DocsContent",
+    template: ".content.template",
 
     initComponent: function() {
+        var self = this;
+        self.scope.content = {
+            template: null
+        };
 
-        var self    = this;
-
-        self.$super();
-        self._createDialog();
+        self.contentId.on("change", self.onContentIdChange, self);
+        self.onContentIdChange(self.contentId.getValue() || self.findFirstItem());
     },
 
-    _getDialogCfg: function() {
+    onContentIdChange: function(contentId) {
+        var self = this;
 
-        var self    = this;
+        if (!contentId) {
+            return;
+        }
 
-        return extend({}, self.dialogCfg, {
-            preset: self.dialogPreset,
-            render: {
-                el: self.dialogNode || self.node,
-                keepInDOM: true
+        return new Promise(function(resolve){
+            async(function(){
+                self.scope.$app.setLoading(true, true);
+                resolve();
+            }, null, [], 100);
+        })
+        .then(function(){
+            return new Promise(function(resolve){
+                raf(function(){
+                    self.scope.content = self.scope.$app.getContentItem(contentId);
+                    self.scope.$check();
+                    resolve();
+                });
+            });
+        })
+        .then(function(){
+            return self.scope.$app.highlightAllUnprocessed();
+        })
+        .then(function(){
+            return new Promise(function(resolve) {
+                raf(function(){
+                    self.scope.$app.setLoading(false);
+                    resolve();
+                });
+            });
+        });
+    }  
+});
+
+
+
+
+Component.$extend({
+    $class: "DocsItem",
+    template: "item-component",
+
+    initComponent: function() {
+        var self = this;
+        self.scope.tpl = '';
+
+        self.itemId.on("change", self.onItemIdChange, self);
+        self.onItemIdChange(self.itemId.getValue() || self.findFirstItem());
+    },
+
+    findFirstItem: function() {
+        var a = select(".bd-toc-sublink");
+        if (a.length) {
+            a = a[0];
+            if (a.href) {
+                var itemId = a.href.split("/item/");
+                if (itemId.length) {
+                    return itemId[1];
+                }
             }
-        }, true, true);
+        }
     },
 
-    _createDialog: function() {
-
-        var self    = this;
-        self.dialog = new Dialog(self._getDialogCfg());
-        self.dialog.on("show", self.onDialogShow, self);
-        self.dialog.on("hide", self.onDialogHide, self);
-        self.dialog.on("before-show", self.onBeforeDialogShow, self);
-        self.dialog.on("before-hide", self.onBeforeDialogHide, self);
-        self.dialog.on("destroy", self.onDialogDestroy, self);
-    },
-
-    getDialog: function() {
-        return this.dialog;
-    },
-
-    // skips the append part
-    onRenderingFinished: function() {
+    onItemIdChange: function(itemId) {
         var self = this;
-        self.rendered   = true;
-        self.afterRender();
-        self.trigger('after-render', self);
-    },
 
-    show: function(e) {
-        if (e && !(e instanceof DomEvent)) {
-            e = null;
+        if (!itemId) {
+            return;
         }
 
-        this.dialog.show(e);
-    },
+        return new Promise(function(resolve){
+            async(function(){
+                self.scope.$app.setLoading(true, true);
+                resolve();
+            }, null, [], 100);
+        })
+        .then(function(){
+            return new Promise(function(resolve){
+                raf(function(){
+                    self.scope.item = self.scope.$app.getItem(itemId);
+                    self.scope.$check();
+                    resolve();
+                    console.log(1)
+                });
+            });
+        })
+        .then(function(){
+            try {
+                return self.scope.$app.highlightAllUnprocessed();
+            }
+            catch (ex) {
+                return Promise.resolve();
+            }
+        })
+        .then(function(){
+            return new Promise(function(resolve) {
+                raf(function(){
+                    self.scope.$app.setLoading(false);
+                    resolve();
+                });
+            });
+        });
+    }  
+});
 
-    hide: function(e) {
 
-        if (e && !(e instanceof DomEvent)) {
-            e = null;
-        }
 
-        this.dialog.hide(e);
-    },
 
-    onBeforeDialogShow: function() {
-
-        var self = this;
-        if (!self.rendered) {
-            self.render();
-        }
-
-        self.template.setAnimation(true);
-        self.hidden = false;
-    },
-
-    onDialogShow: function() {
-        var self = this;
-        self.onShow();
-        self.trigger("show", self);
-    },
-
-    onBeforeDialogHide: function() {
-
-    },
-
-    onDialogHide: function() {
-        var self = this;
-        if (!self.$destroyed) {
-            self.template.setAnimation(false);
-            self.hidden = true;
-            self.onHide();
-            self.trigger("hide", self);
-        }
-    },
-
-    onDialogDestroy: function() {
-        var self    = this;
-
-        if (!self.$destroying) {
-            self.dialog = null;
-            self.$destroy();
-        }
-    },
-
-    destroy: function() {
+View.$extend({
+    $class: "DocsView",
+    
+    initView: function() {
 
         var self    = this;
 
-        if (self.dialog) {
-            self.dialog.destroy();
-        }
+        self.route = [
+            {
+                regexp: /\/item\//,
+                cmp: "DocsItem",
+                id: "item",
+                default: true,
+                params: [
+                    {
+                        name: "itemId",
+                        regexp: /item\/(.+)/
+                    }
+                ]
+            },
+            {
+                regexp: /\/content\//,
+                cmp: "DocsContent",
+                id: "content",
+                default: true,
+                params: [
+                    {
+                        name: "contentId",
+                        regexp: /content\/(.+)/
+                    }
+                ]
+            }
+        ];
+    }
+});
 
-        self.$super();
 
+nsAdd("filter.highlightJson", function(input, scope, prop) {
+    
+    var hl = Prism.highlight(input, Prism.languages.javascript),
+        r = /\/\*fold-start ([^*]+)\*\//,
+        startSpan, endSpan, startReg, endReg,
+        start, end, key,
+        match;
+
+    while ((match = hl.match(r)) !== null) {
+        key = match[1];
+        startSpan = '<span class="token comment">/*fold-start '+key+'*/</span>';
+        endSpan = '<span class="token comment">/*fold-end '+key+'*/</span>';
+        startReg = new RegExp('<span class="token comment">/\\*fold-start '+key+'\\*/</span>[\\r\\n]');
+        endReg = new RegExp('([\\r\\n\\s]*)</div><span class="token comment">/\\*fold-end '+key+'\\*/</span>');
+        start = hl.indexOf(startSpan);
+        end = hl.indexOf(endSpan);
+
+        hl = hl.substring(0, start + startSpan.length + 1) + 
+            '<div {show}="this.show_'+key+'">' +
+            hl.substring(start + startSpan.length + 1, end) +
+            '</div>' +
+            hl.substr(end);
+
+        hl = hl.replace(
+            startReg, 
+            '<a class="code-fold-expander" '+
+                '{init}="this.show_'+key+' = false" '+
+                '(click)="this.show_'+key+' = !this.show_'+key+'"' +
+                '{class.collapsed}="!this.show_'+key+'"' +
+                '{class.expanded}="this.show_'+key+'"' +
+                'href="#">'+
+                '<span class="cfe-expand">+</span>'+
+                '<span class="cfe-collapse">-</span>'+
+            '</a>'
+        );
+
+        hl = hl.replace(endReg, function(match, space){
+            space = space.replace(/[\r\n]/g, '');
+            return '</div><span {show}="this.show_'+key+'">'+space+'</span>';
+        });
     }
 
+    return hl;
+});
+
+
+nsAdd("filter.navFilter", function(input, scope, where) {
+    if (isArray(input)) {
+        return input.filter(function(nav){
+            return nav.value.where == where;
+        });
+    }
+    return [];
 });
 
 
 
+var globalCache = Cache.global();
 
 
-ns.register("validator.messages", {
-    required: 		"This field is required.",
-    remote:	 		"Please fix this field.",
-    email: 			"Please enter a valid email address.",
-    url: 			"Please enter a valid URL.",
-    date: 			"Please enter a valid date.",
-    dateISO: 		"Please enter a valid date (ISO).",
-    number: 		"Please enter a valid number.",
-    digits: 		"Please enter only digits.",
-    creditcard: 	"Please enter a valid credit card number.",
-    equalTo: 		"Please enter the same value again.",
-    accept: 		"Please enter a value with a valid extension.",
-    maxlength: 		"Please enter no more than {0} characters.",
-    minlength: 		"Please enter at least {0} characters.",
-    rangelength: 	"Please enter a value between {0} and {1} characters long.",
-    range: 			"Please enter a value between {0} and {1}.",
-    max: 			"Please enter a value less than or equal to {0}.",
-    min: 			"Please enter a value greater than or equal to {0}."
+
+var getCurly = globalCache.add("file.*.comment.getCurly", 
+    function(content, start, backwards, returnIndexes, brakets) {
+
+    var left, right,
+        i, l,
+        first, last,
+        char,
+        openChar = brakets ? brakets[0] : '{',
+        closeChar = brakets ? brakets[1] : '}';
+
+    if (!backwards) {
+
+        left    = 0;
+        right   = 0;
+        i       = start || 0;
+        l       = content.length;
+        first   = null;
+
+        for (; i < l; i++) {
+
+            char = content.charAt(i);
+
+            if (char === openChar) {
+                left++;
+                if (first === null) {
+                    first = i + 1;
+                }
+            }
+            else if (char === closeChar && first !== null) {
+                right++;
+            }
+
+            if (left > 0 && left == right) {
+                last = i;
+                break;
+            }
+        }
+    }
+    else {
+
+        left    = 0;
+        right   = 0;
+        i       = start || content.length - 1;
+        last    = null;
+
+        for (; i >= 0; i--) {
+
+            char = content.charAt(i);
+
+            if (char === closeChar) {
+                right++;
+                if (last === null) {
+                    last = i;
+                }
+            }
+            else if (char === openChar && last !== null) {
+                left++;
+            }
+
+            if (left > 0 && left == right) {
+                first = i + 1;
+                break;
+            }
+        }
+    }
+
+    if (first && last) {
+        if (returnIndexes) {
+            return [first, last];
+        }
+        else {
+            return content.substring(first, last);
+        }
+    }
+
+    return null;
 });
 
 
-///^((https?|ftp):\/\/|)(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i;
 
-// https://gist.github.com/dperini/729294
-var rUrl = new RegExp(
-    "^" +
-        // protocol identifier
-    "(?:(?:https?|ftp)://)" +
-        // user:pass authentication
-    "(?:\\S+(?::\\S*)?@)?" +
-    "(?:" +
-        // IP address exclusion
-        // private & local networks
-    "(?!(?:10|127)(?:\\.\\d{1,3}){3})" +
-    "(?!(?:169\\.254|192\\.168)(?:\\.\\d{1,3}){2})" +
-    "(?!172\\.(?:1[6-9]|2\\d|3[0-1])(?:\\.\\d{1,3}){2})" +
-        // IP address dotted notation octets
-        // excludes loopback network 0.0.0.0
-        // excludes reserved space >= 224.0.0.0
-        // excludes network & broacast addresses
-        // (first & last IP address of each class)
-    "(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])" +
-    "(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}" +
-    "(?:\\.(?:[1-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))" +
-    "|" +
-        // host name
-    "(?:(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)" +
-        // domain name
-    "(?:\\.(?:[a-z\\u00a1-\\uffff0-9]-*)*[a-z\\u00a1-\\uffff0-9]+)*" +
-        // TLD identifier
-    "(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))" +
-    ")" +
-        // port number
-    "(?::\\d{2,5})?" +
-        // resource path
-    "(?:/\\S*)?" +
-    "$", "i"
-);
+var toJsonTemplate = (function() {
+
+    var LINE_SIZE = 80;
+
+    var defaults = {
+        "int": 1,
+        "string": "",
+        "object": {},
+        "array": [],
+        "bool": true,
+        "boolean": true,
+        "float": 0.5,
+        "datetime": "0000-00-00T00:00:00+00:00"
+    };
+
+    var childrenToObject = function(o, item, cache) {
+        item.children.forEach(function(grp){
+            grp.items.forEach(function(child){
+
+                var name = child.name,
+                    type = child.plainFlags.type,
+                    val = child.plainFlags.value || 
+                            child.plainFlags.default,
+                    key, descr,
+                    id;
+                
+                if (!name) {
+                    return;
+                }
+
+                type && (type = type[0]);
+                val && (val = val[0]);
+
+                if (!type) {
+                    return;
+                }
+
+                id = nextUid();
+                key = name +"_"+ id;
+
+                if (!val) {
+                    val = defaults[type];   
+                }
+                
+                switch (type) {
+                    case "bool":
+                    case "boolean": {
+                        val = toBool(val);
+                        break;
+                    }
+                    case "int": {
+                        val = parseInt(val);
+                        break;
+                    }
+                    case "float": {
+                        val = parseFloat(val);
+                        break;
+                    }
+                }
+
+                o[key] = val;
+
+                cache[key] = {
+                    id: id,
+                    name: name,
+                    type: type,
+                    descr: null
+                };
+
+                if (child.hasOwnProperty("description")) {
+                    cache[key].descr = child.description;
+                }
+
+                if (child.children.length) {
+                    if (type === "object") {
+                        o[key] = {};
+                        childrenToObject(o[key], child, cache);
+                    }
+                    else if (type === "array") {
+                        o[key] = [{}];
+                        childrenToObject(o[key][0], child, cache);
+                    }
+                }
+            });
+        });
+    };
+
+    var buildComment = function(item, offset, lineSize) {
+        var lines = [],
+            d, line, w, descr, descrContent,
+            pad = " ".repeat(offset);
+
+        if (!item.descr || !item.descr.length) {
+            
+        }
+        else {
+            
+            descr = item.descr;
+            line = "";
+
+            while (descr.length > 0) {
+                descrContent = descr.shift().content.split(/[\r\n]/);
+                while (descrContent.length > 0) {
+                    d = descrContent.shift();
+                    d = d.split(" ");
+
+                    while (d.length > 0) {
+                        w = d.shift();
+                        if (offset + 3 + w.length + 1 <= lineSize) {
+                            line += w + " ";
+                        }
+                        else {
+                            lines.push(pad + '// ' + line);
+                            line = "";
+                        }
+                    }
+
+                    if (line.length > 0) {
+                        lines.push(pad + '// ' + line);
+                        line = "";
+
+                    }
+                }
+            }
+        }
+
+        return lines.join("\n");
+    };
+
+    var putComments = function(json, o, cache, lineSize, withFolding) {
+        var key, item, r, comment, type, fold;
+
+        if (!json) {
+            return "";
+        }
+
+        for (key in cache) {
+            item = cache[key];
+            type = item.type;
+
+            r = new RegExp('^(\\s+)"' + key + '":\\s(.+)$', 'im');
+
+            json = json.replace(r, function(match, pref, rest) {
+                var comment = buildComment(
+                    item, 
+                    //match.length - item.id.length - 1, 
+                    pref.length,
+                    lineSize
+                );
+                if (comment) {
+                    comment += "\n";
+                }
+                return comment + pref +'"'+ key +'": '+ rest;
+            });
+
+            fold = null;
+
+            if (type === "array" || type === "object") {
+                json = json.replace(r, function(match, pref, rest) {
+
+                    var inx = json.indexOf(key) + key.length,
+                        brakets = type === "array" ? "[]" : "{}",
+                        inxs = getCurly(json, inx, false, true, brakets),
+                        part = json.substring(inxs[0], inxs[1]);
+
+                    if (trim(part).length > 50) {
+                        fold = {
+                            inxs: inxs,
+                            part: part
+                        };
+                    }
+
+                    return pref +'"'+ key +'": '+ rest;
+                });
+            }
+
+            if (withFolding && fold) {
+                json = json.substring(0, fold.inxs[0]) + 
+                         '/*fold-start '+key+'*/' +
+                            fold.part + 
+                        '/*fold-end '+key+'*/' +
+                        json.substr(fold.inxs[1]);
+            }
+            
+            json = json.replace(key, item.name);
+        }
+
+        return json;
+    };
+
+    return function(item, opt) {
+
+        if (item.$$jsonPresentation) {
+            return item.$$jsonPresentation;
+        }
+
+        var type = item.plainFlags.type,
+            o = {},
+            cache = {};
+
+        opt = opt || {};
+        type && (type = type[0]);
+
+        if (type === "array") {
+            o = [{}];
+            childrenToObject(o[0], item, cache);
+        }
+        else {
+            childrenToObject(o, item, cache);
+        }
+
+        var json = JSON.stringify(o, null, 2);
+
+        json = putComments(json, o, cache, LINE_SIZE, opt.withFolding);
+
+        item.$$jsonPresentation = json;
+        return json;
+    };
+}());
 
 
-
-ns.register("validator.checkable", function(elem) {
-    return /radio|checkbox/i.test(elem.type);
+nsAdd("filter.presentAsJson", function(input, scope, withFolding) {
+    return toJsonTemplate(input, {
+        withFolding: withFolding || false
+    });
 });
 
-function eachNode(el, fn, context) {
-    var i, len,
-        children = el.childNodes;
+var prismClass = function(fileType){
 
-    if (fn.call(context, el) !== false) {
-        for(i =- 1, len = children.length>>>0;
-            ++i !== len;
-            eachNode(children[i], fn, context)){}
+    fileType = fileType.replace("language-", "");
+
+    if (fileType.indexOf('txt-') === 0) {
+        fileType = fileType.split('-')[1];
+    }
+
+    switch (fileType) {
+        case "js":
+        case "json":
+            return "language-javascript";
+        default:
+            return "language-" + fileType;
     }
 };
 
 
 
-
-
-
-
-(function(){
-
-    var checkable = ns.get("validator.checkable");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    return ns.register("validator.getLength", function(value, el) {
-        var l = 0;
-        switch( el.nodeName.toLowerCase() ) {
-            case 'select':
-                eachNode(el, function(node){
-                    if (node.selected) {
-                        l++;
-                    }
-                });
-                return l;
-            case 'input':
-                if (checkable(el)) {
-                    if (el.form) {
-                        eachNode(el.form, function (node) {
-                            if (node.type == el.type && node.name == el.name && node.checked) {
-                                l++;
-                            }
-                        });
-                    }
-                    else {
-                        var parent,
-                            inputs,
-                            i, len;
-
-                        if (isAttached(el)) {
-                            parent  = el.ownerDocument;
-                        }
-                        else {
-                            parent = el;
-                            while (parent.parentNode) {
-                                parent = parent.parentNode;
-                            }
-                        }
-
-                        inputs  = select("input[name="+ el.name +"]", parent);
-                        for (i = 0, len = inputs.length; i < len; i++) {
-                            if (inputs[i].checked) {
-                                l++;
-                            }
-                        }
-                    }
-                    return l;
-                }
-        }
-        return value.length;
-    })
-
-}());
-
-
-
-
-
-
-(function(){
-
-    var checkable   = ns.get("validator.checkable"),
-        getLength   = ns.get("validator.getLength");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    return ns.register("validator.empty", function(value, element) {
-
-        if (!element) {
-            return value == undf || value === '';
-        }
-
-        switch(element.nodeName.toLowerCase()) {
-            case 'select':{
-                // could be an array for select-multiple or a string, both are fine this way
-                var val = getValue(element);
-                return !val || val.length == 0;
-            }
-            case 'input':{
-                if (checkable(element))
-                    return getLength(value, element) == 0;
-                break;
-            }
-        }
-
-        return trim(value).length == 0;
-    });
-
-}());
-
-
-
-
-
-
-
-(function(){
-
-    var empty = ns.get("validator.empty"),
-        getLength = ns.get("validator.getLength");
-
-    // from http://bassistance.de/jquery-plugins/jquery-plugin-validation/
-    // i've changed most of the functions, but the result is the same.
-    // this === field's api.
-
-    return ns.register("validator.methods", {
-
-        required: function(value, element, param) {
-            if (param === false) {
-                return true;
-            }
-            return !empty(value, element);
-        },
-
-        regexp: function(value, element, param) {
-            var reg = param instanceof RegExp ? param : new RegExp(param);
-            return empty(value, element) || reg.test(value);
-        },
-
-        notregexp: function(value, element, param) {
-            var reg = param instanceof RegExp ? param : new RegExp(param);
-            return empty(value, element) || !reg.test(value);
-        },
-
-        minlength: function(value, element, param) {
-            return empty(value, element) ||
-                   (
-                       element ?
-                       getLength(trim(value), element) >= param :
-                       value.toString().length >= param
-                   );
-        },
-
-        maxlength: function(value, element, param) {
-            return empty(value, element) ||
-                   (
-                       element ?
-                       getLength(trim(value), element) <= param:
-                       value.toString().length <= param
-                   );
-        },
-
-        rangelength: function(value, element, param) {
-            var length = element ? getLength(trim(value), element) : value.toString().length;
-            return empty(value, element) || ( length >= param[0] && length <= param[1] );
-        },
-
-        min: function(value, element, param) {
-            return empty(value, element) || parseInt(value, 10) >= param;
-        },
-
-        max: function(value, element, param) {
-            return empty(value, element) || parseInt(value, 10) <= param;
-        },
-
-        range: function(value, element, param) {
-            value = parseInt(value, 10);
-            return empty(value, element) || ( value >= param[0] && value <= param[1] );
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/email
-        email: function(value, element) {
-            // contributed by Scott Gonzalez: http://projects.scottsplayground.com/email_address_validation/
-            return empty(value, element) || /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?$/i.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/url
-        url: function(value, element) {
-            // contributed by Scott Gonzalez: http://projects.scottsplayground.com/iri/
-            return empty(value, element) || rUrl.test(value);
-            //	/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+;=]|:|@)|\/|\?)*)?$/i.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/date
-        date: function(value, element) {
-            return empty(value, element) || !/Invalid|NaN/.test(new Date(value));
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/dateISO
-        dateiso: function(value, element) {
-            return empty(value, element) || /^\d{4}[\/-]\d{1,2}[\/-]\d{1,2}$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/number
-        number: function(value, element) {
-            return empty(value, element) || /^-?(?:\d+|\d{1,3}(?:,\d{3})+)(?:\.\d+)?$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/digits
-        digits: function(value, element) {
-            return empty(value, element) || /^\d+$/.test(value);
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/creditcard
-        // based on http://en.wikipedia.org/wiki/Luhn
-        creditcard: function(value, element) {
-
-            if (empty(value, element)) {
-                return true; // !! who said this field is required?
-            }
-
-            // accept only digits and dashes
-            if (/[^0-9-]+/.test(value)) {
-                return false;
-            }
-
-            var nCheck 	= 0,
-                bEven 	= false,
-                nDigit,
-                cDigit;
-
-            value = value.replace(/\D/g, "");
-
-            for (var n = value.length - 1; n >= 0; n--) {
-
-                cDigit = value.charAt(n);
-                nDigit = parseInt(cDigit, 10);
-
-                if (bEven) {
-                    if ((nDigit *= 2) > 9) {
-                        nDigit -= 9;
-                    }
-                }
-
-                nCheck 	+= nDigit;
-                bEven 	= !bEven;
-            }
-
-            return (nCheck % 10) == 0;
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/accept
-        accept: function(value, element, param) {
-            param = isString(param) ? param.replace(/,/g, '|') : "png|jpe?g|gif";
-            return empty(value, element) || value.match(new RegExp(".(" + param + ")$", "i"));
-        },
-
-        // http://docs.jquery.com/Plugins/Validation/Methods/equalTo
-        equalto: function(value, element, param, api) {
-            // bind to the blur event of the target in order to revalidate whenever the target field is updated
-
-            var f       = api.getValidator().getField(param),
-                target  = f ? f.getElem() : param;
-
-            //var listener = function(){
-            //    removeListener(target, "blur", listener);
-            //    api.check();
-            //};
-
-            return value == getValue(target);
-        },
-
-        notequalto: function(value, element, param, api) {
-
-            var f       = api.getValidator().getField(param),
-                target  = f ? f.getElem() : param;
-
-            //var listener = function(){
-            //    removeListener(target, "blur", listener);
-            //    api.check();
-            //};
-
-            return value != getValue(target);
-        },
-
-        zxcvbn: function(value, element, param) {
-            return zxcvbn(value).score >= parseInt(param);
-        }
-    });
-
-
-}());
-
-
-
-
-ns.register("validator.format", function(str, params) {
-
-    if (isFunction(params)) return str;
-
-    if (!isArray(params)) {
-        params = [params];
-    }
-
-    var i, l = params.length;
-
-    for (i = -1; ++i < l;
-         str = str.replace(new RegExp("\\{" + i + "\\}", "g"), params[i])){}
-
-    return str;
+nsAdd("filter.prismClass", function(input, scope, where) {
+    return prismClass(input);
 });
-
-
-
-
-
-
-
-
-
-
-(function(){
-
-    /* ***************************** FIELD ****************************************** */
-
-
-    var defaults = /*field-options-start*/{
-
-        allowSubmit:		true,			// call form.submit() on field's ENTER keyup
-        alwaysCheck:		false,			// run tests even the field is proven valid and hasn't changed since last check
-        alwaysDisplayState:	false,
-        data:				null,
-        ignore:				null,			// put ignore:true to field config to ignore the field completely
-        disabled:			false,			// make validator disabled for this field initially
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			'',				// css class for a not valid form
-            ajax:			''				// css class for a form while it is being checked with ajax request
-        },
-
-        // if string is provided, considered errorBox: {tag: '...'}
-        errorBox: {
-            cls: 			'',				// add this class to the automatically created element
-            fn:				null, 			// must return dom node (cancels auto creation), receives api as the only param
-            tag:			'',				// create element automatically
-            position:		'after',		// place it before|after the form element
-            elem:			null,			// jquery or dom object or selector (already existing object)
-            enabled:		true			// can be disabled later (toggleErrorBox())
-        },
-
-        // callbacks are case insensitive
-        // you can use camel case if you like.
-        callback: {
-
-            scope:			null,
-
-            destroy:		null,			// called when field's validator is being destroyed. fn(api)
-            statechange:	null,			// when field's state has been changed. fn(api, (boolean) state)
-            errorchange:	null,			// fn(api, error)
-            submit:			null,			// when enter key was pressed. fn(api, event). return false to prevent submitting even
-            // if the form is valid
-            check:          null,           // called after each check (may not be relevant, if there is a ajax check) fn(api, valid)
-            beforeAjax:		null,			// when ajax check is about to be executed. fn(api, requestData)
-            afterAjax:		null,			// when ajax check ended. fn(api)
-
-            displaystate:	null			// use this to display custom field state: fn(api, valid, error)
-        },
-
-        rules: 				{},				// {name: value}
-        // {name: fn(fieldValue, dom, ruleValue, api)}
-        // fn must return error message, false or true.
-        messages: 			{}
-    }/*field-options-end*/;
-
-
-    var fixFieldShorthands = function(options) {
-
-        if (!options) {
-            return {};
-        }
-
-        var fix = function(level1, level2, type) {
-            var value   = options[level1],
-                yes     = false;
-
-            if (value === undf) {
-                return;
-            }
-
-            switch (type) {
-                case "string": {
-                    yes     = isString(value);
-                    break;
-                }
-                case "function": {
-                    yes     = isFunction(value);
-                    break;
-                }
-                case "boolean": {
-                    yes = isBool(value);
-                    break;
-                }
-            }
-            if (yes) {
-                options[level1] = {};
-                options[level1][level2] = value;
-            }
-        };
-
-        fix("errorBox", "enabled", "boolean");
-        fix("errorBox", "tag", "string");
-        fix("errorBox", "fn", "function");
-
-        return options;
-    };
-
-
-    var messages = ns.get("validator.messages"),
-        methods = ns.get("validator.methods"),
-        empty = ns.get("validator.empty"),
-        format = ns.get("validator.format");
-
-
-
-
-    var Field = defineClass({
-        $class: "validator.Field",
-        $mixins: ["mixin.Observable"],
-
-        vldr:           null,
-        elem:           null,
-        rules:          null,
-        cfg:            null,
-
-        input:          null,
-
-        enabled:		true,
-        valid:			null,			// the field has been checked and is valid (null - not checked yet)
-        dirty:			false,			// the field's value changed, hasn't been rechecked yet
-        id:				null,
-        prev:			'',
-        error:			null,
-        errorRule:      null,
-        pending: 		null,
-        rulesNum:		0,
-        displayState:	false,
-        data:			null,
-        checking:		false,
-        checkTmt:		null,
-        errorBox:       null,
-        customError:    false,
-
-        $init: function(elem, options, vldr) {
-            options             = options || {};
-
-            var self            = this,
-                cfg;
-
-            self.cfg            = cfg = extend({}, defaults,
-                fixFieldShorthands(Field.defaults),
-                fixFieldShorthands(options),
-                true, true
-            );
-
-            self.input          = Input.get(elem);
-            self.input.onChange(self.onInputChange, self);
-            self.input.onKey(13, self.onInputSubmit, self);
-
-            self.elem           = elem;
-            self.vldr           = vldr;
-            self.enabled        = !elem.disabled;
-            self.id             = getAttr(elem, 'name') || getAttr(elem, 'id');
-            self.data           = options.data;
-            self.rules			= {};
-
-            cfg.messages        = extend({}, messages, cfg.messages, true, true);
-
-            setAttr(elem, "data-validator", vldr.getVldId());
-
-            if (self.input.radio) {
-                self.initRadio();
-            }
-
-            if (cfg.rules) {
-                self.setRules(cfg.rules, false);
-            }
-
-            self.readRules();
-
-            self.prev 	= self.input.getValue();
-
-            if (cfg.disabled) {
-                self.disable();
-            }
-        },
-
-        getValidator: function() {
-            return this.vldr;
-        },
-
-        initRadio: function() {
-
-            var self    = this,
-                radios  = self.input.radio,
-                vldId   = self.vldr.getVldId(),
-                i,l;
-
-            for(i = 0, l = radios.length; i < l; i++) {
-                setAttr(radios[i], "data-validator", vldId);
-            }
-        },
-
-        /**
-         * Set/add field rules
-         */
-        setRules: function(list, check) {
-
-            var self    = this;
-
-            check = check == undf ? true : check;
-
-            for (var i in list) {
-                self.setRule(i, list[i], false);
-            }
-
-            if (check) {
-                self.check(false);
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Set/add field rule
-         */
-        setRule: function(rule, value, check) {
-
-            var self    = this,
-                rules   = self.rules;
-
-            check = check == undf ? true : check;
-
-            if (value === null) {
-                if (rules[rule]) {
-                    self.rulesNum--;
-                }
-                delete rules[rule];
-            }
-            else {
-                if (!rules[rule]) {
-                    self.rulesNum++;
-                }
-                rules[rule] = value;
-                if (self.valid !== null) {
-                    self.setValidState(false);
-                }
-            }
-
-            if (check) {
-                self.check(false);
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Set rule message
-         */
-        setMessage: function(rule, message) {
-            this.cfg.messages[rule] = message;
-            return this;
-        },
-
-        /**
-         * Set rule messages
-         */
-        setMessages: function(messages) {
-
-            var self = this;
-
-            for (var i in messages) {
-                self.setMessage(i, messages[i]);
-            }
-            return self;
-        },
-
-        /**
-         * Get rule messages
-         */
-        getMessages: function() {
-            return extend({}, this.cfg.messages);
-        },
-
-        /**
-         * Read rules from attributes and classes
-         * (this happens on init)
-         */
-        readRules: function() {
-
-            var self        = this,
-                elem        = self.elem,
-                cls 		= elem.className,
-                found		= {},
-                val, i, name, len;
-
-            for (i in methods) {
-
-                if (methods.hasOwnProperty(i)) {
-
-                    val = getAttr(elem, i) || getAttr(elem, "data-validate-" + i);
-
-                    if (val == undf || val === false) {
-                        continue;
-                    }
-                    if ((i == 'minlength' || i == 'maxlength') && parseInt(val, 10) == -1) {
-                        continue;
-                    }
-
-                    found[i] = val;
-
-                    val = getAttr(elem, "data-message-" + i);
-                    val && self.setMessage(i, val);
-                }
-            }
-
-            if ((val = getAttr(elem, 'remote'))) {
-                found['remote'] = val;
-            }
-
-            if (cls) {
-                cls = cls.split(" ");
-                for (i = 0, len = cls.length; i < len; i++) {
-
-                    name = trim(cls[i]);
-
-                    if (methods[name] || name == 'remote') {
-                        found[name] = true;
-                    }
-                }
-            }
-
-            for (i in found) {
-                self.setRule(i, found[i], false);
-            }
-        },
-
-        /**
-         * Get field rules
-         */
-        getRules: function() {
-            return this.rules;
-        },
-
-        /**
-         * @return boolean
-         */
-        hasRule: function(name) {
-            return this.rules[name] ? true : false;
-        },
-
-        /**
-         * Get field value
-         */
-        getValue: function() {
-            return this.input.getValue();
-        },
-
-        /**
-         * Get user data
-         */
-        getUserData: function() {
-            return this.data;
-        },
-
-
-        /**
-         * Set user data
-         */
-        setUserData: function(data) {
-            var self    = this,
-                old     = self.data;
-            self.data = data;
-            return old;
-        },
-
-        /**
-         * @returns boolean
-         */
-        isEmpty: function() {
-            var self = this;
-            return empty(self.getValue(), self.elem);
-        },
-
-        /**
-         * Enable field validation
-         */
-        enable: function() {
-            var self = this;
-            self.enabled = true;
-            self.vldr.reset();
-            return self;
-        },
-
-        /**
-         * Disable field validation
-         */
-        disable: function() {
-            var self = this;
-            self.enabled = false;
-
-            if (self.valid === false) {
-                self.setValidState(true);
-                self.doDisplayState();
-            }
-            return self;
-        },
-
-        enableDisplayState:	function() {
-            this.displayState = true;
-        },
-
-        disableDisplayState:	function() {
-            this.displayState = false;
-        },
-
-        isDisplayStateEnabled: function() {
-            return this.displayState;
-        },
-
-
-        toggleErrorBox: function(state) {
-
-            var self    = this,
-                cfg     = self.cfg,
-                prev    = cfg.errorBox.enabled;
-
-            cfg.errorBox.enabled = state;
-
-            if (!prev && state && state.displayState && self.valid() === false) {
-                self.doDisplayState();
-            }
-        },
-
-        isEnabled: function() {
-            return this.enabled;
-        },
-
-        getElem: function() {
-            return this.elem;
-        },
-
-        getName: function() {
-            return this.id;
-        },
-
-        getError: function() {
-            return this.error;
-        },
-
-        getErrorRule: function() {
-            return this.errorRule;
-        },
-
-        isValid: function() {
-
-            var self = this;
-
-            if (!self.isEnabled()) {
-                return true;
-            }
-            if (self.customError) {
-                return false;
-            }
-
-            return (self.valid === true && !self.pending) || self.rulesNum === 0;
-        },
-
-        getExactValidState: function() {
-            return this.valid;
-        },
-
-        setCustomError:	function(error, rule) {
-            var self = this;
-            self.customError = error ? true : false;
-            self.setValidState(error ? false : true);
-            self.setError(error === true ? null : error, rule);
-            self.doDisplayState();
-        },
-
-        reset: function() {
-
-            var self = this;
-
-            self.abort();
-            self.dirty 	= false;
-            self.prev 	= '';
-
-            self.setValidState(null);
-            self.setError(null);
-            self.doDisplayState();
-
-            return self;
-        },
-
-        /**
-         * Abort ajax check
-         */
-        abort: function() {
-            var self = this;
-            if (self.pending) {
-                self.pending.abort();
-                self.pending = null;
-            }
-            return self;
-        },
-
-        check: function(force) {
-
-            var self = this,
-                rules = self.rules,
-                cfg = self.cfg,
-                elem = self.elem;
-
-            // disabled field validator always returns true
-            if (!self.isEnabled()) {
-                return true;
-            }
-
-            if (self.customError) {
-                return false;
-            }
-
-            // if there are no rules, we return true
-            if (self.rulesNum == 0 && self.valid !== false) {
-                return true;
-            }
-
-            if (self.checking) {
-                if (!self.checkTmt) {
-                    self.checkTmt	= setTimeout(bind(self.checkTimeout, self), 100);
-                }
-                return self.valid === true;
-            }
-
-            self.checking = true;
-
-            // nothing changed since last check
-            // we need to find a way to indicate that (if) this field depends on others
-            // and state.dirty doesn't really work in this case
-            if (force !== true &&
-                !rules.equalTo && !rules.notEqualTo &&
-                !self.dirty && self.valid !== null &&
-                !cfg.alwaysCheck) {
-
-                if (!self.pending) {
-                    self.doDisplayState();
-                }
-
-                self.checking = false;
-                return self.valid === true;
-            }
-
-            var valid 			= true,
-                remote 			= false,
-                val				= self.getValue(),
-                msg;
-
-            for (var i in rules) {
-
-                // we always call remote check after all others
-                if (i == 'remote') {
-                    if (self.dirty || cfg.alwaysCheck || self.valid === null || force === true) {
-                        if (val || rules[i].checkEmpty) {
-                            remote = true;
-                        }
-                    }
-                    continue;
-                }
-
-                var fn = isFunction(rules[i]) ? rules[i] : methods[i];
-
-                if ((msg = fn.call(self.$$callbackContext, val, elem, rules[i], self)) !== true) {
-                    valid = false;
-                    self.setError(format(msg || cfg.messages[i] || "", rules[i]), i);
-                    break;
-                }
-            }
-
-            remote	= remote && valid;
-
-            if (valid) {
-                self.setError(null);
-            }
-
-            if (!remote) {
-                self.setValidState(valid);
-                self.doDisplayState();
-            }
-            else {
-                self.ajaxCheck();
-            }
-
-            self.dirty = false;
-            self.checking = false;
-
-            self.trigger("check", self, self.valid);
-
-            return self.valid === true && !remote;
-        },
-
-        doDisplayState: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                valid 		= self.isValid(),
-                errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid,
-                elem        = self.elem;
-
-            if (!self.displayState && !cfg.alwaysDisplayState) {
-                valid	= null;
-            }
-
-            if (self.valid === null) {
-                valid 	= null;
-            }
-
-            if (errorCls) {
-                valid === false ? addClass(elem, errorCls) : removeClass(elem, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(elem, validCls) : removeClass(elem, validCls);
-            }
-
-            var box 	= self.getErrorBox(),
-                error 	= self.error;
-
-            if (box) {
-                if (valid === false && error) {
-                    box.innerHTML = state.error;
-                }
-                box.style.display = valid !== false || !error || !cfg.errorBox.enabled ? 'none' : 'block';
-            }
-
-            self.trigger('display-state', self, valid, self.error);
-        },
-
-        /**
-         * @returns jQuery
-         */
-        getErrorBox: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                eb			= cfg.errorBox;
-
-            if (eb.tag || eb.fn || eb.selector) {
-                if (!self.errorBox && eb.enabled) {
-                    self.createErrorBox();
-                }
-                return self.errorBox;
-            }
-            else {
-                return null;
-            }
-        },
-
-
-        destroy: function() {
-
-            var self = this;
-
-            removeAttr(self.elem, "data-validator");
-
-            if (self.errorBox) {
-                self.errorBox.parentNode.removeChild(self.errorBox);
-            }
-
-            self.input.destroy();
-        },
-
-
-        isPending: function() {
-            return this.pending !== null;
-        },
-
-        setValidState: function(valid) {
-
-            var self = this;
-
-            if (self.valid !== valid) {
-                self.valid = valid;
-                self.trigger('state-change', self, valid);
-            }
-        },
-
-
-        setError:		function(error, rule) {
-
-            var self = this;
-
-            if (self.error != error || self.errorRule != rule) {
-                self.error = error;
-                self.errorRule = rule;
-                self.trigger('error-change', self, error, rule);
-            }
-        },
-
-
-        checkTimeout: function() {
-
-            var self = this;
-
-            self.checkTmt = null;
-            if (self.checking) {
-                return;
-            }
-            self.check(false);
-        },
-
-        onInputChange: function(val) {
-
-            var self    = this,
-                prev    = self.prev;
-
-            if (prev !== val) {
-                self.dirty = true;
-                self.customError = false;
-                self.abort();
-                if (!self.pending) {
-                    self.check(false);
-                }
-
-                self.prev = self.input.getValue();
-            }
-        },
-
-        onInputSubmit: function(e) {
-
-            e = normalizeEvent(e);
-
-            if (!e.isDefaultPrevented || !e.isDefaultPrevented()) {
-                var res = this.trigger("submit", this, e);
-                if (res === false) {
-                    e.preventDefault();
-                    return false;
-                }
-            }
-        },
-
-        createErrorBox: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                eb		= cfg.errorBox,
-                tag 	= eb.tag,
-                cls		= eb.cls,
-                fn		= eb.fn,
-                pos		= eb.position,
-                dom		= eb.elem;
-
-            if (fn) {
-                self.errorBox = fn.call(self.$$callbackContext, self);
-            }
-            else if(dom) {
-                self.errorBox = dom;
-            }
-            else {
-                self.errorBox = window.document.createElement(tag);
-                self.errorBox.className = cls;
-
-                var r = self.input.radio,
-                    f = r ?
-                        r[r - 1] :
-                        self.elem;
-
-                if (pos == 'appendParent') {
-                    f.parentNode.appendChild(self.errorBox);
-                }
-                else if (pos == "before") {
-                    f.parentNode.insertBefore(self.errorBox, f);
-                }
-                else {
-                    f.parentNode.insertBefore(self.errorBox, f.nextSibling);
-                }
-            }
-        },
-
-        ajaxCheck: function() {
-
-            var self    = this,
-                rules   = self.rules,
-                elem    = self.elem,
-                rm		= rules['remote'],
-                val 	= self.getValue(),
-                cfg     = self.cfg;
-
-            var acfg 	= extend({}, isString(rm) ? {url: rm} : rm, true);
-
-            //ajax.success 	= self.onAjaxSuccess;
-            //ajax.error 		= self.onAjaxError;
-            acfg.data 		= acfg.data || {};
-            acfg.data[acfg.paramName || getAttr(elem, 'name') || getAttr(elem, 'id')] = val;
-
-            if (!acfg.handler) {
-                acfg.dataType 	= 'text';
-            }
-
-            acfg.cache 		= false;
-
-            if (cfg.cls.ajax) {
-                addClass(elem, cfg.cls.ajax);
-            }
-
-            self.trigger('before-ajax', self, acfg);
-
-            self.pending = ajax(acfg);
-
-            self.pending.done(bind(self.onAjaxSuccess, self));
-            self.pending.fail(bind(self.onAjaxError, self));
-        },
-
-        onAjaxSuccess: function(data) {
-
-            var self    = this,
-                rules   = self.rules,
-                cfg     = self.cfg;
-
-            self.pending 	= null;
-            var valid 		= true;
-
-            if (rules['remote'].handler) {
-
-                var res = rules['remote'].handler.call(self.$$callbackContext, self, data);
-
-                if (res !== true) {
-                    self.setError(format(res || cfg.messages['remote'] || "", rules['remote']), 'remote');
-                    valid 		= false;
-                }
-            }
-            else {
-                if (data) {
-                    self.setError(data, 'remote');
-                    valid 		= false;
-                }
-                else {
-                    self.setError(null);
-                }
-            }
-
-            if (cfg.cls.ajax) {
-                removeClass(self.elem, cfg.cls.ajax);
-            }
-
-            self.setValidState(valid);
-            self.doDisplayState();
-            self.trigger('after-ajax', self);
-        },
-
-        onAjaxError: function(xhr, status) {
-
-            var self        = this,
-                cfg         = self.cfg,
-                response    = xhr.responseData,
-                rules       = self.rules;
-
-            if (response && rules['remote'].handler) {
-
-                var res = rules['remote'].handler.call(self.$$callbackContext, self, response);
-
-                if (res !== true) {
-                    self.setError(format(res || cfg.messages['remote'] || "", rules['remote']), 'remote');
-                }
-            }
-
-            if (cfg.cls.ajax) {
-                removeClass(self.elem, cfg.cls.ajax);
-            }
-
-            self.pending = null;
-
-            if (status != 'abort' && xhr != "abort") {
-                self.setValidState(false);
-                self.doDisplayState();
-                self.trigger('after-ajax', self);
-            }
-        }
-    }, {
-
-        defaults: {},
-        messages: {}
-
-    });
-
-
-    return Field;
-
-}());
-
-
-
-
-
-
-
-
-
-(function(){
-
-
-/* ***************************** GROUP ****************************************** */
-
-
-
-    var defaults	= /*group-options-start*/{
-
-        alwaysCheck:		false,			// run tests even the field is proven valid and hasn't changed since last check
-        alwaysDisplayState:	false,
-        disabled:			false,			// initialize disabled
-
-        value:				null,			// fn(api, vals)
-        elem:				null,			// dom node
-        errorBox:			null,			// fieldId|dom|jquery|selector|fn(api)
-        // fn must return dom|jquery object
-        errorField:			null,			// fieldId - relay errors to this field
-
-        data:				null,
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			''				// css class for a not valid form
-        },
-
-        fields:				[],
-        rules:				{},
-        messages:			{},
-
-        callback:		{
-
-            scope:			null,
-
-            destroy:		null,
-            statechange:	null,
-            errorchange:	null,
-            displaystate:	null
-        }
-    }/*group-options-end*/;
-
-
-    var messages = ns.get("validator.messages"),
-        methods = ns.get("validator.methods"),
-        format = ns.get("validator.format");
-
-
-    var Group = defineClass({
-        $class: "validator.Group",
-        $mixins: ["mixin.Observable"],
-
-        fields:         null,
-        rules:          null,
-        cfg:            null,
-        vldr:           null,
-        enabled:		false,
-        invalid:		null,
-        valid:			null,
-        displayState:	false,
-        rulesNum:	    0,
-        error:			null,
-        data:			null,
-        errorBox:		null,
-        el:			    null,
-
-        $init: function(options, vldr) {
-
-            options     = options || {};
-
-            var self            = this,
-                cfg;
-
-            self._vldr          = vldr;
-
-            self.cfg            = cfg = extend({},
-                defaults,
-                Group.defaults,
-                options,
-                true, true
-            );
-
-            self.data           = options.data;
-            self.el             = options.elem;
-            self.fields         = {};
-            self.rules		    = {};
-
-            cfg.messages        = extend({}, messages, cfg.messages, true, true);
-
-            var i, len;
-
-            if (cfg.rules) {
-                self.setRules(cfg.rules, false);
-            }
-
-            if (cfg.fields) {
-                for (i = 0, len = options.fields.length; i < len; i++) {
-                    self.add(vldr.getField(cfg.fields[i]));
-                }
-            }
-
-            self.enabled = !cfg.disabled;
-        },
-
-        /**
-         * Enable group
-         */
-        enable:		function() {
-            this.enabled	= true;
-            return this;
-        },
-
-        /**
-         * Disable group
-         */
-        disable:	function() {
-            this.enabled	= false;
-            return this;
-        },
-
-        /**
-         * Is group enabled
-         * @return {boolean}
-         */
-        isEnabled:	function() {
-            return this.enabled;
-        },
-
-        /**
-         * Are all fields in this group valid
-         * @return {boolean}
-         */
-        isValid:		function() {
-            var self = this;
-            return !self.enabled || (self.invalid === 0 && self.valid === true);
-        },
-
-        /**
-         * @return {boolean|null}
-         */
-        getExactValidState: function() {
-            return this.valid;
-        },
-
-        /**
-         * Reset group
-         */
-        reset:		function() {
-            var self = this;
-            self.invalid	= 0;
-            self.setValidState(null);
-            self.setError(null);
-            self.doDisplayState();
-            return self;
-        },
-
-        /**
-         * Get user data specified in group config
-         */
-        getUserData: function() {
-            return this.data;
-        },
-
-        /**
-         * Get group name
-         */
-        getName: function() {
-            return this.cfg.name;
-        },
-
-        /**
-         * Set group's rules
-         * @param {object} list {rule: param}
-         * @param {bool} check
-         */
-        setRules: 	function(list, check) {
-
-            var self = this;
-
-            check = check == undf ? true : check;
-
-            for (var i in list) {
-                self.setRule(i, list[i], false);
-            }
-
-            if (check) {
-                self.check();
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * @param rule
-         * @param value
-         * @param check
-         */
-        setRule:	function(rule, value, check) {
-
-            var self = this,
-                rules = self.rules;
-
-            check = check == undf ? true : check;
-
-            if (value === null) {
-                if (rules[rule]) {
-                    self.rulesNum--;
-                }
-                delete rules[rule];
-            }
-            else {
-                if (!rules[rule]) {
-                    self.rulesNum++;
-                }
-                rules[rule] = value;
-                if (self.valid !== null) {
-                    self.setValidState(false);
-                }
-            }
-
-            if (check) {
-                self.check();
-            }
-            else {
-                self.setValidState(null);
-            }
-
-            return self;
-        },
-
-        /**
-         * Get group rules
-         * @returns {name: value}
-         */
-        getRules:	function() {
-            return extend({}, this.rules);
-        },
-
-        /**
-         * @returns boolean
-         */
-        hasRule:	function(name) {
-            return this.rules[name] ? true : false;
-        },
-
-        /**
-         * Set group custom error
-         */
-        setError:	function(error) {
-
-            var self = this,
-                cfg = self.cfg;
-
-            if (self.error != error) {
-
-                if (cfg.errorField) {
-                    self.vldr.getField(cfg.errorField).setError(error);
-                    self.error = null;
-                }
-                else {
-                    self.error = error;
-                    self.trigger('error-change', self, error);
-                }
-            }
-        },
-
-        /**
-         * Get current error
-         */
-        getError: function() {
-            return this.error;
-        },
-
-        /**
-         * @returns {id: field}
-         */
-        getFields: function() {
-            return this.fields;
-        },
-
-        enableDisplayState:		function() {
-            this.displayState	= true;
-            return this;
-        },
-
-        disableDisplayState:	function() {
-            this.displayState	= false;
-            return this;
-        },
-
-        check: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                fields  = self.fields,
-                rules   = self.rules;
-
-            if (!self.enabled || self.rulesNum == 0) {
-                self.setValidState(null);
-                self.doDisplayState();
-                return true;
-            }
-
-            self.countInvalid();
-
-            if (self.invalid > 0) {
-                self.setValidState(null);
-                self.doDisplayState();
-                return true;
-            }
-
-            var vals	= {},
-                valid	= true,
-                val		= null,
-                msg,
-                i;
-
-            if (cfg.value) {
-
-                for (i in fields) {
-                    vals[i]	= fields[i].getValue();
-                }
-
-                val	= cfg.value.call(self.$$callbackContext, vals, self);
-            }
-
-            for (i in rules) {
-
-                var fn = isFunction(rules[i]) ? rules[i] : methods[i];
-
-                if ((msg = fn.call(self.$$callbackContext, val, null, rules[i], self, vals)) !== true) {
-
-                    valid = false;
-
-                    if (msg || cfg.messages[i]) {
-                        self.setError(format(msg || cfg.messages[i] || "", rules[i]));
-                    }
-                    else {
-                        self.setError(null);
-                    }
-
-                    break;
-                }
-
-            }
-
-            if (valid) {
-                self.setError(null);
-            }
-
-            self.setValidState(valid);
-            self.doDisplayState();
-
-            return self.valid === true;
-        },
-
-        doDisplayState:			function() {
-
-            var self    = this,
-                valid	= self.valid,
-                cfg     = self.cfg;
-
-            if (!self.displayState && !cfg.alwaysDisplayState) {
-                valid	= null;
-            }
-
-            if (cfg.errorBox) {
-
-                var ebox = self.getErrorBox();
-
-                if (valid !== null) {
-
-                    if (ebox) {
-                        ebox.innerHTML = self.error || '';
-                        ebox.style.display = self.valid === false ? 'block' : 'none';
-                    }
-                }
-                else {
-                    if (ebox) {
-                        ebox.style.display = "none";
-                    }
-                }
-            }
-
-            var errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid;
-
-            valid = self.valid;
-
-            if (errorCls) {
-                valid === false ? addClass(self.el, errorCls) : removeClass(self.el, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(self.el, validCls) : removeClass(self.el, validCls);
-            }
-
-            self.trigger('display-state', self, self.valid);
-        },
-
-        /**
-         * @returns {Element}
-         */
-        getErrorBox: function() {
-
-            var self    = this,
-                cfg     = self.cfg,
-                fields  = self.fields,
-                eb	    = cfg.errorBox;
-
-            if (fields[eb]) {
-                return fields[eb].getErrorBox();
-            }
-            else if (!self.errorBox) {
-
-                if (isFunction(cfg.errorBox)) {
-                    self.errorBox	= cfg.errorBox.call(self.$$callbackContext, self);
-                }
-                else {
-                    self.errorBox	= cfg.errorBox;
-                }
-            }
-
-            return self.errorBox;
-        },
-
-
-        /**
-         * Destroy group
-         */
-        destroy:	function() {
-
-            var self    = this,
-                fields  = self.fields;
-
-            for (var i in fields) {
-                if (fields[i]) {
-                    self.setFieldEvents(fields[i], 'un');
-                }
-            }
-
-            if (self.errorBox) {
-                self.errorBox.parentNode.removeChild(self.errorBox);
-            }
-        },
-
-        add:		function(field) {
-
-            var self    = this,
-                fields  = self.fields,
-                id	    = field.getName();
-
-            if (!fields[id]) {
-                fields[id] 	= field;
-
-                self.setFieldEvents(field, 'on');
-            }
-        },
-
-        setFieldEvents:		function(f, mode) {
-            var self = this;
-            f[mode]('state-change', self.onFieldStateChange, self);
-        },
-
-        remove:		function(field) {
-
-            var self    = this,
-                fields  = self.fields,
-                id	    = field.getName();
-
-            if (fields[id]) {
-                delete fields[id];
-                self.setFieldEvents(field, 'un');
-            }
-
-            return self;
-        },
-
-        setValidState:			function(valid) {
-            var self = this;
-            if (self.valid !== valid) {
-                self.valid = valid;
-                self.trigger('state-change', self, valid);
-            }
-        },
-
-        countInvalid:			function() {
-
-            var self = this,
-                fields = self.fields;
-
-            self.invalid	= 0;
-            for (var i in fields) {
-                self.invalid += fields[i].isValid() ? 0 : 1;
-            }
-        },
-
-        onFieldStateChange:		function(f, valid) {
-            var self = this;
-            self.trigger("field-state-change", self, f, valid);
-            self.check();
-        }
-    }, {
-
-        defaults: {}
-    });
-
-
-
-    return Group;
-
-}());
-
-
-
-
-
-
-
-
-var Validator = (function(){
-
-
-    var validators  = {};
-
-    var Field = MetaphorJs.validator.Field,
-        Group = MetaphorJs.validator.Group;
-
-
-    var defaults = /*validator-options-start*/{
-
-        form:               null,           // form element -- jquery
-
-        all: 				{},				// {} of field properties which work as a preset
-        fields: 			{},				// {field: properties}
-        rules: 				{},				// {field: rules}
-
-        cls: {
-            valid: 			'',				// css class for a valid form
-            error:			'',				// css class for a not valid form
-            checking:		''				// css class for a form while it is being checked with ajax request
-        },
-
-        groups: 			{},				// see groupDefaults. {name: cfg}
-
-        // callbacks are case insensitive
-        // you can use camel case if you like.
-        callback: {
-
-            scope:			null,
-
-            destroy:		null,			// when validator is being destroyd. fn(api)
-            reset:			null,			// when the form was resetted. fn(api)
-            beforesubmit:	null,			// when form is about to be submitted: valid and non-valid. fn(api)
-            submit:			null,			// when form is about to be submitted: only valid. fn(api).
-            // return false to prevent submitting
-            statechange:	null,			// when form's state has been changed. fn(api, state)
-            check:			null,			// fn(api) performe some additional out-of-form checks
-            // if false is returned, form becomes invalid
-
-            displaystate:	null,			// fn(api, valid)
-            displaystatechange:	null		// fn(api, state)
-        }
-    }/*validator-options-end*/;
-
-
-    var Validator = defineClass({
-
-        $class: "Validator",
-        $mixins: ["mixin.Observable"],
-
-        id:             null,
-        el:             null,
-        cfg:            null,
-        enabled: 		false,
-        invalid:		null,					// array of invalid fields
-        pending: 		0,						// number of pending requests
-        grps:			0,						// number of invalid groups
-        outside:		true,					// true - outside check passed or not present
-        submitted:		false,
-        displayState:	false,
-        isForm: 		false,
-        isField: 		false,
-        submitButton: 	null,
-        hidden:			null,
-
-        preventFormSubmit: false,
-
-        fields:         null,
-        groups:         null,
-
-        $init: function(el, preset, options) {
-
-            var self    = this,
-                tag     = el.nodeName.toLowerCase(),
-                cfg;
-
-            self.id     = nextUid();
-            validators[self.id] = self;
-
-            setAttr(el, "data-validator", self.id);
-
-            self.el     = el;
-
-            if (preset && !isString(preset)) {
-                options         = preset;
-                preset          = null;
-            }
-
-            self.cfg            = cfg = extend({}, defaults, Validator.defaults, Validator[preset], options, true, true);
-
-            self.$initObservable(cfg);
-
-            self.isForm         = tag === 'form';
-            self.isField        = /input|select|textarea/.test(tag);
-
-            self.fields         = {};
-            self.groups         = {};
-
-            self.$$observable.createEvent("submit", false);
-            self.$$observable.createEvent("beforesubmit", false);
-
-            self.onRealSubmitClickDelegate  = bind(self.onRealSubmitClick, self);
-            self.resetDelegate = bind(self.reset, self);
-            self.onSubmitClickDelegate = bind(self.onSubmitClick, self);
-            self.onFormSubmitDelegate = bind(self.onFormSubmit, self);
-
-            var i;
-
-            self.initFields();
-
-            var fields  = self.fields;
-
-            for (i in cfg.rules) {
-                if (!fields[i]) {
-                    continue;
-                }
-                fields[i].setRules(cfg.rules[i], false);
-            }
-
-            cfg.rules	= null;
-
-            for (i in cfg.groups) {
-                self.addGroup(i, cfg.groups[i]);
-            }
-
-            self.initForm('bind');
-
-            delete cfg.rules;
-            delete cfg.fields;
-            delete cfg.groups;
-
-            self.enabled = true;
-        },
-
-        getVldId:       function() {
-            return this.id;
-        },
-
-        /**
-         * @returns {Element}
-         */
-        getElem:        function() {
-            return this.el;
-        },
-
-        /**
-         * @return {validator.Group}
-         */
-        getGroup: function(name) {
-            return this.groups[name] || null;
-        },
-
-        /**
-         * @return {validator.Field}
-         */
-        getField:	function(id) {
-            return this.fields[id] || null;
-        },
-
-        /**
-         * Enable validator
-         */
-        enable: function() {
-            this.enabled = true;
-            return this;
-        },
-
-        /**
-         * Disable validator
-         */
-        disable: function() {
-            this.enabled = false;
-            return this;
-        },
-
-        /**
-         * @return boolean
-         */
-        isEnabled: function() {
-            return this.enabled;
-        },
-
-        enableDisplayState:	function() {
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups,
-                i;
-
-            if (self.displayState !== true) {
-
-                self.displayState = true;
-
-                for (i in fields) {
-                    fields[i].enableDisplayState();
-                }
-                for (i in groups) {
-                    groups[i].enableDisplayState();
-                }
-
-                self.trigger('display-state-change', self, true);
-            }
-
-            return self;
-        },
-
-        disableDisplayState:	function() {
-
-            var self    = this,
-                groups  = self.groups,
-                fields  = self.fields,
-                i;
-
-            if (self.displayState !== false) {
-
-                self.displayState = false;
-
-                for (i in fields) {
-                    fields[i].disableDisplayState();
-                }
-                for (i in groups) {
-                    groups[i].disableDisplayState();
-                }
-
-                self.trigger('display-state-change', self, false);
-            }
-
-            return self;
-        },
-
-        /**
-         * @return {boolean}
-         */
-        isDisplayStateEnabled:	function() {
-            return this.displayState;
-        },
-
-
-        /**
-         * Is form valid
-         * @return {boolean}
-         */
-        isValid: function() {
-
-            var self    = this;
-
-            if (self.enabled === false) {
-                return true;
-            }
-            return 	self.invalid === 0 &&
-                      self.pending === 0 &&
-                      self.grps === 0 &&
-                      self.outside === true;
-        },
-
-        getErrors: function(plain) {
-
-            var self    = this,
-                ers     = plain === true ? [] : {},
-                err,
-                i, j,
-                all     = [self.fields, self.groups],
-                curr;
-
-            if (!self.isEnabled()) {
-                return ers;
-            }
-
-            for (j = 0; j < 2; j++) {
-
-                curr = all[j];
-
-                for (i in curr) {
-                    if (curr[i].getExactValidState() === null) {
-                        curr[i].check();
-                    }
-
-                    if (!curr[i].isValid()) {
-
-                        err = curr[i].getError();
-
-                        // it can be invalid, but have no error
-                        if (err) {
-                            if (plain) {
-                                ers.push(err);
-                            }
-                            else {
-                                ers[i] = err;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return ers;
-        },
-
-
-        /**
-         * Check form for errors
-         */
-        check: function() {
-
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups;
-
-            // disabled field validator always returns true
-            if (!self.isEnabled()) {
-                return true;
-            }
-
-            var prevValid	= self.isValid(),
-                nowValid,
-                i;
-
-            for (i in fields) {
-                fields[i].check();
-            }
-
-            for (i in groups) {
-                groups[i].check();
-            }
-
-            self.outside 	= self.trigger('check', self) !== false;
-            nowValid		= self.isValid();
-
-            if (prevValid != nowValid) {
-                self.doDisplayState();
-                self.trigger('state-change', self, false);
-            }
-
-            return nowValid;
-        },
-
-
-        /**
-         * Add field
-         */
-        add: function(node, fieldCfg) {
-
-            var self    = this;
-
-            if (!isField(node)) {
-                return self;
-            }
-            if (getAttr(node, "data-no-validate") !== null) {
-                return self;
-            }
-            if (getAttr(node, "data-validator") !== null) {
-                return self;
-            }
-
-            var id 			= getAttr(node, 'name') || getAttr(node, 'id'),
-                cfg         = self.cfg,
-                fields      = self.fields,
-                fcfg,
-                f;
-
-            if (!id) {
-                return self;
-            }
-
-            fcfg 	= cfg.fields && cfg.fields[id] ? cfg.fields[id] : (fieldCfg || {});
-
-            if (isString(fcfg)) {
-                fcfg 	= {rules: [fcfg]};
-            }
-
-            fcfg 	= extend({}, cfg.all || {}, fcfg, true, true);
-
-            if (fcfg.ignore) {
-                return self;
-            }
-
-            if (!fcfg.callback) {
-                fcfg.callback = {
-                    context:	self.$$callbackContext
-                };
-            }
-
-            f       = new Field(node, fcfg, self);
-            fcfg    = null;
-            id      = f.getName();
-
-            if (fields[id]) {
-                return self; // already added
-            }
-
-            fields[id] = f;
-
-            self.setFieldEvents(f, 'on');
-
-            if (self.displayState) {
-                f.enableDisplayState();
-            }
-
-            if (self.isEnabled() && self.invalid !== null) {
-                f.check();
-            }
-
-            return self;
-        },
-
-        /**
-         * Add group of fields
-         */
-        addGroup:		function(name, cfg) {
-
-            var self    = this,
-                groups  = self.groups;
-
-            if (!groups[name]) {
-
-                cfg.name		= name;
-
-                groups[name]	= new Group(cfg, self);
-                self.setGroupEvents(groups[name], 'on');
-
-                if (self.isEnabled() && self.invalid !== null) {
-                    groups[name].check();
-                }
-            }
-        },
-
-
-        /**
-         * Focus first invalid field
-         */
-        focusInvalid: function() {
-            var fields  = this.fields;
-            for (var i in fields) {
-                if (!fields[i].isValid()) {
-                    fields[i].getElem().focus();
-                    return;
-                }
-            }
-        },
-
-
-        /**
-         * Reset validator
-         */
-        reset: function() {
-
-            var self    = this,
-                fields  = self.fields,
-                groups  = self.groups,
-                i;
-
-            self.submitted 	= false;
-
-            self.disableDisplayState();
-
-            for (i in groups) {
-                groups[i].reset();
-            }
-
-            for (i in fields) {
-                fields[i].reset();
-            }
-
-            self.pending 		= 0;
-            self.invalid 		= null;
-            self.grps			= 0;
-            self.outside		= false;
-
-            self.doDisplayState();
-            self.trigger('reset', self);
-
-            return self;
-        },
-
-
-        /**
-         * Submit form
-         */
-        submit: function() {
-
-            var self    = this,
-                el      = self.el;
-
-            if (!self.isForm) {
-                self.onSubmit();
-                return;
-            }
-
-            if (isFunction(el.submit)) {
-
-                if (self.trigger('before-submit', self) !== false &&
-                    self.trigger('submit', self) !== false) {
-                    el.submit();
-                }
-            }
-            else {
-                self.onSubmit();
-            }
-        },
-
-        setFieldEvents: function(v, mode) {
-            var self    = this;
-            v[mode]('state-change', self.onFieldStateChange, self);
-            v[mode]('before-ajax', self.onBeforeAjax, self);
-            v[mode]('after-ajax', self.onAfterAjax, self);
-            v[mode]('submit', self.onFieldSubmit, self);
-            v[mode]('destroy', self.onFieldDestroy, self);
-            v[mode]('error-change', self.onFieldErrorChange, self);
-        },
-
-        setGroupEvents:	function(g, mode) {
-            g[mode]('state-change', this.onGroupStateChange, this);
-        },
-
-
-        initFields: function() {
-
-            var self    = this,
-                el      = self.el,
-                els, i, l;
-
-            if (self.isField) {
-                self.add(el);
-                return self;
-            }
-
-            els = select("input, textarea, select", el);
-
-            for (i = -1, l = els.length; ++i < l; self.add(els[i])){}
-
-            return self;
-        },
-
-        initForm: function(mode) {
-
-            var self    = this,
-                el      = self.el,
-                nodes   = el.getElementsByTagName("input"),
-                submits = select(".submit", el),
-                resets  = select(".reset", el),
-                fn      = mode === "bind" ? addListener : removeListener,
-                i, l,
-                type,
-                node;
-
-            for (i = 0, l = nodes.length; i < l; i++) {
-                node = nodes[i];
-                type = node.type;
-                if (type === "submit") {
-                    fn(node, "click", self.onRealSubmitClickDelegate);
-                }
-                else if (type === "reset") {
-                    fn(node, "click", self.resetDelegate);
-                }
-            }
-
-            for (i = -1, l = submits.length;
-                 ++i < l;
-                 submits[i].type !== "submit" && fn(submits[i], "click", self.onSubmitClickDelegate)
-            ){}
-
-            for (i = -1, l = resets.length;
-                 ++i < l;
-                 resets[i].type !== "reset" && fn(resets[i], "click", self.resetDelegate)
-            ){}
-
-            if (self.isForm) {
-                fn(el, "submit", self.onFormSubmitDelegate);
-            }
-        },
-
-        onRealSubmitClick: function(e) {
-            e = normalizeEvent(e || window.event);
-            this.submitButton  = e.target || e.srcElement;
-            this.preventFormSubmit = false;
-            return this.onSubmit(e);
-        },
-
-        onSubmitClick: function(e) {
-            this.preventFormSubmit = false;
-            return this.onSubmit(normalizeEvent(e || window.event));
-        },
-
-        onFormSubmit: function(e) {
-            e = normalizeEvent(e);
-            if (!this.isValid() || this.preventFormSubmit) {
-                e.preventDefault();
-                return false;
-            }
-
-        },
-
-        onFieldSubmit: function(fapi, e) {
-
-            var self    = this;
-            self.preventFormSubmit = false;
-            self.enableDisplayState();
-            self.submitted = true;
-
-            return self.onSubmit(e);
-        },
-
-        onSubmit: function(e) {
-
-            var self    = this;
-
-            self.enableDisplayState();
-
-            if (!self.isForm) {
-                e && e.preventDefault();
-                e && e.stopPropagation();
-            }
-
-            if (self.pending) {
-                e && e.preventDefault();
-                return false;
-            }
-
-            var buttonClicked = !!self.submitButton;
-
-            if (self.isForm) {
-
-                if (self.hidden) {
-                    self.el.removeChild(self.hidden);
-                    self.hidden = null;
-                }
-
-                // submit button's value is only being sent with the form if you click the button.
-                // since there can be a delay due to ajax checks and the form will be submitted later
-                // automatically, we need to create a hidden field
-                if (self.submitButton && /input|button/.test(self.submitButton.nodeName)) {
-                    self.hidden = window.document.createElement("input");
-                    self.hidden.type = "hidden";
-                    setAttr(self.hidden, "name", self.submitButton.name);
-                    self.hidden.value = self.submitButton.value;
-                    self.el.appendChild(self.hidden);
-                }
-            }
-
-            self.submitButton = null;
-
-            if (!self.isValid()) {
-                self.check();
-                self.onFieldStateChange();
-
-                if (self.pending) {
-                    // TODO: find out why this flag is not being set in all onSubmit handlers
-                    self.submitted = true;
-                    e && e.preventDefault();
-                    return false;
-                }
-            }
-
-            if (self.trigger('before-submit', self) === false || !self.isValid()) {
-
-                if (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
-
-                if (!self.pending) {
-                    self.focusInvalid();
-                    self.submitted = false;
-                }
-
-                self.trigger('failed-submit', self, buttonClicked);
-                return false;
-            }
-
-            if (!self.pending) {
-                self.submitted = false;
-            }
-
-            var res = self.trigger('submit', self);
-            self.preventFormSubmit = res === false;
-            return !self.isForm ? false : res;
-        },
-
-        onFieldDestroy: function(f) {
-
-            var elem 	= f.getElem(),
-                id		= getAttr(elem, 'name') || getAttr(elem, 'id');
-
-            delete this.fields[id];
-        },
-
-        onFieldErrorChange: function(f, error) {
-            this.trigger("field-error-change", this, f, error);
-        },
-
-        onFieldStateChange: function(f, valid) {
-
-            var self        = this,
-                num 		= self.invalid,
-                fields      = self.fields;
-
-            self.invalid 	= 0;
-
-            for (var i in fields) {
-                self.invalid += fields[i].isValid() ? 0 : 1;
-            }
-
-            if (f) {
-                self.trigger('field-state-change', self, f, valid);
-            }
-
-            if (num === null || (num !== null && self.invalid !== num)) {
-                self.doDisplayState();
-                self.trigger('state-change', self, self.isValid());
-            }
-        },
-
-        onGroupStateChange:	function() {
-
-            var self        = this,
-                groups      = self.groups,
-                num 		= self.grps;
-
-            self.grps 	= 0;
-
-            for (var i in groups) {
-                self.grps += groups[i].isValid() ? 0 : 1;
-            }
-
-            if (num === null || (num !== null && self.grps !== num)) {
-                self.doDisplayState();
-                self.trigger('state-change', self, self.isValid());
-            }
-        },
-
-        doDisplayState: function() {
-
-            var self        = this,
-                cfg         = self.cfg,
-                valid 		= self.isValid(),
-                errorCls	= cfg.cls.error,
-                validCls	= cfg.cls.valid,
-                el          = self.el;
-
-            if (self.isField || !self.displayState) {
-                valid		= null;
-            }
-
-            if (self.invalid === null) {
-                valid = null;
-            }
-
-            if (errorCls) {
-                valid === false ? addClass(el, errorCls) : removeClass(el, errorCls);
-            }
-            if (validCls) {
-                valid === true ? addClass(el, validCls) : removeClass(el, validCls);
-            }
-
-            self.trigger('display-state', self, valid);
-        },
-
-        onBeforeAjax: function() {
-            var self = this;
-            self.pending++;
-            if (self.cfg.cls.ajax) {
-                addClass(self.el, self.cfg.cls.ajax);
-            }
-        },
-
-        onAfterAjax: function() {
-
-            var self    = this,
-                fields  = self.fields,
-                cfg     = self.cfg;
-
-            self.pending = 0;
-
-            for (var i in fields) {
-                self.pending += fields[i].isPending() ? 1 : 0;
-            }
-
-            self.doDisplayState();
-
-            if (cfg.cls.ajax) {
-                removeClass(self.el, cfg.cls.ajax);
-            }
-
-            if (self.submitted && self.pending == 0) {
-                self.submitted = false;
-
-                if (self.isValid()) {
-                    self.submit();
-                }
-                else {
-                    self.focusInvalid();
-                }
-            }
-        },
-
-
-        /**
-         * Destroy validator
-         */
-        destroy: function() {
-
-            var self    = this,
-                groups  = self.groups,
-                fields  = self.fields,
-                i;
-
-            self.reset();
-            //self.trigger('destroy', self);
-
-            delete validators[self.id];
-
-            for (i in groups) {
-                if (groups.hasOwnProperty(i) && groups[i]) {
-                    self.setGroupEvents(groups[i], 'un');
-                    groups[i].destroy();
-                }
-            }
-
-            for (i in fields) {
-                if (fields.hasOwnProperty(i) && fields[i]) {
-                    self.setFieldEvents(fields[i], 'un');
-                    fields[i].destroy();
-                }
-            }
-
-            self.initForm('unbind');
-
-            self.fields = null;
-            self.groups = null;
-            self.el = null;
-            self.cfg = null;
-        }
-
-    }, {
-
-        defaults:   {},
-
-        addMethod:  function(name, fn, message) {
-            var methods = ns.get("validator.methods");
-            if (!methods[name]) {
-                methods[name] = fn;
-                if (message) {
-                    Validator.messages[name] = message;
-                }
-            }
-        },
-
-        getValidator: function(el) {
-            var vldId = getAttr(el, "data-validator");
-            return validators[vldId] || null;
-        }
-
-
-    });
-
-
-
-    return Validator;
-
-}());
-
-
-
-
-
-
-defineClass({
-
-    $class: "validator.Component",
-
-    node: null,
-    scope: null,
-    validator: null,
-    scopeState: null,
-    fields: null,
-    formName: null,
-    nodeCfg: null,
-
-    $init: function(node, scope, renderer, nodeCfg) {
-
-        var self        = this;
-
-        self.node       = node;
-        self.scope      = scope;
-        self.scopeState = {};
-        self.fields     = [];
-        self.nodeCfg    = nodeCfg;
-        self.validator  = self.createValidator();
-        self.formName   = getAttr(node, 'name') || getAttr(node, 'id') || '$form';
-
-        self.initScope();
-        self.initScopeState();
-        self.initValidatorEvents();
-
-        // wait for the renderer to finish
-        // before making judgements :)
-        renderer.once("rendered", self.validator.check, self.validator);
-        renderer.on("destroy", self.$destroy, self);
-        scope.$on("destroy", self.$destroy, self);
-    },
-
-    createValidator: function() {
-        var self    = this,
-            node    = self.node,
-            cfg     = {},
-            ncfg    = self.nodeCfg,
-            submit;
-
-        if ((submit = ncfg.submit)) {
-            cfg.callback = cfg.callback || {};
-            cfg.callback.submit = function(fn, scope){
-                return function() {
-                    try {
-                        return fn(scope);
-                    }
-                    catch(thrownError) {
-                        error(thrownError);
-                    }
-                }
-            }(createFunc(submit), self.scope);
-        }
-
-        return new Validator(node, cfg);
-    },
-
-    initValidatorEvents: function() {
-
-        var self    = this,
-            v       = self.validator;
-
-        v.on('field-state-change', self.onFieldStateChange, self);
-        v.on('state-change', self.onFormStateChange, self);
-        v.on('display-state-change', self.onDisplayStateChange, self);
-        v.on('field-error-change', self.onFieldErrorChange, self);
-        v.on('reset', self.onFormReset, self);
-    },
-
-    initScope: function() {
-
-        var self    = this,
-            scope   = self.scope,
-            name    = self.formName;
-
-        scope[name] = self.scopeState;
-    },
-
-
-    initScopeState: function() {
-
-        var self    = this,
-            node    = self.node,
-            state   = self.scopeState,
-            fields  = self.fields,
-            els, el,
-            i, l,
-            name;
-
-        if (node.elements) {
-            els     = node.elements;
-        }
-        else {
-            els     = [];
-            eachNode(node, function(el) {
-                if (isField(el)) {
-                    els.push(el);
-                }
-            });
-        }
-
-        for (i = -1, l = els.length; ++i < l;) {
-            el = els[i];
-            name = getAttr(el, "name") || getAttr(el, 'id');
-
-            if (name && !state[name]) {
-                fields.push(name);
-                state[name] = {
-                    $error: null,
-                    $invalid: null,
-                    $pristine: true,
-                    $errorMessage: null
-                };
-            }
-        }
-
-        state.$$validator = self.validator;
-        state.$invalid = false;
-        state.$pristine = true;
-        state.$isDestroyed = bind(self.$isDestroyed, self);
-        state.$submit = bind(self.validator.onSubmit, self.validator);
-        state.$reset = bind(self.validator.reset, self.validator);
-    },
-
-    onDisplayStateChange: function(vld, state) {
-
-        var self    = this;
-
-        if (!state) {
-            self.onFormReset(vld);
-        }
-        else {
-            state   = self.scopeState;
-            var i, l, f,
-                fields = self.fields;
-
-            for (i = 0, l = fields.length; i < l; i++) {
-                f = state[fields[i]];
-                if (f.$real) {
-                    state[fields[i]] = f.$real;
-                }
-            }
-
-            state.$invalid = !vld.isValid();
-            state.$pristine = false;
-
-            self.scope.$check();
-        }
-
-    },
-
-    onFieldErrorChange: function(vld, field, error) {
-        this.onFieldStateChange(vld, field, field.isValid());
-    },
-
-    onFormReset: function(vld) {
-
-        var self    = this,
-            state   = self.scopeState,
-            i, l, f,
-            fields = self.fields;
-
-        for (i = 0, l = fields.length; i < l; i++) {
-            f = state[fields[i]];
-            f.$error = null;
-            f.$errorMessage = null;
-            f.$invalid = null;
-            f.$pristine = true;
-        }
-
-        state.$invalid = false;
-        state.$pristine = true;
-
-        self.scope.$check();
-    },
-
-    onFormStateChange: function(vld, valid) {
-
-        var self    = this,
-            state   = self.scopeState;
-
-        state.$invalid = valid === false && vld.isDisplayStateEnabled();
-        state.$pristine = false;
-
-        self.scope.$check();
-    },
-
-    onFieldStateChange: function(vld, field, valid) {
-
-        var self    = this,
-            state   = self.scopeState,
-            name    = field.getName(),
-            ds      = vld.isDisplayStateEnabled(),
-            fstate  = {
-                $error: field.getErrorRule(),
-                $errorMessage: field.getError(),
-                $invalid: valid === false,
-                $pristine: field.getExactValidState() === null
-            };
-
-        if (ds) {
-            state[name] = fstate;
-        }
-        else {
-            state[name].$real = fstate;
-        }
-
-        self.scope.$check();
-    },
-
-
-    destroy: function() {
-        var self = this;
-
-        self.validator.$destroy();
-
-        if (self.scope) {
-            delete self.scope[self.formName];
-        }
-    }
-
-});
-
-
-
-
-
-
-
-Directive.registerAttribute("validate", 250,
-    function(scope, node, expr, renderer, attr) {
-
-    var cls     = expr || "validator.Component",
-        constr  = nsGet(cls),
-        cfg     = attr ? attr.config : {};
-
-    if (!constr) {
-        error(new Error("Class '"+cls+"' not found"));
-    }
-    else {
-        return new constr(node, scope, renderer, cfg);
-    }
-});
-
-
 var MetaphorJsExport = {};
 MetaphorJsExport['MetaphorJs'] = MetaphorJs;
 MetaphorJsExport['isFunction'] = isFunction;
@@ -28051,6 +21445,7 @@ MetaphorJsExport['Renderer'] = Renderer;
 MetaphorJsExport['Text'] = Text;
 MetaphorJsExport['destroy'] = destroy;
 MetaphorJsExport['Provider'] = Provider;
+MetaphorJsExport['App'] = App;
 MetaphorJsExport['isAttached'] = isAttached;
 MetaphorJsExport['data'] = data;
 MetaphorJsExport['toFragment'] = toFragment;
@@ -28089,6 +21484,7 @@ MetaphorJsExport['mhistory'] = mhistory;
 MetaphorJsExport['currentUrl'] = currentUrl;
 MetaphorJsExport['UrlParam'] = UrlParam;
 MetaphorJsExport['resolveComponent'] = resolveComponent;
+MetaphorJsExport['View'] = View;
 MetaphorJsExport['isField'] = isField;
 MetaphorJsExport['getValue'] = getValue;
 MetaphorJsExport['setValue'] = setValue;
@@ -28120,28 +21516,19 @@ MetaphorJsExport['sortArray'] = sortArray;
 MetaphorJsExport['onReady'] = onReady;
 MetaphorJsExport['initApp'] = initApp;
 MetaphorJsExport['run'] = run;
+MetaphorJsExport['render'] = render;
 MetaphorJsExport['getAttrMap'] = getAttrMap;
 MetaphorJsExport['factory'] = factory;
 MetaphorJsExport['Model'] = Model;
 MetaphorJsExport['Record'] = Record;
 MetaphorJsExport['Store'] = Store;
 MetaphorJsExport['StoreRenderer'] = StoreRenderer;
-MetaphorJsExport['setStyle'] = setStyle;
-MetaphorJsExport['isVisible'] = isVisible;
-MetaphorJsExport['is'] = is;
-MetaphorJsExport['ucfirst'] = ucfirst;
-MetaphorJsExport['getOuterWidth'] = getOuterWidth;
-MetaphorJsExport['getOuterHeight'] = getOuterHeight;
-MetaphorJsExport['delegates'] = delegates;
-MetaphorJsExport['delegate'] = delegate;
-MetaphorJsExport['undelegate'] = undelegate;
-MetaphorJsExport['getOffsetParent'] = getOffsetParent;
-MetaphorJsExport['getOffset'] = getOffset;
-MetaphorJsExport['getPosition'] = getPosition;
-MetaphorJsExport['Dialog'] = Dialog;
-MetaphorJsExport['rUrl'] = rUrl;
-MetaphorJsExport['eachNode'] = eachNode;
-MetaphorJsExport['Validator'] = Validator;
+MetaphorJsExport['isBrowser'] = isBrowser;
+MetaphorJsExport['generateTemplateNames'] = generateTemplateNames;
+MetaphorJsExport['globalCache'] = globalCache;
+MetaphorJsExport['getCurly'] = getCurly;
+MetaphorJsExport['toJsonTemplate'] = toJsonTemplate;
+MetaphorJsExport['prismClass'] = prismClass;
 return MetaphorJsExport;
 
 };

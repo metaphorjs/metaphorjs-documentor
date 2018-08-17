@@ -67,7 +67,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
         var self    = this,
             tplDir  = self.templateDir,
-            index   = tplDir + (self.multipage ? "/multipage.html" : "/index.html"),
+            index   = tplDir + (self.multipage ? "/multipage.html" : "/singlepage.html"),
             tpl     = fs.readFileSync(index).toString(),
             dir     = __dirname.split("/").pop(),
             mjs     = dir === "dist" ? 
@@ -98,10 +98,11 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         }
 
         self.runMetaphor(MetaphorJs, doc, extend({}, self.data, {
-            renderDataScript: function() {
+            renderDataScript: function(multipage) {
                 var data = extend({}, self.data, false, false);
-                if (self.multipage) {
-                    delete data.templates;
+                delete data.templates;
+                if (!self.multipage) {
+                    delete data.items;
                 }
                 var json = JSON.stringify(data, null, 2);
                 return '<script>window.docsData = '+json+'</script>';

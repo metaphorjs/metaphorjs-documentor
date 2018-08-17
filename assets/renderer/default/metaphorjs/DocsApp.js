@@ -4,6 +4,7 @@ var App = require("metaphorjs/src/class/App.js"),
     select = require("metaphorjs-select/src/func/select.js"),
     setAttr = require("metaphorjs/src/func/dom/setAttr.js"),
     async = require("metaphorjs/src/func/async.js"),
+    isBrowser = require("metaphorjs/src/func/isBrowser.js"),
     getAttr = require("metaphorjs/src/func/dom/getAttr.js"),
     generateTemplateNames = require("metaphorjs-documentor/src/func/generateTemplateNames.js"),
     nextUid = require("metaphorjs/src/func/nextUid.js");
@@ -44,7 +45,10 @@ App.$extend({
         }
 
         self.makeItemMap();
-        mhistory.init();
+
+        if (isBrowser()) {
+            mhistory.init();
+        }
     },
 
     makeItemMap: function() {
@@ -186,6 +190,11 @@ App.$extend({
     },
 
     goto: function(url) {
-        mhistory.push(url);
+        if (url.substr(0,1) === '#') {
+            window.location.href = url;
+        }
+        else {
+            mhistory.push(url);
+        }
     }
 });

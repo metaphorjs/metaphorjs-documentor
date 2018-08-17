@@ -1,21 +1,12 @@
 var globalCache = require("../../../../../var/globalCache.js"),
-    isArray = require("metaphorjs/src/func/isArray.js");
+    abstractSort = require("../../../../../func/abstractSort.js");
 
 module.exports = globalCache.add("file.*.item.*.sort", 
-    function(items, cfg, doc) {
-
-        if (cfg.sort) {
-            if (!isArray(cfg.sort)) {
-                cfg.sort = [cfg.sort];
-            }
-
-            cfg.sort.forEach(function(sortCfg){
-                var sortType = sortCfg.type,
-                    fn = doc.pget("sort." + sortType);
-
-                items = fn.call(null, items, sortCfg, doc);
-            });
-        }
-
-        return items;
+    function(items, cfg, parentItem, itemsType) {
+        return abstractSort(items, cfg.sort, parentItem.doc, {
+            typeFilter: true,
+            levelFilter: true,
+            level: parentItem.level + 1,
+            itemType: itemsType
+        });
     });

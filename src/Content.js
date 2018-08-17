@@ -149,6 +149,7 @@ module.exports = Base.$extend({
             type: self.type,
             groupName: self.groupName,
             contentType: self.contentType,
+            template: self.file.ext + ".content." + self.type,
             content: self.getContent()
         });
     },

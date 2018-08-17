@@ -11,7 +11,10 @@ module.exports = globalCache.add("file.*.item.*.sortChildren",
 
         for (childType in item.items) {
             fn = item.items[childType][0].pget("sort");
-            item.items = fn.call(null, item.items, cfg, item.doc);
+            item.items[childType] = fn.call(
+                null, item.items[childType], cfg, 
+                item, childType
+            );
         }
     });
 

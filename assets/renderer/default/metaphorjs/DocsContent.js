@@ -5,11 +5,13 @@ var Component = require("metaphorjs/src/class/Component.js"),
 
 Component.$extend({
     $class: "DocsContent",
-    template: "content-component",
+    template: ".content.template",
 
     initComponent: function() {
         var self = this;
-        self.scope.tpl = '';
+        self.scope.content = {
+            template: null
+        };
 
         self.contentId.on("change", self.onContentIdChange, self);
         self.onContentIdChange(self.contentId.getValue() || self.findFirstItem());

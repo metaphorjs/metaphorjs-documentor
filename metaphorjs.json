@@ -55,8 +55,7 @@
                 ["metaphorjs/src/func/render.js", {"as": "render"}],
                 "metaphorjs/src/extra-directives/**",
                 "metaphorjs-model/src/directive/*",
-                "metaphorjs-dialog/src/class/dialog/Component.js",
-                "metaphorjs-validator/src/directive/**"
+                "assets/renderer/default/metaphorjs/**"
             ],
             "expose": "all",
             "exposeIn": "MetaphorJsExport",

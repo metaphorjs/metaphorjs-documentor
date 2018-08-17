@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html mjs-app>
+<html mjs-app="DocsApp">
 <head lang="en">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>{{ .title }}</title>
@@ -11,11 +11,12 @@
           [href]="this.style">
 
     <script type="text/javascript" src="bower_components/prism/prism.js"></script>
+    <script type="text/javascript" src="bower_components/prism/plugins/keep-markup/prism-keep-markup.min.js"></script>
     <script type="text/javascript" src="assets/metaphorjs.js"></script>
 </head>
 <body>
 
-<mjs-include src="top-menu"></mjs-include>
+<mjs-include src="top-menu" $asis></mjs-include>
 <mjs-include src="jubmotron"></mjs-include>
 
 <div class="container source-container">
@@ -33,6 +34,8 @@
     <div class="container" {bind-html}=".footer"></div>
 </div>
 
+<bind-html value="this.renderDataScript(this.multipage)"></bind-html>
+<mjs-include src="loader" $asis="true"></mjs-include>
 
 </body>
 </html>

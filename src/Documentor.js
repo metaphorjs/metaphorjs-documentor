@@ -368,7 +368,13 @@ module.exports = Base.$extend({
         self.eachItem("sortChildren", null, true, [self.cfg]);
         self.pcall("event.itemsSorted", self);
 
-        self.contents = self.pcall("content.sortTypes", self.content, self.cfg, self);
+        self.content = self.pcall("content.sortTypes", self.content, self.cfg, self);
+        for (childType in self.content) {
+            fn = self.content[childType][0].pget("sort");
+            self.content[childType] = fn.call(
+                null, self.content[childType], cfg, self, childType
+            );
+        }
         self.pcall("event.contentSorted", self);
 
         self.pcall("event.end", self);
@@ -441,6 +447,7 @@ module.exports = Base.$extend({
             exportData = self.pget("export"),
             getStructure = self.pget("export.getStructure"),
             items = [],
+            contents = [],
             k;
 
         if (exportData) {
@@ -465,21 +472,30 @@ module.exports = Base.$extend({
             items.push(item);
         });
 
+        items = self.pcall("export.sortItems", items, self.cfg, self);
+
         self.root.exportChildren(items, noHelpers, true)
-            .forEach(function(ch){
+            .forEach(function(ch) {
                 exprt.items.push(ch);
             });
 
+
         for (k in self.content) {
             self.content[k].forEach(function(c){
-                exprt.content.push(c.exportData());
-                items.push(c);
+                contents.push(c);
             });
         }
-        
+
+        contents = self.pcall("export.sortContent", contents, self.cfg, self);
+        contents.forEach(function(c){
+            exprt.content.push(c.exportData());
+            items.push(c);
+        });
+
+        items = self.pcall("export.sortAll", items, self.cfg, self);
         exprt.structure = getStructure(self, items);
 
-        return exprt;    
+        return exprt;
     },
 
     destroy: function() {
