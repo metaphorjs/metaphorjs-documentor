@@ -1,15 +1,24 @@
 
-var globalCache = require("../../var/globalCache.js"),
-sortArray = require("metaphorjs/src/func/array/sortArray.js");
+var globalCache = require("../../var/globalCache.js");
 
-module.exports = globalCache.add("sort.name", function(item, cfg){
+/**
+ * @group hook 
+ * @function
+ * Sort items by name. Uses item's getSortableName() 
+ * @param {array} items
+ * @param {object} cfg
+ * @param {Documentor} doc
+ * @returns {array}
+ */
+module.exports = globalCache.add("sort.name", function(item, cfg, doc){
 
     items.sort(function(a, b) {
-        if (a.getSortName() == b.getSortName()) {
+        if (a.getSortableName() == b.getSortableName()) {
             return 0;
         }
-        return a.getSortName() < b.getSortName() ? -1 : 1;
+        return a.getSortableName() < b.getSortableName() ? -1 : 1;
     });
 
     return items;
 });
+

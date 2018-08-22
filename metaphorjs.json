@@ -17,26 +17,21 @@
     },
 
     "docs": {
-        "": {
-            "out": "docs/out.json",
-            "src": [
-                "src/**"
-            ],
-            "contentSort": [
-                "Documentor",
-                "Runner",
-                "Base"
-            ],
-            "includeExternal": false,
-            "renderer": "json",
-            "init": "assets/self-doc.js",
+        "renderer": {
+            "type": "default",
             "data": {
                 "title": "MetaphorJs.Documentor"
-            },
-            "options": {
-
             }
-        }
+        },
+        "out": "docs/api",
+        "hooks": [
+            "docs/hooks"
+        ],
+        "src": [
+            "src/hooks/**"
+        ],
+        "includeExternal": false,
+        "init": "assets/self-doc.js"
     },
 
     "build": {

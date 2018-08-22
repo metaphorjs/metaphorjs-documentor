@@ -2,6 +2,7 @@
 var Base = require("./Base.js"),
     Flag = require("./Flag.js"),
     isArray = require("metaphorjs/src/func/isArray.js"),
+    toArray = require("metaphorjs/src/func/array/toArray.js"),
     undf = require("metaphorjs/src/var/undf.js"),
     copy = require("metaphorjs/src/func/copy.js"),
     emptyFn = require("metaphorjs/src/func/emptyFn.js");
@@ -20,9 +21,9 @@ module.exports = (function(){
         doc: null,
         file: null,
         type: null,
+        group: null,
         name: null,
         fullName: null,
-        //navName: null,
         items: null,
         flags: null,
         comment: null,
@@ -56,6 +57,8 @@ module.exports = (function(){
             self.values = {};
             self.toExport = {};
             self.toStructExport = {};
+
+            self.group = this.type;
 
             self.$super();
 
@@ -139,24 +142,56 @@ module.exports = (function(){
         },
 
         pcall: function(name) {
-            arguments[0] = "item." + this.type + "." + arguments[0];
-            if (this.file) {
-                return this.file.pcall.apply(this.file, arguments);
+            var self = this,
+                args;
+
+            args = toArray(arguments);
+            args[0] = "item." + self.type + "." + args[0];
+            if (self.file) {
+                return self.file.pcall.apply(self.file, args);
             }
             else {
-                arguments[0] = "*." + arguments[0];
-                return this.doc.pcall.apply(this.doc, arguments);
+                args[0] = "*." + args[0];
+                return self.doc.pcall.apply(self.doc, args);
+            }
+
+            if (self.type != self.group) {
+                args = toArray(arguments);
+                args[0] = "group." + self.group + "." + args[0];
+                if (self.file) {
+                    return self.file.pcall.apply(self.file, args);
+                }
+                else {
+                    args[0] = "*." + args[0];
+                    return self.doc.pcall.apply(self.doc, args);
+                }
             }
         },
 
         pget: function(name, collect, passthru) {
-            arguments[0] = "item." + this.type + "." + arguments[0];
-            if (this.file) {
-                return this.file.pget.apply(this.file, arguments);
+            var self = this,
+                args;
+            
+            args = toArray(arguments);
+            args[0] = "item." + self.type + "." + args[0];
+            if (self.file) {
+                return self.file.pget.apply(self.file, args);
             }
             else {
-                arguments[0] = "*." + arguments[0];
-                return this.doc.pcall.apply(this.doc, arguments);
+                args[0] = "*." + args[0];
+                return self.doc.pcall.apply(self.doc, args);
+            }
+
+            if (self.type != self.group) {
+                args = toArray(arguments);
+                args[0] = "group." + self.group + "." + args[0];
+                if (self.file) {
+                    return self.file.pget.apply(self.file, args);
+                }
+                else {
+                    args[0] = "*." + args[0];
+                    return self.doc.pcall.apply(self.doc, args);
+                }
             }
         },
 
@@ -170,6 +205,15 @@ module.exports = (function(){
             }
             return this.props;
         },
+
+        /**
+         * @method
+         * @returns {object}
+         */
+        getGroupProps: function() {
+            return  this.file.pcall("getItemType", this.group, this.file);
+        },
+
 
         /**
          * @return {string}
@@ -386,6 +430,10 @@ module.exports = (function(){
                     this.fullName === this.type +':'+ name;
         },
 
+        /**
+         * @method
+         * @param {string} name
+         */
         setFullName: function(name) {
 
             var self = this;
@@ -393,6 +441,17 @@ module.exports = (function(){
             if (name && (!self.fullName || self.fullName != name)) {
                 self.fullName = name;
                 self.doc.addUniqueItem(self);
+            }
+        },
+
+        /**
+         * @method
+         * @param {string} name
+         */
+        setGroup: function(name) {
+            this.group = name;
+            if (this.group != this.type) {
+                this.pcall("setGroup", this);
             }
         },
 
@@ -802,6 +861,7 @@ module.exports = (function(){
                 k,
                 exprt =  extend({}, self.toExport, {
                     isApiItem: true,
+                    group: self.group,
                     type: self.type,
                     name:  self.name,
                     fullName: self.fullName,

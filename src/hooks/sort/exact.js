@@ -1,6 +1,15 @@
 
 var globalCache = require("../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Sort items by exact order
+ * @param {array} items
+ * @param {object} cfg
+ * @param {Documentor} doc
+ * @returns {array}
+ */
 module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
 
     var res = [],

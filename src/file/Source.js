@@ -127,6 +127,7 @@ module.exports = File.$extend({
             cmts = cmts || self.comments;
 
             var commentPart = function(part, cmt) {
+
                 csl     = cs.length;
                 item    = self.processCommentPart(part, cmt, fixedContext);
 

@@ -5,10 +5,12 @@ module.exports = globalCache.add("file.*.item.*.getStructurePath",
         if (item.structurePath) {
             return item.structurePath;
         }
-        var path = item.name.split("/");
-        if (path.length > 1) {
-            item.addToStructExport("nameInPath", path.pop());
-            return path;
+        if (item.name) {
+            var path = item.name.split("/");
+            if (path.length > 1) {
+                item.addToStructExport("nameInPath", path.pop());
+                return path;
+            }
         }
         return null;
     }

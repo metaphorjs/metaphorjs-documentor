@@ -81,7 +81,8 @@ var Runner = Base.$extend({
         }
 
         self.doc = doc  = new Documentor({
-            cfg: cfg
+            cfg: cfg,
+            runner: self
         });
 
         if (cfg.init) {
@@ -240,6 +241,12 @@ var Runner = Base.$extend({
         }
 
         return res;
+    },
+
+    getMjsDocRoot: function(){
+        //var dir     = __dirname.split("/").pop();
+        //    dir     = dir === "dist" ? __dirname +"/../" : __dirname + "/../../";
+        return path.normalize(__dirname +"/../");
     }
 
 }, {

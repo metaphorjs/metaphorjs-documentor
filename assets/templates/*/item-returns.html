@@ -1,0 +1,10 @@
+<div class="item-returns"
+    {class}="['level-'+ (.item.level)]">
+    <mjs-if value=".item.plainFlags.hasOwnProperty('returns')">
+        <span class="item-name-returns">->
+            {<mjs-bind-html value=".item.plainFlags.returns | map:'filter.typeRef' | join:' | ' | markdownLinks"></mjs-bind-html>}
+        </span>
+    </mjs-if>
+    <span class="item-name-return-descr"
+            {bind}=".item.plainFlags.returnDescription[0]"></span>
+</div>

@@ -128,6 +128,10 @@ module.exports = Base.$extend({
         return this.props;
     },
 
+    getGroupProps: function() {
+        return this.getTypeProps();
+    },
+
     /**
      * @return {string}
      */

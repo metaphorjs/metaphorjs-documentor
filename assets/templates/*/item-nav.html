@@ -3,10 +3,9 @@
         {bind}=".group.groupName"></li>
     <li {each}="item in .group.items"
         {show}="!.item.isInherited || $parent.$parent.showInherited"
-        {init}=".isFunction = .item.type == 'function' ||
-                        .item.type == 'method' ||
-                        (.item.plainFlags.hasOwnProperty('type') && 
-                            .item.plainFlags.type.indexOf('function') != -1)"
+        {init}=".isFunction = .item.isFunction ||
+                                (.item.plainFlags.hasOwnProperty('type') && 
+                                .item.plainFlags.type.indexOf('function') != -1)"
         class="item-nav-property"
         {class}="'item-nav-property-' + .item.type"
         {class.inherited}=".item.isInherited">

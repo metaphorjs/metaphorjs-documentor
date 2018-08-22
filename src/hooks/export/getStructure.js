@@ -43,22 +43,22 @@ module.exports = globalCache.add("export.getStructure", function(doc, items){
 
     items.forEach(function(item){
 
-        var typeProps   = item.getTypeProps(),
+        var grpProps    = item.getGroupProps(),
             path        = item.pcall("getStructurePath", item),
-            type        = item.type,
+            group       = item.group,
             target;
 
-        if (!structure[type]) {
-            structure[type] = {
-                type: type,
-                groupName: typeProps.groupName,
-                where: typePos[type] || "top-menu",
+        if (!structure[group]) {
+            structure[group] = {
+                type: group,
+                groupName: grpProps.groupName,
+                where: typePos[group] || "top-menu",
                 children: []
             };
         }
 
-        target = path ? getTargetByPath(structure[type], path.slice()) : 
-                        structure[type].children;
+        target = path ? getTargetByPath(structure[group], path.slice()) : 
+                        structure[group].children;
     
         target.push(extend(
             {}, 

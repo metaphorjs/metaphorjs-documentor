@@ -1,6 +1,8 @@
 
 
 $borderColor: #d0d0d0;
+$h1Size: 36px;
+$hStep: 4px;
 
 .jumbotron {
     margin-bottom: 0;
@@ -69,7 +71,7 @@ $borderColor: #d0d0d0;
 
     &.level-0 > li,
     &.level-1 > li {
-        padding: 10px 0;
+        //padding: 10px 0;
         &:first-child {
             padding-top: 5px;
         }
@@ -88,8 +90,7 @@ ul.level-0 > li.item-property-group-name {
 
 
 .item-header {
-    $h1Size: 36px;
-    $hStep: 4px;
+    
     h1, h2, h3, h4, h5, h6{
         font-size: 0;
     }
@@ -183,6 +184,33 @@ ul.level-0 > li.item-property-group-name {
     margin-right: 5px;
 }
 
+.item-returns {
+    margin-left: 40px;
+    color: #999;
+    font-weight: normal;
+    border-top: 1px dotted $borderColor;
+    padding-bottom: 10px;
+
+    &.level-0 {
+        font-size: $h1Size - ($hStep * 2);
+    }
+    &.level-1 {
+        font-size: $h1Size - ($hStep * 3);
+    }
+    &.level-2 {
+        font-size: $h1Size - ($hStep * 4);
+    }
+    &.level-3 {
+        font-size: $h1Size - ($hStep * 5);
+    }
+    &.level-4 {
+        font-size: $h1Size - ($hStep * 6);
+    }
+    &.level-5 {
+        font-size: $h1Size - ($hStep * 7);
+    }
+    
+}
 
 //.inherited {
 //    display: none;

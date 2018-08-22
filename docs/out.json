@@ -1,709 +1,931 @@
 {
-  "sections": {},
   "items": [
     {
+      "isFunction": true,
       "isApiItem": true,
-      "type": "class",
-      "name": "Base",
-      "fullName": "class:Base",
-      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
+      "group": "hook",
+      "type": "function",
+      "name": "file.*.item.*.*.add",
+      "fullName": "function:file.*.item.*.*.add",
+      "file": "src/hooks/file/*/item/*/*/add.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
       "fileType": "js",
-      "template": "js.item.class",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
       "level": 1,
-      "flags": {},
-      "plainFlags": {},
+      "flags": {
+        "returnDescription": [
+          {
+            "contentType": "string",
+            "content": "Return false to cancel adding this flag",
+            "template": "js.flag.returnDescription"
+          }
+        ],
+        "returns": [
+          {
+            "contentType": "string",
+            "content": "boolean",
+            "template": "js.flag.returns"
+          }
+        ]
+      },
+      "plainFlags": {
+        "returnDescription": [
+          "Return false to cancel adding this flag"
+        ],
+        "returns": [
+          "boolean"
+        ]
+      },
       "booleanFlags": [],
       "children": [
         {
           "isApiGroup": true,
-          "type": "method",
-          "name": "Method",
-          "groupName": "Methods",
+          "type": "param",
           "items": [
             {
               "isApiItem": true,
-              "type": "method",
-              "name": "pcall",
-              "fullName": "class:Base.pcall",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
+              "group": "param",
+              "type": "param",
+              "name": "flagName",
+              "fullName": "function:file.*.item.*.*.add/flagName",
+              "file": "src/hooks/file/*/item/*/*/add.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
               "fileType": "js",
-              "template": "js.item.method",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
               "level": 2,
               "flags": {
-                "returns": [
+                "type": [
                   {
                     "contentType": "string",
-                    "content": "*",
-                    "template": "js.flag.returns"
+                    "content": "string",
+                    "template": "js.flag.type"
                   }
                 ]
               },
               "plainFlags": {
-                "returns": [
-                  "*"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": "class:Base.pcall/name",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "string",
-                            "template": "js.flag.type"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "string"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 41,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Plugin name",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 41,
-              "description": [
-                {
-                  "contentType": "string",
-                  "content": "Call a plugin function and pass parameters to it. Plugins are\njs files from <code>hooks</code> directory containing functions, scalar\nvalues and any other stuff. The file structure is\nlike file/js/item/param/add.js which is called when adding\nparameter to js function. Plugins can be generic:\n<code>file/* /item/* /* /add.js</code> . Plugins are stored in globalCache\nand can be overriden/intercepted etc.<br><br>\nInternally, it uses <code>pget</code> to find the plugin.<br><br>\nCalled from SourceFile it looks for <code>file/-ext-/-name-</code> plugins.\nCalled from Item it looks for\n<code>file/-item-file-ext-/item/-current-item-type-/-name-</code>\nand if not found - generics. First item_type generic, then\nfile_ext generic.<br><br>\nAlso, there is '?' plugin directories for 'other' functions.",
-                  "template": "js.flag.description"
-                }
-              ]
-            },
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "pget",
-              "fullName": "class:Base.pget",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "returns": [
-                  {
-                    "contentType": "string",
-                    "content": "*",
-                    "template": "js.flag.returns"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "returns": [
-                  "*"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": "class:Base.pget/name",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "string",
-                            "template": "js.flag.type"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "string"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Plugin name",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "collect",
-                      "fullName": "class:Base.pget/collect",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "boolean",
-                            "template": "js.flag.type"
-                          }
-                        ],
-                        "default": [
-                          {
-                            "contentType": "string",
-                            "content": "false",
-                            "template": "js.flag.default"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "boolean"
-                        ],
-                        "default": [
-                          "false"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Collect all applicable plugins:\nincluding exactly matched\nplugin and all generics. Returns <code>array</code>",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "passthru",
-                      "fullName": "class:Base.pget/passthru",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "function",
-                            "template": "js.flag.type"
-                          }
-                        ],
-                        "returns": [
-                          {
-                            "contentType": "string",
-                            "content": "boolean",
-                            "template": "js.flag.returns"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "function"
-                        ],
-                        "returns": [
-                          "boolean"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [
-                        {
-                          "isApiGroup": true,
-                          "type": "property",
-                          "name": "Property",
-                          "groupName": "Properties",
-                          "items": [
-                            {
-                              "isApiItem": true,
-                              "type": "property",
-                              "name": "value",
-                              "fullName": "class:Base.pget/passthru.value",
-                              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "fileType": "js",
-                              "template": "js.item.property",
-                              "level": 4,
-                              "flags": {
-                                "type": [
-                                  {
-                                    "contentType": "string",
-                                    "content": "*",
-                                    "template": "js.flag.type"
-                                  }
-                                ]
-                              },
-                              "plainFlags": {
-                                "type": [
-                                  "*"
-                                ]
-                              },
-                              "booleanFlags": [],
-                              "children": [],
-                              "childTypes": []
-                            }
-                          ]
-                        }
-                      ],
-                      "childTypes": [
-                        "property"
-                      ],
-                      "line": 83,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Call this function with each found plugin. If returned\n<code>false</code>, execution stops and last plugin returned. Does\nnot work with <code>collect</code>.",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "exact",
-                      "fullName": "class:Base.pget/exact",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "boolean",
-                            "template": "js.flag.type"
-                          }
-                        ],
-                        "default": [
-                          {
-                            "contentType": "string",
-                            "content": "false",
-                            "template": "js.flag.default"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "boolean"
-                        ],
-                        "default": [
-                          "false"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Only return the first matched plugin, if any",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "merge",
-                      "fullName": "class:Base.pget/merge",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "boolean",
-                            "template": "js.flag.type"
-                          }
-                        ],
-                        "default": [
-                          {
-                            "contentType": "string",
-                            "content": "false",
-                            "template": "js.flag.default"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "boolean"
-                        ],
-                        "default": [
-                          "false"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83,
-                      "description": [
-                        {
-                          "contentType": "string",
-                          "content": "Not only collects (requires <code>collect=true</code>), but also merges\nall returned objects into one. Returns <code>object</code>",
-                          "template": "js.flag.description"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 83,
-              "description": [
-                {
-                  "contentType": "string",
-                  "content": "Find an applicable plugin(s). Plugins are not only functions, but\nalso scalar values and objects.",
-                  "template": "js.flag.description"
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "childTypes": [
-        "method"
-      ],
-      "line": 7
-    },
-    {
-      "isApiItem": true,
-      "type": "class",
-      "name": "Comment",
-      "fullName": "class:Comment",
-      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-      "fileType": "js",
-      "template": "js.item.class",
-      "level": 1,
-      "flags": {},
-      "plainFlags": {},
-      "booleanFlags": [],
-      "children": [
-        {
-          "isApiGroup": true,
-          "type": "method",
-          "name": "Method",
-          "groupName": "Methods",
-          "items": [
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "isTemporary",
-              "fullName": "class:Comment.isTemporary",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "returns": [
-                  {
-                    "contentType": "string",
-                    "content": "boolean",
-                    "template": "js.flag.returns"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "returns": [
-                  "boolean"
+                "type": [
+                  "string"
                 ]
               },
               "booleanFlags": [],
               "children": [],
               "childTypes": [],
-              "line": 29
+              "line": 11
             },
             {
               "isApiItem": true,
-              "type": "method",
-              "name": "hasFlag",
-              "fullName": "class:Comment.hasFlag",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
+              "group": "param",
+              "type": "param",
+              "name": "flagContent",
+              "fullName": "function:file.*.item.*.*.add/flagContent",
+              "file": "src/hooks/file/*/item/*/*/add.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
               "fileType": "js",
-              "template": "js.item.method",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
               "level": 2,
               "flags": {
-                "returns": [
+                "type": [
                   {
                     "contentType": "string",
-                    "content": "boolean",
-                    "template": "js.flag.returns"
+                    "content": "string",
+                    "template": "js.flag.type"
                   }
                 ]
               },
               "plainFlags": {
-                "returns": [
-                  "boolean"
+                "type": [
+                  "string"
                 ]
               },
               "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": "class:Comment.hasFlag/name",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "string",
-                            "template": "js.flag.type"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "string"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 39
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 39,
-              "description": [
-                {
-                  "contentType": "string",
-                  "content": "Check if comment has a flag in it",
-                  "template": "js.flag.description"
-                }
-              ]
+              "children": [],
+              "childTypes": [],
+              "line": 11
             },
             {
               "isApiItem": true,
-              "type": "method",
-              "name": "getFlag",
-              "fullName": "class:Comment.getFlag",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
+              "group": "param",
+              "type": "param",
+              "name": "item",
+              "fullName": "function:file.*.item.*.*.add/item",
+              "file": "src/hooks/file/*/item/*/*/add.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
               "fileType": "js",
-              "template": "js.item.method",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
               "level": 2,
               "flags": {
-                "returns": [
+                "type": [
                   {
                     "contentType": "string",
-                    "content": "*",
-                    "template": "js.flag.returns"
+                    "content": "Item",
+                    "template": "js.flag.type"
                   }
                 ]
               },
               "plainFlags": {
-                "returns": [
-                  "*"
+                "type": [
+                  "Item"
                 ]
               },
               "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": "class:Comment.getFlag/name",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "string",
-                            "template": "js.flag.type"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "string"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 58
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 58,
-              "description": [
-                {
-                  "contentType": "string",
-                  "content": "Get flag content",
-                  "template": "js.flag.description"
-                }
-              ]
-            },
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "removeFlag",
-              "fullName": "class:Comment.removeFlag",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {},
-              "plainFlags": {},
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": "class:Comment.removeFlag/name",
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Comment.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {
-                        "type": [
-                          {
-                            "contentType": "string",
-                            "content": "string",
-                            "template": "js.flag.type"
-                          }
-                        ]
-                      },
-                      "plainFlags": {
-                        "type": [
-                          "string"
-                        ]
-                      },
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 77
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 77,
-              "description": [
-                {
-                  "contentType": "string",
-                  "content": "Get flag content",
-                  "template": "js.flag.description"
-                }
-              ]
+              "children": [],
+              "childTypes": [],
+              "line": 11
             }
           ]
         }
       ],
       "childTypes": [
-        "method"
+        "param"
       ],
-      "line": 8
+      "line": 11
     },
     {
+      "isFunction": true,
       "isApiItem": true,
-      "type": "class",
-      "name": "SourceFile",
-      "fullName": "class:SourceFile",
-      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
+      "group": "hook",
+      "type": "function",
+      "name": "file.*.item.*.*.parse",
+      "fullName": "function:file.*.item.*.*.parse",
+      "file": "src/hooks/file/*/item/*/*/parse.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
       "fileType": "js",
-      "template": "js.item.class",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
       "level": 1,
       "flags": {
-        "extends": [
+        "returns": [
           {
-            "contentType": "typeRef",
-            "content": "Base",
-            "template": "js.flag.extends",
-            "ref": "class:Base"
+            "contentType": "string",
+            "content": "object",
+            "template": "js.flag.returns"
           }
         ]
       },
       "plainFlags": {
-        "extends": [
-          "Base"
+        "returns": [
+          "object"
+        ]
+      },
+      "booleanFlags": [],
+      "children": [
+        {
+          "isApiGroup": true,
+          "type": "param",
+          "items": [
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "flagName",
+              "fullName": "function:file.*.item.*.*.parse/flagName",
+              "file": "src/hooks/file/*/item/*/*/parse.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "string",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "string"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 17
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "flagContent",
+              "fullName": "function:file.*.item.*.*.parse/flagContent",
+              "file": "src/hooks/file/*/item/*/*/parse.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "string",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "string"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 17
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "comment",
+              "fullName": "function:file.*.item.*.*.parse/comment",
+              "file": "src/hooks/file/*/item/*/*/parse.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Comment",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Comment"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 17
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "item",
+              "fullName": "function:file.*.item.*.*.parse/item",
+              "file": "src/hooks/file/*/item/*/*/parse.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Item",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Item"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 17
+            }
+          ]
+        }
+      ],
+      "childTypes": [
+        "param"
+      ],
+      "line": 17
+    },
+    {
+      "isFunction": true,
+      "isApiItem": true,
+      "group": "hook",
+      "type": "function",
+      "name": "file.*.item.*.*.prepare",
+      "fullName": "function:file.*.item.*.*.prepare",
+      "file": "src/hooks/file/*/item/*/*/prepare.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+      "fileType": "js",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
+      "level": 1,
+      "flags": {
+        "returnDescription": [
+          {
+            "contentType": "string",
+            "content": "(un)Modified flag content",
+            "template": "js.flag.returnDescription"
+          }
+        ],
+        "returns": [
+          {
+            "contentType": "string",
+            "content": "string",
+            "template": "js.flag.returns"
+          }
+        ]
+      },
+      "plainFlags": {
+        "returnDescription": [
+          "(un)Modified flag content"
+        ],
+        "returns": [
+          "string"
+        ]
+      },
+      "booleanFlags": [],
+      "children": [
+        {
+          "isApiGroup": true,
+          "type": "param",
+          "items": [
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "flagName",
+              "fullName": "function:file.*.item.*.*.prepare/flagName",
+              "file": "src/hooks/file/*/item/*/*/prepare.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "string",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "string"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 12
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "flagContent",
+              "fullName": "function:file.*.item.*.*.prepare/flagContent",
+              "file": "src/hooks/file/*/item/*/*/prepare.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "string",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "string"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 12
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "item",
+              "fullName": "function:file.*.item.*.*.prepare/item",
+              "file": "src/hooks/file/*/item/*/*/prepare.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Item",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Item"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 12
+            }
+          ]
+        }
+      ],
+      "childTypes": [
+        "param"
+      ],
+      "line": 12
+    },
+    {
+      "isFunction": true,
+      "isApiItem": true,
+      "group": "hook",
+      "type": "function",
+      "name": "sort.by",
+      "fullName": "function:sort.by",
+      "file": "src/hooks/sort/by.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+      "fileType": "js",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
+      "level": 1,
+      "flags": {
+        "returns": [
+          {
+            "contentType": "string",
+            "content": "array",
+            "template": "js.flag.returns"
+          }
+        ]
+      },
+      "plainFlags": {
+        "returns": [
+          "array"
+        ]
+      },
+      "booleanFlags": [],
+      "children": [
+        {
+          "isApiGroup": true,
+          "type": "param",
+          "items": [
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "items",
+              "fullName": "function:sort.by/items",
+              "file": "src/hooks/sort/by.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "array",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "array"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 14
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "cfg",
+              "fullName": "function:sort.by/cfg",
+              "file": "src/hooks/sort/by.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "object",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "object"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 14
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "doc",
+              "fullName": "function:sort.by/doc",
+              "file": "src/hooks/sort/by.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Documentor",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Documentor"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 14
+            }
+          ]
+        }
+      ],
+      "childTypes": [
+        "param"
+      ],
+      "line": 14,
+      "description": [
+        {
+          "contentType": "string",
+          "content": "Sort items by function",
+          "template": "js.flag.description"
+        }
+      ]
+    },
+    {
+      "isFunction": true,
+      "isApiItem": true,
+      "group": "hook",
+      "type": "function",
+      "name": "sort.exact",
+      "fullName": "function:sort.exact",
+      "file": "src/hooks/sort/exact.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+      "fileType": "js",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
+      "level": 1,
+      "flags": {
+        "returns": [
+          {
+            "contentType": "string",
+            "content": "array",
+            "template": "js.flag.returns"
+          }
+        ]
+      },
+      "plainFlags": {
+        "returns": [
+          "array"
+        ]
+      },
+      "booleanFlags": [],
+      "children": [
+        {
+          "isApiGroup": true,
+          "type": "param",
+          "items": [
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "items",
+              "fullName": "function:sort.exact/items",
+              "file": "src/hooks/sort/exact.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "array",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "array"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "cfg",
+              "fullName": "function:sort.exact/cfg",
+              "file": "src/hooks/sort/exact.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "object",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "object"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "doc",
+              "fullName": "function:sort.exact/doc",
+              "file": "src/hooks/sort/exact.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Documentor",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Documentor"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "childTypes": [
+        "param"
+      ],
+      "line": 13,
+      "description": [
+        {
+          "contentType": "string",
+          "content": "Sort items by exact order",
+          "template": "js.flag.description"
+        }
+      ]
+    },
+    {
+      "isFunction": true,
+      "isApiItem": true,
+      "group": "hook",
+      "type": "function",
+      "name": "sort.name",
+      "fullName": "function:sort.name",
+      "file": "src/hooks/sort/name.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+      "fileType": "js",
+      "template": "js.item.function",
+      "hasInherited": false,
+      "isInherited": false,
+      "level": 1,
+      "flags": {
+        "returns": [
+          {
+            "contentType": "string",
+            "content": "array",
+            "template": "js.flag.returns"
+          }
+        ]
+      },
+      "plainFlags": {
+        "returns": [
+          "array"
+        ]
+      },
+      "booleanFlags": [],
+      "children": [
+        {
+          "isApiGroup": true,
+          "type": "param",
+          "items": [
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "items",
+              "fullName": "function:sort.name/items",
+              "file": "src/hooks/sort/name.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "array",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "array"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "cfg",
+              "fullName": "function:sort.name/cfg",
+              "file": "src/hooks/sort/name.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "object",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "object"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            },
+            {
+              "isApiItem": true,
+              "group": "param",
+              "type": "param",
+              "name": "doc",
+              "fullName": "function:sort.name/doc",
+              "file": "src/hooks/sort/name.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+              "fileType": "js",
+              "template": "js.item.param",
+              "hasInherited": false,
+              "isInherited": false,
+              "level": 2,
+              "flags": {
+                "type": [
+                  {
+                    "contentType": "string",
+                    "content": "Documentor",
+                    "template": "js.flag.type"
+                  }
+                ]
+              },
+              "plainFlags": {
+                "type": [
+                  "Documentor"
+                ]
+              },
+              "booleanFlags": [],
+              "children": [],
+              "childTypes": [],
+              "line": 13
+            }
+          ]
+        }
+      ],
+      "childTypes": [
+        "param"
+      ],
+      "line": 13,
+      "description": [
+        {
+          "contentType": "string",
+          "content": "Sort items by name. Uses item's getSortableName()",
+          "template": "js.flag.description"
+        }
+      ]
+    },
+    {
+      "isApiItem": true,
+      "group": "hook",
+      "type": "var",
+      "name": "files",
+      "fullName": "var:files",
+      "file": "src/hooks/files.js",
+      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
+      "fileType": "js",
+      "template": "js.item.var",
+      "hasInherited": false,
+      "isInherited": false,
+      "level": 1,
+      "flags": {
+        "type": [
+          {
+            "contentType": "string",
+            "content": "array",
+            "template": "js.flag.type"
+          }
+        ]
+      },
+      "plainFlags": {
+        "type": [
+          "array"
         ]
       },
       "booleanFlags": [],
@@ -716,246 +938,16 @@
           "items": [
             {
               "isApiItem": true,
+              "group": "property",
               "type": "property",
-              "name": "path",
-              "fullName": "class:SourceFile.path",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
+              "name": null,
+              "fullName": "var:files.property",
+              "file": "src/hooks/files.js",
+              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
               "fileType": "js",
               "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "string",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "string"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 26
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "exportPath",
-              "fullName": "class:SourceFile.exportPath",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "string",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "string"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 31
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "dir",
-              "fullName": "class:SourceFile.dir",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "string",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "string"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 36
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "ext",
-              "fullName": "class:SourceFile.ext",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "string",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "string"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 41
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "doc",
-              "fullName": "class:SourceFile.doc",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "typeRef",
-                    "content": "Documentor",
-                    "template": "js.flag.type",
-                    "ref": "class:Documentor"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "Documentor"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 46
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "contextStack",
-              "fullName": "class:SourceFile.contextStack",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "array",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "array"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 51
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "comments",
-              "fullName": "class:SourceFile.comments",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "array",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "array"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 56
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "content",
-              "fullName": "class:SourceFile.content",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "string",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "string"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 61
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "tmp",
-              "fullName": "class:SourceFile.tmp",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
+              "hasInherited": false,
+              "isInherited": false,
               "level": 2,
               "flags": {
                 "type": [
@@ -972,568 +964,166 @@
                 ]
               },
               "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 66
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "options",
-              "fullName": "class:SourceFile.options",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "object",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "object"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 71
-            },
-            {
-              "isApiItem": true,
-              "type": "property",
-              "name": "hidden",
-              "fullName": "class:SourceFile.hidden",
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/SourceFile.js",
-              "fileType": "js",
-              "template": "js.item.property",
-              "level": 2,
-              "flags": {
-                "type": [
-                  {
-                    "contentType": "string",
-                    "content": "boolean",
-                    "template": "js.flag.type"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "type": [
-                  "boolean"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [],
-              "childTypes": [],
-              "line": 76
-            }
-          ]
-        },
-        {
-          "isApiGroup": true,
-          "type": "method",
-          "name": "Method",
-          "groupName": "Methods",
-          "items": [
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "pcall",
-              "fullName": null,
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "inherits": [
-                  {
-                    "contentType": "string",
-                    "content": "class:Base",
-                    "template": "js.flag.inherits"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "inherits": [
-                  "class:Base"
-                ]
-              },
-              "booleanFlags": [],
               "children": [
                 {
                   "isApiGroup": true,
-                  "type": "param",
+                  "type": "property",
+                  "name": "Property",
+                  "groupName": "Properties",
                   "items": [
                     {
                       "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
+                      "group": "property",
+                      "type": "property",
+                      "name": "ext",
+                      "fullName": "var:files.property.ext",
+                      "file": "src/hooks/files.js",
+                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
                       "fileType": "js",
-                      "template": "js.item.param",
+                      "template": "js.item.property",
+                      "hasInherited": false,
+                      "isInherited": false,
                       "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
+                      "flags": {
+                        "type": [
+                          {
+                            "contentType": "string",
+                            "content": "string",
+                            "template": "js.flag.type"
+                          },
+                          {
+                            "contentType": "string",
+                            "content": "regexp",
+                            "template": "js.flag.type"
+                          }
+                        ]
+                      },
+                      "plainFlags": {
+                        "type": [
+                          "string",
+                          "regexp"
+                        ]
+                      },
                       "booleanFlags": [],
                       "children": [],
                       "childTypes": [],
-                      "line": 41
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 41
-            },
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "pget",
-              "fullName": null,
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "inherits": [
-                  {
-                    "contentType": "string",
-                    "content": "class:Base",
-                    "template": "js.flag.inherits"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "inherits": [
-                  "class:Base"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "collect",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "passthru",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [
+                      "description": [
                         {
-                          "isApiGroup": true,
-                          "type": "property",
-                          "name": "Property",
-                          "groupName": "Properties",
-                          "items": [
-                            {
-                              "isApiItem": true,
-                              "type": "property",
-                              "name": "value",
-                              "fullName": null,
-                              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "fileType": "js",
-                              "template": "js.item.property",
-                              "level": 4,
-                              "flags": {},
-                              "plainFlags": {},
-                              "booleanFlags": [],
-                              "children": [],
-                              "childTypes": []
-                            }
-                          ]
+                          "contentType": "string",
+                          "content": "File extension",
+                          "template": "js.flag.description"
                         }
-                      ],
-                      "childTypes": [
-                        "property"
-                      ],
-                      "line": 83
+                      ]
                     },
                     {
                       "isApiItem": true,
-                      "type": "param",
-                      "name": "exact",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
+                      "group": "property",
+                      "type": "property",
+                      "name": "class",
+                      "fullName": "var:files.property.class",
+                      "file": "src/hooks/files.js",
+                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
                       "fileType": "js",
-                      "template": "js.item.param",
+                      "template": "js.item.property",
+                      "hasInherited": false,
+                      "isInherited": false,
                       "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
+                      "flags": {
+                        "type": [
+                          {
+                            "contentType": "string",
+                            "content": "string",
+                            "template": "js.flag.type"
+                          }
+                        ]
+                      },
+                      "plainFlags": {
+                        "type": [
+                          "string"
+                        ]
+                      },
                       "booleanFlags": [],
                       "children": [],
                       "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "merge",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
+                      "description": [
+                        {
+                          "contentType": "string",
+                          "content": "File class name",
+                          "template": "js.flag.description"
+                        }
+                      ]
                     }
                   ]
                 }
               ],
               "childTypes": [
-                "param"
-              ],
-              "line": 83
+                "property"
+              ]
             }
           ]
         }
       ],
       "childTypes": [
-        "property",
-        "method"
+        "property"
       ],
-      "line": 18
-    },
-    {
-      "isApiItem": true,
-      "type": "class",
-      "name": "Documentor",
-      "fullName": "class:Documentor",
-      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Documentor.js",
-      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Documentor.js",
-      "fileType": "js",
-      "template": "js.item.class",
-      "level": 1,
-      "flags": {
-        "extends": [
-          {
-            "contentType": "typeRef",
-            "content": "Base",
-            "template": "js.flag.extends",
-            "ref": "class:Base"
-          }
-        ],
-        "mixes": [
-          {
-            "contentType": "typeRef",
-            "content": "mixin.Observable",
-            "template": "js.flag.mixes",
-            "ref": "mixin.Observable"
-          }
-        ]
-      },
-      "plainFlags": {
-        "extends": [
-          "Base"
-        ],
-        "mixes": [
-          "mixin.Observable"
-        ]
-      },
-      "booleanFlags": [],
-      "children": [
+      "line": 14,
+      "description": [
         {
-          "isApiGroup": true,
-          "type": "method",
-          "name": "Method",
-          "groupName": "Methods",
-          "items": [
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "pcall",
-              "fullName": null,
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "inherits": [
-                  {
-                    "contentType": "string",
-                    "content": "class:Base",
-                    "template": "js.flag.inherits"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "inherits": [
-                  "class:Base"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 41
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 41
-            },
-            {
-              "isApiItem": true,
-              "type": "method",
-              "name": "pget",
-              "fullName": null,
-              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-              "fileType": "js",
-              "template": "js.item.method",
-              "level": 2,
-              "flags": {
-                "inherits": [
-                  {
-                    "contentType": "string",
-                    "content": "class:Base",
-                    "template": "js.flag.inherits"
-                  }
-                ]
-              },
-              "plainFlags": {
-                "inherits": [
-                  "class:Base"
-                ]
-              },
-              "booleanFlags": [],
-              "children": [
-                {
-                  "isApiGroup": true,
-                  "type": "param",
-                  "items": [
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "name",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "collect",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "passthru",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [
-                        {
-                          "isApiGroup": true,
-                          "type": "property",
-                          "name": "Property",
-                          "groupName": "Properties",
-                          "items": [
-                            {
-                              "isApiItem": true,
-                              "type": "property",
-                              "name": "value",
-                              "fullName": null,
-                              "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                              "fileType": "js",
-                              "template": "js.item.property",
-                              "level": 4,
-                              "flags": {},
-                              "plainFlags": {},
-                              "booleanFlags": [],
-                              "children": [],
-                              "childTypes": []
-                            }
-                          ]
-                        }
-                      ],
-                      "childTypes": [
-                        "property"
-                      ],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "exact",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    },
-                    {
-                      "isApiItem": true,
-                      "type": "param",
-                      "name": "merge",
-                      "fullName": null,
-                      "file": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/Base.js",
-                      "fileType": "js",
-                      "template": "js.item.param",
-                      "level": 3,
-                      "flags": {},
-                      "plainFlags": {},
-                      "booleanFlags": [],
-                      "children": [],
-                      "childTypes": [],
-                      "line": 83
-                    }
-                  ]
-                }
-              ],
-              "childTypes": [
-                "param"
-              ],
-              "line": 83
-            }
-          ]
+          "contentType": "string",
+          "content": "List of file extension properties.",
+          "template": "js.flag.description"
         }
-      ],
-      "childTypes": [
-        "method"
-      ],
-      "line": 27
+      ]
     }
   ],
+  "content": [],
   "structure": {
-    "class": {
-      "type": "class",
-      "groupName": "Classes",
+    "hook": {
+      "type": "hook",
+      "groupName": "Hooks",
+      "where": "top-menu",
       "children": [
         {
-          "id": "class:Base",
-          "name": "Base"
+          "id": "function:file.*.item.*.*.add",
+          "name": "file.*.item.*.*.add",
+          "pathPrefix": "item",
+          "isItem": true
         },
         {
-          "id": "class:Comment",
-          "name": "Comment"
+          "id": "function:file.*.item.*.*.parse",
+          "name": "file.*.item.*.*.parse",
+          "pathPrefix": "item",
+          "isItem": true
         },
         {
-          "id": "class:SourceFile",
-          "name": "SourceFile"
+          "id": "function:file.*.item.*.*.prepare",
+          "name": "file.*.item.*.*.prepare",
+          "pathPrefix": "item",
+          "isItem": true
         },
         {
-          "id": "class:Documentor",
-          "name": "Documentor"
+          "id": "var:files",
+          "name": "files",
+          "pathPrefix": "item",
+          "isItem": true
+        },
+        {
+          "id": "function:sort.by",
+          "name": "sort.by",
+          "pathPrefix": "item",
+          "isItem": true
+        },
+        {
+          "id": "function:sort.exact",
+          "name": "sort.exact",
+          "pathPrefix": "item",
+          "isItem": true
+        },
+        {
+          "id": "function:sort.name",
+          "name": "sort.name",
+          "pathPrefix": "item",
+          "isItem": true
         }
       ]
     }

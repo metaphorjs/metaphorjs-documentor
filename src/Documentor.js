@@ -38,6 +38,8 @@ module.exports = Base.$extend({
     id: null,
     map: null,
     content: null,
+    runner: null,
+    hookDirs: null,
 
 
     /**
@@ -56,6 +58,7 @@ module.exports = Base.$extend({
         self.files      = {};
         self.map        = {};
         self.content    = {};
+        self.hookDirs   = [];
         self.root       = new Item({
             doc:        self,
             type:       "root",
@@ -68,6 +71,8 @@ module.exports = Base.$extend({
         extend(self, cfg, true, false);
 
         self.hooks      = new Cache(true);
+
+        self.hookDirs.push(path.normalize(self.runner.getMjsDocRoot() + "/src/hooks"));
 
         self.$super(cfg);
     },
@@ -405,6 +410,7 @@ module.exports = Base.$extend({
         var self = this,
             r = require;
 
+        self.hookDirs.push(dir);
         self.eachHook(dir, "js", function(name, file){
             self.hooks.add(name, r(file));
         });

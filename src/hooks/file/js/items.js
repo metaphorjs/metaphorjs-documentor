@@ -13,6 +13,7 @@ module.exports = (function(){
             extendable: true,
             transform: {
                 "function": "method",
+                "constructor": "method",
                 "var":      "property"
             },
             displayName: displayName,

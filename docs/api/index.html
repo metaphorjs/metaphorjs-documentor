@@ -1,0 +1,2344 @@
+<!DOCTYPE html><html mjs-app="DocsApp"><head lang="en">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>MetaphorJs.Documentor</title>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/prism/themes/prism.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <link rel="stylesheet" href="assets/style.css">
+
+    <script type="text/javascript" src="bower_components/prism/prism.js"></script>
+    <script type="text/javascript" src="bower_components/prism/plugins/keep-markup/prism-keep-markup.min.js"></script>
+    <script type="text/javascript" src="assets/metaphorjs.js"></script>
+</head>
+<body>
+
+
+<div class="navbar navbar-expand navbar-dark bg-dark fixed-top" role="navigation" (click)="this.$app.trigger('menu-toggle', null, null)" {if}="!this.pageOptions.hideTopMenu" {class.fixed-top}="!this.multipage">
+
+    <a class="navbar-brand" [href]=".topTitleLink || '#'" {bind}=".topTitle || .title"></a>
+
+
+    <mjs-if value="this.$app.hasNav('top-menu')">
+
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarToggler1" aria-controls="navbarToggler1" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse">
+
+        <ul class="navbar-nav">
+            <li class="nav-item dropdown" {each}="section in .sourceTree.structure | toArray | navFilter:'top-menu'" {init}="this.open = false; this.mid = this.$app.initMenuItem()">
+                <a href="#" (click)="this.open = this.$app.toggleMenuItem(this.open, this.mid)" (click.$stop-propagation)="true" {update-on.menu-toggle}="this.$app" {update-on.$code}="
+                        if (this.$event[0] != this.mid) {
+                            this.open = false;
+                        }
+                    " class="nav-link dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+                    <span {bind}=".section.value.groupName"></span>
+                    <span class="caret"></span>
+                </a>
+                <div class="dropdown-menu" role="menu" (click)="this.open = this.$app.toggleMenuItem(this.open, this.mid)" (click.$prevent-default)="true" (click.$stop-propagation)="true" {show}="this.open" {show.$display}="block">
+                    <a class="dropdown-item" {each}="item in .section.value.children" [href]="this.$app.getItemUrl(this.item)" (click)="this.$app.goto(this.$app.getItemUrl(this.item))" {bind}=".item.name"></a>
+                </div>
+            </li>
+        </ul>
+        <!--
+        <ul class="navbar-nav navbar-right"
+            {if}=".hasOwnProperty('topRightMenu')">
+            <li class="nav-item" 
+                {each}="item in .topRightMenu">
+                <a class="nav-link" 
+                    [href]=".item.href" 
+                    {bind}=".item.name"></a>
+            </li>
+        </ul>-->
+
+    </div>
+    </mjs-if> 
+</div>
+
+<div class="jumbotron">
+    <div class="container">
+        <h1>MetaphorJs.Documentor</h1>
+        <p></p>
+        <p></p>
+    </div>
+</div>
+
+<div class="container source-container">
+    <div class="row item-group level-0">
+        <div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:file.*.item.*.*.add">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">file.*.item.*.*.add</span>
+        
+            
+                <span class="item-name-arguments">(flagName, flagContent, item)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    boolean
+            </span>
+        
+    </h3>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.add/flagName">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagName</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.add/flagContent">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagContent</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.add/item">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Item</span>
+        
+        
+        <span class="item-name">item</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+        <div class="item-returns level-1">
+    
+        <span class="item-name-returns">-&gt;
+            {boolean}
+        </span>
+    
+    <span class="item-name-return-descr">Return false to cancel adding this flag</span>
+</div>
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:file.*.item.*.*.parse">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">file.*.item.*.*.parse</span>
+        
+            
+                <span class="item-name-arguments">(flagName, flagContent, comment, item)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    object
+            </span>
+        
+    </h3>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.parse/flagName">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagName</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.parse/flagContent">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagContent</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.parse/comment">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Comment</span>
+        
+        
+        <span class="item-name">comment</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.parse/item">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Item</span>
+        
+        
+        <span class="item-name">item</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:file.*.item.*.*.prepare">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">file.*.item.*.*.prepare</span>
+        
+            
+                <span class="item-name-arguments">(flagName, flagContent, item)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    string
+            </span>
+        
+    </h3>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.prepare/flagName">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagName</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.prepare/flagContent">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">flagContent</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:file.*.item.*.*.prepare/item">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Item</span>
+        
+        
+        <span class="item-name">item</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+        <div class="item-returns level-1">
+    
+        <span class="item-name-returns">-&gt;
+            {string}
+        </span>
+    
+    <span class="item-name-return-descr">(un)Modified flag content</span>
+</div>
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:sort.by">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">sort.by</span>
+        
+            
+                <span class="item-name-arguments">(items, cfg, doc)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    array
+            </span>
+        
+    </h3>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>Sort items by function</p>
+
+        
+        
+    </div>
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.by/items">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">array</span>
+        
+        
+        <span class="item-name">items</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.by/cfg">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object</span>
+        
+        
+        <span class="item-name">cfg</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.by/doc">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Documentor</span>
+        
+        
+        <span class="item-name">doc</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:sort.exact">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">sort.exact</span>
+        
+            
+                <span class="item-name-arguments">(items, cfg, doc)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    array
+            </span>
+        
+    </h3>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>Sort items by exact order</p>
+
+        
+        
+    </div>
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.exact/items">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">array</span>
+        
+        
+        <span class="item-name">items</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.exact/cfg">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object</span>
+        
+        
+        <span class="item-name">cfg</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.exact/doc">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Documentor</span>
+        
+        
+        <span class="item-name">doc</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-function">
+        <div class="item-header" id="function:sort.name">
+    
+        
+    
+    <h3>
+        
+        
+            <span class="item-type">function</span>
+        
+        <span class="item-name">sort.name</span>
+        
+            
+                <span class="item-name-arguments">(items, cfg, doc)</span>
+            
+            
+            
+                <span class="item-name-returns">&nbsp;-&gt;
+                    array
+            </span>
+        
+    </h3>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>Sort items by name. Uses item's getSortableName()</p>
+
+        
+        
+    </div>
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-param level-0">
+        <li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.name/items">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">array</span>
+        
+        
+        <span class="item-name">items</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.name/cfg">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object</span>
+        
+        
+        <span class="item-name">cfg</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-param">
+            <div class="item-header" id="function:sort.name/doc">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">Documentor</span>
+        
+        
+        <span class="item-name">doc</span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+
+        </div><div class="col-md-12 item-group-items level-0 item-group-type-var">
+        <div class="item-header" id="var:files">
+    
+        
+    
+    <h3>
+        
+            <span class="item-type">array</span>
+        
+        
+        <span class="item-name">files</span>
+        
+    </h3>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>List of file extension properties.</p>
+
+        
+        
+    </div>
+
+
+
+
+
+<div class="row">
+    <div class="col-3 col-md-3 nopadding item-nav-container">
+        <ul class="item-nav">
+    <li class="item-nav-group-name">Properties</li>
+    <li class="item-nav-property item-nav-property-property">
+
+        <a href="#var:files.property" title="">
+            <span class="item-nav-item-name"></span>
+            
+        </a>
+    </li>
+</ul>
+
+    </div>
+    <div class="col-9 col-md-9 nopadding item-properties-container">
+        
+    <div class="item-property-group-name">Properties</div>
+    <ul class="item-properties item-properties-property level-0">
+        <li class="item-property item-property-property">
+            <div class="item-header" id="var:files.property">
+    
+        
+    
+    <h4>
+        
+            <span class="item-type">object</span>
+        
+        
+        <span class="item-name"></span>
+        
+    </h4>
+</div>
+
+
+
+
+
+
+
+
+
+    
+    
+    <ul class="item-properties item-properties-property level-1">
+        <li class="item-property item-property-property">
+            <div class="item-header" id="var:files.property.ext">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">string | regexp</span>
+        
+        
+        <span class="item-name">ext</span>
+        
+    </h5>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>File extension</p>
+
+        
+        
+    </div>
+
+
+
+
+
+
+
+
+    
+    
+
+        </li><li class="item-property item-property-property">
+            <div class="item-header" id="var:files.property.class">
+    
+        
+    
+    <h5>
+        
+            <span class="item-type">string</span>
+        
+        
+        <span class="item-name">class</span>
+        
+    </h5>
+</div>
+
+
+    <div class="item-description">
+        
+            <p>File class name</p>
+
+        
+        
+    </div>
+
+
+
+
+
+
+
+
+    
+    
+
+        </li>
+    </ul>
+
+    
+
+        </li>
+    </ul>
+
+    </div>
+</div>
+
+
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="container"></div>
+</div>
+
+<script>window.docsData = {
+  "title": "MetaphorJs.Documentor",
+  "styles": [
+    "assets/style.css"
+  ],
+  "scripts": [],
+  "pageOptions": {},
+  "sourceTree": {
+    "items": [
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "file.*.item.*.*.add",
+        "fullName": "function:file.*.item.*.*.add",
+        "file": "src/hooks/file/*/item/*/*/add.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returnDescription": [
+            {
+              "contentType": "string",
+              "content": "Return false to cancel adding this flag",
+              "template": "js.flag.returnDescription",
+              "$$04N": "04P"
+            }
+          ],
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "boolean",
+              "template": "js.flag.returns",
+              "$$05O": "05Q"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returnDescription": [
+            "Return false to cancel adding this flag"
+          ],
+          "returns": [
+            "boolean"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagName",
+                "fullName": "function:file.*.item.*.*.add/flagName",
+                "file": "src/hooks/file/*/item/*/*/add.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$0EL": "0EN",
+                      "$$0WL": "0WN"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 11,
+                "$$03G": "03M",
+                "$$07R": "07T",
+                "$$0BL": "0BN",
+                "$$0TL": "0TN"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagContent",
+                "fullName": "function:file.*.item.*.*.add/flagContent",
+                "file": "src/hooks/file/*/item/*/*/add.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$0K8": "0KA",
+                      "$$128": "12A"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 11,
+                "$$03G": "03N",
+                "$$07R": "07U",
+                "$$0BL": "0BO",
+                "$$0TL": "0TO"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "item",
+                "fullName": "function:file.*.item.*.*.add/item",
+                "file": "src/hooks/file/*/item/*/*/add.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/add.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Item",
+                      "template": "js.flag.type",
+                      "$$0PV": "0PX",
+                      "$$17V": "17X"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Item"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 11,
+                "$$03G": "03O",
+                "$$07R": "07V",
+                "$$0BL": "0BP",
+                "$$0TL": "0TP"
+              }
+            ],
+            "$$07E": "07G"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 11,
+        "$$01G": "01I"
+      },
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "file.*.item.*.*.parse",
+        "fullName": "function:file.*.item.*.*.parse",
+        "file": "src/hooks/file/*/item/*/*/parse.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "object",
+              "template": "js.flag.returns",
+              "$$1E3": "1E5"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returns": [
+            "object"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagName",
+                "fullName": "function:file.*.item.*.*.parse/flagName",
+                "file": "src/hooks/file/*/item/*/*/parse.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$1O1": "1O3",
+                      "$$2BQ": "2BS"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 17,
+                "$$1CW": "1D2",
+                "$$1G6": "1G8",
+                "$$1KZ": "1L1",
+                "$$28O": "28Q"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagContent",
+                "fullName": "function:file.*.item.*.*.parse/flagContent",
+                "file": "src/hooks/file/*/item/*/*/parse.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$1TO": "1TQ",
+                      "$$2HD": "2HF"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 17,
+                "$$1CW": "1D3",
+                "$$1G6": "1G9",
+                "$$1KZ": "1L2",
+                "$$28O": "28R"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "comment",
+                "fullName": "function:file.*.item.*.*.parse/comment",
+                "file": "src/hooks/file/*/item/*/*/parse.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Comment",
+                      "template": "js.flag.type",
+                      "$$1ZB": "1ZD",
+                      "$$2N0": "2N2"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Comment"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 17,
+                "$$1CW": "1D4",
+                "$$1G6": "1GA",
+                "$$1KZ": "1L3",
+                "$$28O": "28S"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "item",
+                "fullName": "function:file.*.item.*.*.parse/item",
+                "file": "src/hooks/file/*/item/*/*/parse.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/parse.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Item",
+                      "template": "js.flag.type",
+                      "$$24Y": "250",
+                      "$$2SN": "2SP"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Item"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 17,
+                "$$1CW": "1D5",
+                "$$1G6": "1GB",
+                "$$1KZ": "1L4",
+                "$$28O": "28T"
+              }
+            ],
+            "$$1FT": "1FV"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 17,
+        "$$01G": "01J"
+      },
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "file.*.item.*.*.prepare",
+        "fullName": "function:file.*.item.*.*.prepare",
+        "file": "src/hooks/file/*/item/*/*/prepare.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returnDescription": [
+            {
+              "contentType": "string",
+              "content": "(un)Modified flag content",
+              "template": "js.flag.returnDescription",
+              "$$2YV": "2YX"
+            }
+          ],
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "string",
+              "template": "js.flag.returns",
+              "$$2ZW": "2ZY"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returnDescription": [
+            "(un)Modified flag content"
+          ],
+          "returns": [
+            "string"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagName",
+                "fullName": "function:file.*.item.*.*.prepare/flagName",
+                "file": "src/hooks/file/*/item/*/*/prepare.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$38T": "38V",
+                      "$$3QT": "3QV"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 12,
+                "$$2XO": "2XU",
+                "$$31Z": "321",
+                "$$35T": "35V",
+                "$$3NT": "3NV"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "flagContent",
+                "fullName": "function:file.*.item.*.*.prepare/flagContent",
+                "file": "src/hooks/file/*/item/*/*/prepare.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "string",
+                      "template": "js.flag.type",
+                      "$$3EG": "3EI",
+                      "$$3WG": "3WI"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "string"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 12,
+                "$$2XO": "2XV",
+                "$$31Z": "322",
+                "$$35T": "35W",
+                "$$3NT": "3NW"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "item",
+                "fullName": "function:file.*.item.*.*.prepare/item",
+                "file": "src/hooks/file/*/item/*/*/prepare.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/file/*/item/*/*/prepare.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Item",
+                      "template": "js.flag.type",
+                      "$$3K3": "3K5",
+                      "$$423": "425"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Item"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 12,
+                "$$2XO": "2XW",
+                "$$31Z": "323",
+                "$$35T": "35X",
+                "$$3NT": "3NX"
+              }
+            ],
+            "$$31M": "31O"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 12,
+        "$$01G": "01K"
+      },
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "sort.by",
+        "fullName": "function:sort.by",
+        "file": "src/hooks/sort/by.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "array",
+              "template": "js.flag.returns",
+              "$$48A": "48C"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returns": [
+            "array"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "items",
+                "fullName": "function:sort.by/items",
+                "file": "src/hooks/sort/by.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "array",
+                      "template": "js.flag.type",
+                      "$$4HN": "4HP",
+                      "$$4ZN": "4ZP"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "array"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 14,
+                "$$474": "47A",
+                "$$4AT": "4AV",
+                "$$4EN": "4EP",
+                "$$4WN": "4WP"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "cfg",
+                "fullName": "function:sort.by/cfg",
+                "file": "src/hooks/sort/by.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "object",
+                      "template": "js.flag.type",
+                      "$$4NA": "4NC",
+                      "$$55A": "55C"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "object"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 14,
+                "$$474": "47B",
+                "$$4AT": "4AW",
+                "$$4EN": "4EQ",
+                "$$4WN": "4WQ"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "doc",
+                "fullName": "function:sort.by/doc",
+                "file": "src/hooks/sort/by.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/by.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Documentor",
+                      "template": "js.flag.type",
+                      "$$4SX": "4SZ",
+                      "$$5AX": "5AZ"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Documentor"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 14,
+                "$$474": "47C",
+                "$$4AT": "4AX",
+                "$$4EN": "4ER",
+                "$$4WN": "4WR"
+              }
+            ],
+            "$$4AG": "4AI"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 14,
+        "description": [
+          {
+            "contentType": "string",
+            "content": "Sort items by function",
+            "template": "js.flag.description",
+            "$$49H": "49J"
+          }
+        ],
+        "$$01G": "01L"
+      },
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "sort.exact",
+        "fullName": "function:sort.exact",
+        "file": "src/hooks/sort/exact.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "array",
+              "template": "js.flag.returns",
+              "$$5H4": "5H6"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returns": [
+            "array"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "items",
+                "fullName": "function:sort.exact/items",
+                "file": "src/hooks/sort/exact.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "array",
+                      "template": "js.flag.type",
+                      "$$5QH": "5QJ",
+                      "$$68H": "68J"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "array"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$5FY": "5G4",
+                "$$5JN": "5JP",
+                "$$5NH": "5NJ",
+                "$$65H": "65J"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "cfg",
+                "fullName": "function:sort.exact/cfg",
+                "file": "src/hooks/sort/exact.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "object",
+                      "template": "js.flag.type",
+                      "$$5W4": "5W6",
+                      "$$6E4": "6E6"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "object"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$5FY": "5G5",
+                "$$5JN": "5JQ",
+                "$$5NH": "5NK",
+                "$$65H": "65K"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "doc",
+                "fullName": "function:sort.exact/doc",
+                "file": "src/hooks/sort/exact.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/exact.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Documentor",
+                      "template": "js.flag.type",
+                      "$$61R": "61T",
+                      "$$6JR": "6JT"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Documentor"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$5FY": "5G6",
+                "$$5JN": "5JR",
+                "$$5NH": "5NL",
+                "$$65H": "65L"
+              }
+            ],
+            "$$5JA": "5JC"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 13,
+        "description": [
+          {
+            "contentType": "string",
+            "content": "Sort items by exact order",
+            "template": "js.flag.description",
+            "$$5IB": "5ID"
+          }
+        ],
+        "$$01G": "01M"
+      },
+      {
+        "isFunction": true,
+        "isApiItem": true,
+        "group": "hook",
+        "type": "function",
+        "name": "sort.name",
+        "fullName": "function:sort.name",
+        "file": "src/hooks/sort/name.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+        "fileType": "js",
+        "template": "js.item.function",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "returns": [
+            {
+              "contentType": "string",
+              "content": "array",
+              "template": "js.flag.returns",
+              "$$6PY": "6Q0"
+            }
+          ]
+        },
+        "plainFlags": {
+          "returns": [
+            "array"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "param",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "items",
+                "fullName": "function:sort.name/items",
+                "file": "src/hooks/sort/name.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "array",
+                      "template": "js.flag.type",
+                      "$$6ZB": "6ZD",
+                      "$$7HB": "7HD"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "array"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$6OS": "6OY",
+                "$$6SH": "6SJ",
+                "$$6WB": "6WD",
+                "$$7EB": "7ED"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "cfg",
+                "fullName": "function:sort.name/cfg",
+                "file": "src/hooks/sort/name.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "object",
+                      "template": "js.flag.type",
+                      "$$74Y": "750",
+                      "$$7MY": "7N0"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "object"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$6OS": "6OZ",
+                "$$6SH": "6SK",
+                "$$6WB": "6WE",
+                "$$7EB": "7EE"
+              },
+              {
+                "isApiItem": true,
+                "group": "param",
+                "type": "param",
+                "name": "doc",
+                "fullName": "function:sort.name/doc",
+                "file": "src/hooks/sort/name.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/sort/name.js",
+                "fileType": "js",
+                "template": "js.item.param",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "Documentor",
+                      "template": "js.flag.type",
+                      "$$7AL": "7AN",
+                      "$$7SL": "7SN"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "Documentor"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [],
+                "childTypes": [],
+                "line": 13,
+                "$$6OS": "6P0",
+                "$$6SH": "6SL",
+                "$$6WB": "6WF",
+                "$$7EB": "7EF"
+              }
+            ],
+            "$$6S4": "6S6"
+          }
+        ],
+        "childTypes": [
+          "param"
+        ],
+        "line": 13,
+        "description": [
+          {
+            "contentType": "string",
+            "content": "Sort items by name. Uses item's getSortableName()",
+            "template": "js.flag.description",
+            "$$6R5": "6R7"
+          }
+        ],
+        "$$01G": "01N"
+      },
+      {
+        "isApiItem": true,
+        "group": "hook",
+        "type": "var",
+        "name": "files",
+        "fullName": "var:files",
+        "file": "src/hooks/files.js",
+        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
+        "fileType": "js",
+        "template": "js.item.var",
+        "hasInherited": false,
+        "isInherited": false,
+        "level": 1,
+        "flags": {
+          "type": [
+            {
+              "contentType": "string",
+              "content": "array",
+              "template": "js.flag.type",
+              "$$7YP": "7YR"
+            }
+          ]
+        },
+        "plainFlags": {
+          "type": [
+            "array"
+          ]
+        },
+        "booleanFlags": [],
+        "children": [
+          {
+            "isApiGroup": true,
+            "type": "property",
+            "name": "Property",
+            "groupName": "Properties",
+            "items": [
+              {
+                "isApiItem": true,
+                "group": "property",
+                "type": "property",
+                "name": null,
+                "fullName": "var:files.property",
+                "file": "src/hooks/files.js",
+                "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
+                "fileType": "js",
+                "template": "js.item.property",
+                "hasInherited": false,
+                "isInherited": false,
+                "level": 2,
+                "flags": {
+                  "type": [
+                    {
+                      "contentType": "string",
+                      "content": "object",
+                      "template": "js.flag.type",
+                      "$$860": "862",
+                      "$$95Z": "961"
+                    }
+                  ]
+                },
+                "plainFlags": {
+                  "type": [
+                    "object"
+                  ]
+                },
+                "booleanFlags": [],
+                "children": [
+                  {
+                    "isApiGroup": true,
+                    "type": "property",
+                    "name": "Property",
+                    "groupName": "Properties",
+                    "items": [
+                      {
+                        "isApiItem": true,
+                        "group": "property",
+                        "type": "property",
+                        "name": "ext",
+                        "fullName": "var:files.property.ext",
+                        "file": "src/hooks/files.js",
+                        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
+                        "fileType": "js",
+                        "template": "js.item.property",
+                        "hasInherited": false,
+                        "isInherited": false,
+                        "level": 3,
+                        "flags": {
+                          "type": [
+                            {
+                              "contentType": "string",
+                              "content": "string",
+                              "template": "js.flag.type",
+                              "$$8DW": "8DY",
+                              "$$8RP": "8RR",
+                              "$$9DV": "9DX",
+                              "$$9RO": "9RQ"
+                            },
+                            {
+                              "contentType": "string",
+                              "content": "regexp",
+                              "template": "js.flag.type",
+                              "$$8DW": "8DZ",
+                              "$$8RP": "8RS",
+                              "$$9DV": "9DY",
+                              "$$9RO": "9RR"
+                            }
+                          ]
+                        },
+                        "plainFlags": {
+                          "type": [
+                            "string",
+                            "regexp"
+                          ]
+                        },
+                        "booleanFlags": [],
+                        "children": [],
+                        "childTypes": [],
+                        "description": [
+                          {
+                            "contentType": "string",
+                            "content": "File extension",
+                            "template": "js.flag.description",
+                            "$$8FP": "8FR",
+                            "$$8TI": "8TK",
+                            "$$9FO": "9FQ",
+                            "$$9TH": "9TJ"
+                          }
+                        ],
+                        "$$883": "885",
+                        "$$8AY": "8B0",
+                        "$$8OR": "8OT",
+                        "$$982": "984",
+                        "$$9AX": "9AZ",
+                        "$$9OQ": "9OS"
+                      },
+                      {
+                        "isApiItem": true,
+                        "group": "property",
+                        "type": "property",
+                        "name": "class",
+                        "fullName": "var:files.property.class",
+                        "file": "src/hooks/files.js",
+                        "originalFile": "/Users/kuindji/projects/metaphorjs/metaphorjs-documentor/src/hooks/files.js",
+                        "fileType": "js",
+                        "template": "js.item.property",
+                        "hasInherited": false,
+                        "isInherited": false,
+                        "level": 3,
+                        "flags": {
+                          "type": [
+                            {
+                              "contentType": "string",
+                              "content": "string",
+                              "template": "js.flag.type",
+                              "$$8KL": "8KN",
+                              "$$8YE": "8YG",
+                              "$$9KK": "9KM",
+                              "$$9YD": "9YF"
+                            }
+                          ]
+                        },
+                        "plainFlags": {
+                          "type": [
+                            "string"
+                          ]
+                        },
+                        "booleanFlags": [],
+                        "children": [],
+                        "childTypes": [],
+                        "description": [
+                          {
+                            "contentType": "string",
+                            "content": "File class name",
+                            "template": "js.flag.description",
+                            "$$8LS": "8LU",
+                            "$$8ZL": "8ZN",
+                            "$$9LR": "9LT",
+                            "$$9ZK": "9ZM"
+                          }
+                        ],
+                        "$$883": "886",
+                        "$$8AY": "8B1",
+                        "$$8OR": "8OU",
+                        "$$982": "985",
+                        "$$9AX": "9B0",
+                        "$$9OQ": "9OT"
+                      }
+                    ],
+                    "$$87Q": "87S",
+                    "$$97P": "97R"
+                  }
+                ],
+                "childTypes": [
+                  "property"
+                ],
+                "$$818": "81A",
+                "$$834": "836",
+                "$$933": "935"
+              }
+            ],
+            "$$80V": "80X"
+          }
+        ],
+        "childTypes": [
+          "property"
+        ],
+        "line": 14,
+        "description": [
+          {
+            "contentType": "string",
+            "content": "List of file extension properties.",
+            "template": "js.flag.description",
+            "$$7ZW": "7ZY"
+          }
+        ],
+        "$$01G": "01O"
+      }
+    ],
+    "content": [],
+    "structure": {
+      "hook": {
+        "type": "hook",
+        "groupName": "Hooks",
+        "where": "top-menu",
+        "children": [
+          {
+            "id": "function:file.*.item.*.*.add",
+            "name": "file.*.item.*.*.add",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "function:file.*.item.*.*.parse",
+            "name": "file.*.item.*.*.parse",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "function:file.*.item.*.*.prepare",
+            "name": "file.*.item.*.*.prepare",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "var:files",
+            "name": "files",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "function:sort.by",
+            "name": "sort.by",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "function:sort.exact",
+            "name": "sort.exact",
+            "pathPrefix": "item",
+            "isItem": true
+          },
+          {
+            "id": "function:sort.name",
+            "name": "sort.name",
+            "pathPrefix": "item",
+            "isItem": true
+          }
+        ]
+      }
+    }
+  }
+}</script>
+<div class="page-loader" {show}="this.loading">
+    <div class="page-loader-spinner">
+        <div class="sk-fading-circle">
+            <div class="sk-circle1 sk-circle"></div>
+            <div class="sk-circle2 sk-circle"></div>
+            <div class="sk-circle3 sk-circle"></div>
+            <div class="sk-circle4 sk-circle"></div>
+            <div class="sk-circle5 sk-circle"></div>
+            <div class="sk-circle6 sk-circle"></div>
+            <div class="sk-circle7 sk-circle"></div>
+            <div class="sk-circle8 sk-circle"></div>
+            <div class="sk-circle9 sk-circle"></div>
+            <div class="sk-circle10 sk-circle"></div>
+            <div class="sk-circle11 sk-circle"></div>
+            <div class="sk-circle12 sk-circle"></div>
+        </div>
+    </div>
+</div>
+
+
+</body></html>

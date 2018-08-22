@@ -1,9 +1,9 @@
 <div [id]=".item.fullName" 
      class="item-header"
-     {init}=".isFunction = .item.type == 'function' ||
-                        .item.type == 'method' ||
+     {init}=".isFunction = .item.isFunction ||
                         (.item.plainFlags.hasOwnProperty('type') &&
-                        .item.plainFlags.type.indexOf('function') != -1 && .item.plainFlags.type.length == 1)">
+                        .item.plainFlags.type.indexOf('function') != -1 && 
+                        .item.plainFlags.type.length == 1)">
     <mjs-if value=".item.hasOwnProperty('booleanFlags')">
         <span class="badge badge-warning item-label" 
               {each}="flag in .item.booleanFlags" 
@@ -14,7 +14,9 @@
             <span class="item-type"
                   {bind-html}=".item.plainFlags.type | map:'filter.typeRef' | join:' | ' | markdownLinks"></span>
         </mjs-if>
-        <mjs-if value=".item.level == 1 && .item.hasOwnProperty('type')">
+        <mjs-if value=".item.level == 1 && 
+                        .item.hasOwnProperty('type') && 
+                        !.item.plainFlags.hasOwnProperty('type')">
             <span class="item-type" {bind}=".item.type"></span>
         </mjs-if>
         <span class="item-name" {bind}=".item.name"></span>
@@ -30,10 +32,6 @@
             <mjs-if value=".item.plainFlags.hasOwnProperty('returns')">
                 <span class="item-name-returns">&nbsp;->
                     <mjs-bind-html value=".item.plainFlags.returns | map:'filter.typeRef' | join:' | ' | markdownLinks"></mjs-bind-html>
-            </mjs-if>
-            <mjs-if value=".item.plainFlags.hasOwnProperty('returnDescription')">
-                <small class="item-name-return-descr"
-                       {bind}=".item.plainFlags.returnDescription[0]"></small>
             </mjs-if>
         </mjs-if>
     </mjs-tag>
