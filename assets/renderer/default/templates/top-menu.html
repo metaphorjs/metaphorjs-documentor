@@ -26,8 +26,8 @@
                 {each}="section in .sourceTree.structure | toArray | navFilter:'top-menu'">
                 <a href="#" 
                     {init}="this.open = false"
-                    (click)="this.open = !this.open"
-                    (blur)="this.open = !this.open"
+                    (click)="this.open = true"
+                    (blur)="this.open = false"
                     (blur.$async)="200"
                     class="nav-link dropdown-toggle" 
                     data-toggle="dropdown"

@@ -377,7 +377,7 @@ module.exports = Base.$extend({
         for (childType in self.content) {
             fn = self.content[childType][0].pget("sort");
             self.content[childType] = fn.call(
-                null, self.content[childType], cfg, self, childType
+                null, self.content[childType], self.cfg, self, childType
             );
         }
         self.pcall("event.contentSorted", self);
