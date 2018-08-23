@@ -154,18 +154,6 @@ module.exports = (function(){
                 args[0] = "*." + args[0];
                 return self.doc.pcall.apply(self.doc, args);
             }
-
-            if (self.type != self.group) {
-                args = toArray(arguments);
-                args[0] = "group." + self.group + "." + args[0];
-                if (self.file) {
-                    return self.file.pcall.apply(self.file, args);
-                }
-                else {
-                    args[0] = "*." + args[0];
-                    return self.doc.pcall.apply(self.doc, args);
-                }
-            }
         },
 
         pget: function(name, collect, passthru) {
@@ -180,18 +168,6 @@ module.exports = (function(){
             else {
                 args[0] = "*." + args[0];
                 return self.doc.pcall.apply(self.doc, args);
-            }
-
-            if (self.type != self.group) {
-                args = toArray(arguments);
-                args[0] = "group." + self.group + "." + args[0];
-                if (self.file) {
-                    return self.file.pget.apply(self.file, args);
-                }
-                else {
-                    args[0] = "*." + args[0];
-                    return self.doc.pcall.apply(self.doc, args);
-                }
             }
         },
 

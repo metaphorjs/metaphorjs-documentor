@@ -34,6 +34,12 @@
     <div class="container" {bind-html}=".footer"></div>
 </div>
 
+<script type="text/mjs-template"
+    {each}="tpl in .templates"
+    [id]=".tpl.name"
+    {bind}=".tpl.tpl" 
+    $ignore-inside></script>
+
 <bind-html value="this.renderDataScript(this.multipage)"></bind-html>
 <mjs-include src="loader" $asis="true"></mjs-include>
 

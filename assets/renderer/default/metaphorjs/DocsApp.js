@@ -190,8 +190,9 @@ App.$extend({
     },
 
     goto: function(url) {
+        console.log(url)
         if (url.substr(0,1) === '#') {
-            window.location.href = url;
+            window.location.hash = url;
         }
         else {
             mhistory.push(url);

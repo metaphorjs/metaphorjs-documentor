@@ -1,0 +1,22 @@
+<mjs-if value=".item.isGroup">
+    <a href="#" 
+        class="dropdown-item">
+        <span class="bd-toc-directory">&#128193;</span>
+        <span {bind}=".item.name"></span>
+    </a>
+
+    <div class="dropdown-submenu" role="menu">
+        <div class="dropdown-item" 
+            {each}="item in .item.children"
+            {init}="this.open = false;"
+            {include}="top-menu.entry">
+        </div>
+    </div>
+</mjs-if>
+<mjs-if value="!.item.isGroup">
+    <a [href]="this.$app.getItemUrl(this.item)" 
+        class="dropdown-item" 
+        {bind}=".item.nameInPath || .item.name">
+    </a>
+</mjs-if>
+

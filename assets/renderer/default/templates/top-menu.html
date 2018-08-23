@@ -1,14 +1,12 @@
 
 <div class="navbar navbar-expand navbar-dark bg-dark fixed-top" 
         role="navigation"
-        (click)="this.$app.trigger('menu-toggle', null, null)"
         {if}="!this.pageOptions.hideTopMenu"
         {class.fixed-top}="!this.multipage">
 
     <a class="navbar-brand" 
         [href]=".topTitleLink || '#'" 
         {bind}=".topTitle || .title"></a>
-
 
     <mjs-if value="this.$app.hasNav('top-menu')">
 
@@ -25,36 +23,24 @@
 
         <ul class="navbar-nav">
             <li class="nav-item dropdown" 
-                {each}="section in .sourceTree.structure | toArray | navFilter:'top-menu'"
-                {init}="this.open = false; this.mid = this.$app.initMenuItem()">
+                {each}="section in .sourceTree.structure | toArray | navFilter:'top-menu'">
                 <a href="#" 
-                    (click)="this.open = this.$app.toggleMenuItem(this.open, this.mid)"
-                    (click.$stop-propagation)="true"
-                    {update-on.menu-toggle}="this.$app"
-                    {update-on.$code}="
-                        if (this.$event[0] != this.mid) {
-                            this.open = false;
-                        }
-                    "
+                    {init}="this.open = false"
+                    (click)="this.open = !this.open"
+                    (blur)="this.open = !this.open"
+                    (blur.$async)="200"
                     class="nav-link dropdown-toggle" 
                     data-toggle="dropdown"
-                    role="button" 
-                    aria-haspopup="true" 
-                    aria-expanded="false">
+                    role="button">
                     <span {bind}=".section.value.groupName"></span>
                     <span class="caret"></span>
                 </a>
                 <div class="dropdown-menu" role="menu" 
-                    (click)="this.open = this.$app.toggleMenuItem(this.open, this.mid)"
-                    (click.$prevent-default)="true"
-                    (click.$stop-propagation)="true"
                     {show}="this.open" 
                     {show.$display}="block">
-                    <a class="dropdown-item" 
+                    <div class="dropdown-item" 
                         {each}="item in .section.value.children"
-                        [href]="this.$app.getItemUrl(this.item)" 
-                        (click)="this.$app.goto(this.$app.getItemUrl(this.item))"
-                        {bind}=".item.name"></a>
+                        {include}="top-menu.entry"></div>
                 </div>
             </li>
         </ul>

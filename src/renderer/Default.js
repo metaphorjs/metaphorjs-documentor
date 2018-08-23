@@ -86,16 +86,16 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             self.initAssets(self.assets);
         }
 
-        if (self.data.multipage) {
-            var allTpls = [];
-            MetaphorJs.Template.cache.eachEntry(function(tpl, name) {
-                allTpls.push({
-                    name: name,
-                    tpl: tpl
-                });
+    
+        var allTpls = [];
+        MetaphorJs.Template.cache.eachEntry(function(tpl, name) {
+            allTpls.push({
+                name: name,
+                tpl: tpl
             });
-            self.data.templates = allTpls;
-        }
+        });
+        self.data.templates = allTpls;
+    
 
         self.runMetaphor(MetaphorJs, doc, extend({}, self.data, {
             renderDataScript: function(multipage) {

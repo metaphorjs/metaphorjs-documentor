@@ -1084,45 +1084,76 @@
       "where": "top-menu",
       "children": [
         {
-          "id": "function:file.*.item.*.*.add",
-          "name": "file.*.item.*.*.add",
-          "pathPrefix": "item",
-          "isItem": true
+          "isGroup": true,
+          "name": "file.*",
+          "children": [
+            {
+              "isGroup": true,
+              "name": "item.*",
+              "children": [
+                {
+                  "isGroup": true,
+                  "name": "*",
+                  "children": [
+                    {
+                      "id": "function:file.*.item.*.*.add",
+                      "name": "file.*.item.*.*.add",
+                      "pathPrefix": "item",
+                      "nameInPath": "add",
+                      "isItem": true
+                    },
+                    {
+                      "id": "function:file.*.item.*.*.parse",
+                      "name": "file.*.item.*.*.parse",
+                      "pathPrefix": "item",
+                      "nameInPath": "parse",
+                      "isItem": true
+                    },
+                    {
+                      "id": "function:file.*.item.*.*.prepare",
+                      "name": "file.*.item.*.*.prepare",
+                      "pathPrefix": "item",
+                      "nameInPath": "prepare",
+                      "isItem": true
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         },
         {
-          "id": "function:file.*.item.*.*.parse",
-          "name": "file.*.item.*.*.parse",
-          "pathPrefix": "item",
-          "isItem": true
-        },
-        {
-          "id": "function:file.*.item.*.*.prepare",
-          "name": "file.*.item.*.*.prepare",
-          "pathPrefix": "item",
-          "isItem": true
+          "isGroup": true,
+          "name": "sort",
+          "children": [
+            {
+              "id": "function:sort.by",
+              "name": "sort.by",
+              "pathPrefix": "item",
+              "nameInPath": "by",
+              "isItem": true
+            },
+            {
+              "id": "function:sort.exact",
+              "name": "sort.exact",
+              "pathPrefix": "item",
+              "nameInPath": "exact",
+              "isItem": true
+            },
+            {
+              "id": "function:sort.name",
+              "name": "sort.name",
+              "pathPrefix": "item",
+              "nameInPath": "name",
+              "isItem": true
+            }
+          ]
         },
         {
           "id": "var:files",
           "name": "files",
           "pathPrefix": "item",
-          "isItem": true
-        },
-        {
-          "id": "function:sort.by",
-          "name": "sort.by",
-          "pathPrefix": "item",
-          "isItem": true
-        },
-        {
-          "id": "function:sort.exact",
-          "name": "sort.exact",
-          "pathPrefix": "item",
-          "isItem": true
-        },
-        {
-          "id": "function:sort.name",
-          "name": "sort.name",
-          "pathPrefix": "item",
+          "nameInPath": "files",
           "isItem": true
         }
       ]

@@ -87,7 +87,36 @@ ul.level-0 > li.item-property-group-name {
     border-bottom: 1px solid $borderColor;
 }
 
+.dropdown-item {
+    position: relative;
+}
 
+.dropdown-item > a.dropdown-item {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.dropdown-submenu {
+    font-size: 1rem;
+    color: #212529;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,.15);
+    border-radius: .25rem;
+}
+
+div.dropdown-item > .dropdown-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    display: none;
+}
+
+div.dropdown-item:hover > .dropdown-submenu {
+    display: block;
+}
 
 .item-header {
     
