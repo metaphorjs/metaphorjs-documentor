@@ -15,7 +15,8 @@ module.exports = globalCache.add("file.*.item.*.getStructurePath",
                     path.push(parts.shift() + "." + parts.shift());
                 }
 
-                if (parts[0] === "item" || parts[0] === "content") {
+                if ((parts[0] === "item" || parts[0] === "content") &&
+                    parts.length > 2) {
                     path.push(parts.shift() + "." + parts.shift());
                 }
 

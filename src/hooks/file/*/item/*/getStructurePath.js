@@ -1,5 +1,13 @@
 var globalCache = require("../../../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * When generating navigational structure, each item generates
+ * its own structure path - breadcrumbs. 
+ * @param {Item} item
+ * @returns {array}
+ */
 module.exports = globalCache.add("file.*.item.*.getStructurePath", 
     function(item) {
         if (item.structurePath) {

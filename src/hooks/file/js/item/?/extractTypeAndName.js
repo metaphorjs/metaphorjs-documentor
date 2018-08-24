@@ -1,7 +1,7 @@
 
-var globalCache = require("../../../../var/globalCache.js");
+var globalCache = require("../../../../../var/globalCache.js");
 
-module.exports = globalCache.add("file.js.item.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
+module.exports = globalCache.add("file.js.item.?.extractTypeAndName", function(file, startIndex, checkFunctions, checkVars) {
 
     var content         = file.getContent(),
         part            = content.substr(startIndex, 200),

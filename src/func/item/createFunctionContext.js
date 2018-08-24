@@ -1,7 +1,7 @@
 
 module.exports = function createFunctionContext(commentPart, comment) {
 
-    var res = comment.file.pcall("item.extractTypeAndName",
+    var res = comment.file.pcall("item.?.extractTypeAndName",
         comment.file, comment.endIndex, true, false);
 
     if (res) {

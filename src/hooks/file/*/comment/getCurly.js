@@ -1,6 +1,18 @@
 
 var globalCache = require("../../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function 
+ * Extract part of comment between curly brakets
+ * @param {string} content Full comment
+ * @param {int} start Start position
+ * @param {bool} backwards Backward lookup
+ * @param {bool} returnIndexes Return array with start and last index
+ * @param {string|array} brakets {
+ *  @default '{}'
+ * }
+ */
 module.exports = globalCache.add("file.*.comment.getCurly", 
     function(content, start, backwards, returnIndexes, brakets) {
 

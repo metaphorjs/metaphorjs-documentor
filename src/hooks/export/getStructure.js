@@ -1,6 +1,14 @@
 var globalCache = require("../../var/globalCache.js"),
     extend = require("metaphorjs/src/func/extend.js");
 
+/**
+ * @group hook
+ * @function
+ * Returns navigational structure with all items - api and content.
+ * @param {Documentor} doc
+ * @param {array} items
+ * @returns {object}
+ */
 module.exports = globalCache.add("export.getStructure", function(doc, items){
     
     var structure = {},
@@ -47,6 +55,10 @@ module.exports = globalCache.add("export.getStructure", function(doc, items){
             path        = item.pcall("getStructurePath", item),
             group       = item.group,
             target;
+
+        if (!grpProps) {
+            console.log("Group " + group + " not found");
+        }
 
         if (!structure[group]) {
             structure[group] = {

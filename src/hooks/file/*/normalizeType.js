@@ -1,6 +1,14 @@
 
 var globalCache = require("../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Uses <code>typeAliases</code> to normalize given data type.
+ * @param {string} type
+ * @param {File} file
+ * @returns {string}
+ */
 module.exports = globalCache.add("file.*.normalizeType", function(type, file){
 
     var aliases = file.pget("typeAliases"),

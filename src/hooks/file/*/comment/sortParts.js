@@ -2,7 +2,15 @@
 
 var globalCache = require("../../../../var/globalCache.js");
 
-
+/**
+ * @group hook
+ * @function
+ * Sort comment parts by context so that flags that require parent context were 
+ * farther in the list than flags defining this context. (param flags after function flag)
+ * @param {array} parts Comment parts from parseComment()
+ * @param {Comment} comment
+ * @returns {array}
+ */
 module.exports = globalCache.add("file.*.comment.sortParts", function(parts, comment) {
 
     var flagInx = {},

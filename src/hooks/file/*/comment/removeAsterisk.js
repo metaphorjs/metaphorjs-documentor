@@ -1,7 +1,13 @@
 
 var globalCache = require("../../../../var/globalCache.js");
 
-
+/**
+ * @group hook
+ * @function
+ * Remove leading * asterisk symbols from each line of the comment
+ * @param {string} text
+ * @returns {string}
+ */
 module.exports = globalCache.add("file.*.comment.removeAsterisk", function(text) {
 
     text = text.replace("/**", '');

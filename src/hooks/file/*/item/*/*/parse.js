@@ -4,6 +4,7 @@ var globalCache = require("../../../../../../var/globalCache.js");
 /**
  * @group hook 
  * @function
+ * Some flags may require specific parsing. 
  * @param {string} flagName 
  * @param {string} flagContent
  * @param {Comment} comment

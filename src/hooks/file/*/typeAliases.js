@@ -2,7 +2,13 @@
 
 var globalCache = require("../../../var/globalCache.js");
 
-module.exports = globalCache.add("file.js.typeAliases", {
+/**
+ * @group hook
+ * @var {object}
+ * Key:value map that shows how to normalize data type. Like
+ * bool=>boolean
+ */
+module.exports = globalCache.add("file.*.typeAliases", {
 
     "{}": "object",
     "Object": "object",

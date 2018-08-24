@@ -387,7 +387,7 @@ module.exports = File.$extend({
             }
 
             if (comment) {
-                res = this.pcall("item.extractTypeAndName", this, comment.endIndex, true, true);
+                res = this.pcall("item.?.extractTypeAndName", this, comment.endIndex, true, true);
                 return res ? res[1] : null;
             }
 

@@ -1,6 +1,18 @@
 
 var globalCache = require("../../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Parse comment. Returns array with comment parts
+ * @param {string} text
+ * @param {File} file
+ * @return {array} {
+ *  @type {string} flag
+ *  @type {string} content
+ *  @type {array} sub Sub parts with the same structure
+ * }
+ */
 module.exports = (function(){
 
 

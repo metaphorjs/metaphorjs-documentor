@@ -1,6 +1,14 @@
 
 var globalCache = require("../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Get item type definition by type
+ * @param {string} type
+ * @param {File} file
+ * @returns {object}
+ */
 module.exports = globalCache.add("file.*.getItemType", function(type, file) {
 
     var types = file.pget("items"),

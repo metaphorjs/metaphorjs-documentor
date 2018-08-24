@@ -1,5 +1,14 @@
 var globalCache = require("../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Sorts exported structure by moving groups higher than items
+ * and sorting items and groups by name.
+ * @param {Documentor} doc
+ * @param {object} structure
+ * @returns {object}
+ */
 module.exports = globalCache.add("export.sortStructure", function(doc, structure){
 
     var byName = function(a, b){

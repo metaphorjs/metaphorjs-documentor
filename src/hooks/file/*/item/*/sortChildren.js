@@ -1,6 +1,13 @@
-var globalCache = require("../../../../../var/globalCache.js"),
-    isArray = require("metaphorjs/src/func/isArray.js");
+var globalCache = require("../../../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Calls <code>item.*.sortChildTypes</code> and <code>item.*.sort</code> 
+ * hooks for all item children and all their children.
+ * @param {Item} item
+ * @param {object} cfg Documentor config
+ */
 module.exports = globalCache.add("file.*.item.*.sortChildren", 
     function(item, cfg) {
 

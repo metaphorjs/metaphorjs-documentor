@@ -1,6 +1,15 @@
 
 var globalCache = require("../../../../../var/globalCache.js");
 
+/**
+ * @group hook
+ * @function
+ * Returns item's full name - unique name among all items.<br>
+ * It consists of prefix taken from <code>getFullNamePrefix()</code>,
+ * current item name and all parent's names.
+ * @param {Item} item
+ * @returns {string}
+ */
 module.exports = globalCache.add("file.*.item.*.getFullName", 
 function(item) {
 

@@ -4,7 +4,9 @@ var globalCache = require("../../var/globalCache.js");
 /**
  * @group hook 
  * @function
- * Sort items by name. Uses item's getSortableName() 
+ * Sort items by name. Uses item's getSortableName(). 
+ * Called from various places where configured sorters
+ * are applied. 
  * @param {array} items
  * @param {object} cfg
  * @param {Documentor} doc

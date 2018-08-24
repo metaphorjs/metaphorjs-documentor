@@ -5,9 +5,18 @@ var globalCache = require("../../var/globalCache.js"),
 /**
  * @group hook
  * @function
- * Sort items by function
+ * Sort items by function. Called from various places where configured sorters
+ * are applied.
  * @param {array} items
- * @param {object} cfg
+ * @param {object} cfg {
+ *  @type {string|function} by {
+ *      Either a field name to take value from or function that takes item as argument
+ *      and returns some value. Items will be sorted by this value.
+ *  }
+ *  @type {string} direction {
+ *      @default asc
+ *  }
+ * }
  * @param {Documentor} doc
  * @returns {array}
  */

@@ -4,9 +4,14 @@ var globalCache = require("../../var/globalCache.js");
 /**
  * @group hook
  * @function
- * Sort items by exact order
+ * Sort items by exact order. Called from various places where configured sorters
+ * are applied.
  * @param {array} items
- * @param {object} cfg
+ * @param {object} cfg {
+ *  @type {array} order {
+ *      List of instructions: '*' - all, 'some:name' - item name, '!some:name' - not.
+ *  }
+ * }
  * @param {Documentor} doc
  * @returns {array}
  */
@@ -42,7 +47,7 @@ module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
             if (is) {
                 res.push(item);
                 if (all) {
-                    res = false;
+                    all = false;
                 }
             }
         });
