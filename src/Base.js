@@ -19,11 +19,13 @@ module.exports = cs.define({
 
     /**
      * Call a plugin function and pass parameters to it. Plugins are 
-     * js files from <code>hooks</code> directory containing functions, scalar
+     * js files from local <code>hooks</code> directory 
+     * (or one of your directories) containing functions, scalar
      * values and any other stuff. The file structure is
      * like file/js/item/param/add.js which is called when adding 
      * parameter to js function. Plugins can be generic:
-     * <code>file/* /item/* /* /add.js</code> . Plugins are stored in globalCache
+     * <code>file/* /item/* /* /add.js</code> . Plugins are stored in 
+     * <code>globalCache</code> var 
      * and can be overriden/intercepted etc.<br><br>
      * 
      * Internally, it uses <code>pget</code> to find the plugin.<br><br>
@@ -34,7 +36,7 @@ module.exports = cs.define({
      * and if not found - generics. First item_type generic, then 
      * file_ext generic.<br><br>
      * 
-     * Also, there is '?' plugin directories for 'other' functions.
+     * Also, there is '?' plugin directories for unknown-type items.
      * @method
      * @param {string} name Plugin name
      * @returns {*}

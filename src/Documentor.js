@@ -45,9 +45,6 @@ module.exports = Base.$extend({
     /**
      * @constructor
      * @param {object} cfg {
-     *  @type {object} typeSortCfg
-     *  @type {object} itemSortCfg
-     *  @type {object} contentSortCfg
      * }
      */
     $init: function(cfg){
@@ -212,13 +209,13 @@ module.exports = Base.$extend({
     /**
      * @method
      * @param {string} directory
-     * @param {string} ext
+     * @param {string} ext File extension
      * @param {object} options {
      *  @type {bool} hidden
      *  @type {string} startDir
      *  @type {bool} includeExternal
      *  @type {bool} hideIncludes
-     *  @type {string} basePath
+     *  @type {string} basePath Base path is usually path to metaphorjs.json file
      * }
      */
     eat: function(directory, ext, options) {
@@ -294,6 +291,11 @@ module.exports = Base.$extend({
         }
     },
 
+    /**
+     * @method
+     * @param {File} file
+     * @param {object} options
+     */
     resolveIncludes: function(file, options) {
 
         var self = this,
@@ -317,7 +319,7 @@ module.exports = Base.$extend({
 
     /**
      * @method
-     * @param {object} cfg
+     * @param {object} cfg See Content's constructor
      */
     addContent: function(cfg) {
         var self = this,
@@ -333,6 +335,15 @@ module.exports = Base.$extend({
         c.pcall("added", c, self);
     },
 
+    /**
+     * @method
+     * @param {function} fn {
+     *  @param {Content} content
+     *  @param {...} args rest of args
+     * }
+     * @param {object} context fn's 'this' object
+     * @param {array} args Arguments to append to fn's arguments
+     */
     eachContent: function(fn, context, args) {
         var k, self = this;
         args = args || [];
@@ -357,6 +368,10 @@ module.exports = Base.$extend({
         }
     },
 
+    /**
+     * Run all preparations
+     * @method
+     */
     prepare: function() {
 
         var self = this;
@@ -391,10 +406,11 @@ module.exports = Base.$extend({
      * @method
      * @param {function} fn {
      *  @param {Item} item
+     *  @param {...} args rest of args
      * }
      * @param {object} context
      * @param {bool} includeRoot
-     * @param {array} args
+     * @param {array} args Arguments to append to fn
      */
     eachItem: function(fn, context, includeRoot, args) {
         this.root.eachItem(fn, context, false, includeRoot, args);
@@ -447,6 +463,15 @@ module.exports = Base.$extend({
 
     },
 
+    /**
+     * Export all parsed data and data structure into one object
+     * @method
+     * @returns {object} {
+     *  @type {array} items
+     *  @type {array} content
+     *  @type {object} structure 
+     * }
+     */
     exportData: function(noHelpers) {
 
         var self = this,
@@ -504,10 +529,16 @@ module.exports = Base.$extend({
         return exprt;
     },
 
+    /**
+     * @method
+     */
     destroy: function() {
         this.clear();
     },
 
+    /**
+     * @method
+     */
     clear: function() {
         SourceFile.clear();
 

@@ -26,7 +26,9 @@ globalCache.add("file.*.item.*.description.add", function(flag, content, item) {
             return match;
         }
 
-        files.push(f);
+        if (f) {
+            files.push(f);
+        }
         return "--#--";
     });
 

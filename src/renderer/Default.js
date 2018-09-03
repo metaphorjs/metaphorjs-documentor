@@ -4,15 +4,18 @@ var Renderer = require("../Renderer.js"),
     path = require("path"),
     fs = require("fs"),
     fse = require("fs.extra"),
-    child = require("child_process"),
     jsdom = require("jsdom"),
     isArray = require("metaphorjs/src/func/isArray.js"),
     extend = require("metaphorjs/src/func/extend.js"),
     getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
     initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
-    Promise = require("metaphorjs-promise/src/lib/Promise.js"),
-    UglifyJS = require("uglify-js");
+    Promise = require("metaphorjs-promise/src/lib/Promise.js");
 
+/**
+ * @class renderer.Default
+ * @extends Renderer
+ * Default renderer, single or multipage.
+ */
 module.exports = globalCache.add("renderer.default", Renderer.$extend({
 
     $class: "renderer.default",

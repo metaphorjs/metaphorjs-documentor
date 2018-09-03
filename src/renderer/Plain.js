@@ -3,6 +3,10 @@ var Renderer = require("../Renderer.js"),
     globalCache = require("../var/globalCache.js");
 
 
+/**
+ * @class renderer.Plain
+ * @extends Renderer
+ */
 module.exports = globalCache.add("renderer.plain", Renderer.$extend({
 
     render: function() {

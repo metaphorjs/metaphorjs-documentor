@@ -1,7 +1,5 @@
 
-var fs = require("fs"),
-    path = require("path"),
-    File = require("../File.js");
+var File = require("../File.js");
 
 module.exports = File.$extend({
 

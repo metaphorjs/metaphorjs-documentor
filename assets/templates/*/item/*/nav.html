@@ -1,3 +1,6 @@
+<!--{
+    description: "Item left nav"
+}-->
 <ul {each}="group in .item.children" class="item-nav">
     <li class="item-nav-group-name" 
         {bind}=".group.groupName"></li>
@@ -14,7 +17,7 @@
             <span class="item-nav-item-name" {bind}=".item.navName || .item.name"></span>
             <mjs-if value=".isFunction">
                 <mjs-if value=".item.childTypes.indexOf('param') != -1">
-                    <span class="item-nav-item-arguments">({{ .item.getChildren('param') | collect:"name" | join:", " }})</span>
+                    <span class="item-nav-item-arguments">({{ .item | getChildren:"param" | collect:"name" | join:", " }})</span>
                 </mjs-if>
                 <mjs-if value=".item.childTypes.indexOf('param') == -1">
                     <span class="item-nav-item-arguments">()</span>

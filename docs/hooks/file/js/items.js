@@ -16,6 +16,13 @@ module.exports = globalCache.add("file.js.items",
             "type": "property"
         },
         stackable: true
+    },
+
+    {
+        name: "template",
+        children: [],
+        displayName: "Template",
+        groupName: "Templates"
     }
 
 ]));

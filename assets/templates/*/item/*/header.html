@@ -1,3 +1,6 @@
+<!--{
+    description: "Item header with type, name, params and return type"
+}-->
 <div [id]=".item.fullName" 
      class="item-header"
      {init}=".isFunction = .item.isFunction ||
@@ -23,7 +26,7 @@
         <mjs-if value=".isFunction">
             <mjs-if value=".item.childTypes.indexOf('param') != -1">
                 <span class="item-name-arguments">({{
-                    .item.getChildren('param') | collect:"name" | join:", "
+                    .item | getChildren:"param" | collect:"name" | join:", "
                 }})</span>
             </mjs-if>
             <mjs-if value=".item.childTypes.indexOf('param') == -1">

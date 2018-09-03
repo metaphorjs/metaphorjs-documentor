@@ -83,12 +83,26 @@ module.exports = function(){
             return fs.readFileSync(this.path).toString();
         },
 
+        /**
+         * Process file contents 
+         * @method
+         */
         process: function() {
 
+        },
+
+        resolveFlagFile: function(){
+            return false;
         }
         
     }, {
 
+        /**
+         * @static
+         * @method
+         * @returns {object} Same object as in <code>files</code> hook, but 
+         * with <code>class</code> as a link to file class.
+         */
         getFileClass: function(filePath, doc) {
             var files = doc.pget("files"),
                 ext = path.extname(filePath).substr(1),
@@ -119,11 +133,28 @@ module.exports = function(){
             return returnDef;
         },
 
+        /**
+         * @static
+         * @method
+         * @param {string} filePath
+         * @param {Documentor} doc
+         * @param {object} options
+         * @returns {File}
+         */
         get: function(filePath, doc, options) {
 
             if (!all[filePath]) {
-                var def = File.getFileClass(filePath, doc),
+
+                var cls, def;
+
+                if (options.class) {
+                    cls = doc.getFileClass(options.class);
+                    def = {};
+                }
+                else {
+                    def = File.getFileClass(filePath, doc);
                     cls = def.class;
+                }
 
                 all[filePath] = new cls({
                     path: filePath,
@@ -135,6 +166,10 @@ module.exports = function(){
             return all[filePath];
         },
 
+        /**
+         * @static
+         * @method
+         */
         clear: function() {
             all = {};
         }

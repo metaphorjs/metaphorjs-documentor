@@ -4,8 +4,7 @@ var Base = require("./Base.js"),
     fs = require("fs"),
     prismClass = require("./func/prismClass.js"),
     Promise = require("metaphorjs-promise/src/lib/Promise.js"),
-    toJsonTemplate = require("./func/toJsonTemplate.js"),
-    eachLink = require("./func/eachLink.js");
+    toJsonTemplate = require("./func/toJsonTemplate.js");
 
 /**
  * @class Renderer
@@ -14,6 +13,12 @@ var Base = require("./Base.js"),
 module.exports = Base.$extend({
 
     $class: "Renderer",
+
+    /**
+     * @property
+     * Renderer name for plugins: <code>renderer.<pname>.hook</code>
+     */
+    pname: "*",
 
     doc: null,
     outDir: null,
@@ -35,13 +40,28 @@ module.exports = Base.$extend({
 
         self.doc = doc;
 
-        self.doc.pcall("renderer.init", self, self.doc);
-
-        self.resolveLinks();
-
-        self.doc.pcall("renderer.linksResolved", self, self.doc);
+        self.pcall("init", self, self.doc);
+        self.pcall("resolveLinks", self, self.doc);
     },
 
+    pcall: function(name) {
+        arguments[0] = "renderer." + this.pname + "." + arguments[0];
+        return this.doc.pcall.apply(this.doc, arguments);
+    },
+
+    pget: function(name, collect, passthru, exact, merge) {
+        arguments[0] = "renderer." + this.pname + "." + arguments[0];
+        return this.doc.pget.apply(this.doc, arguments);
+    },
+
+
+    /**
+     * @method
+     * Init server-side MetaphorJs. 
+     * Register filters, directives, override and extend classes.
+     * This will render html file that goes into browser
+     * using templates.
+     */
     initMetaphor: function(MetaphorJs) {
 
         var self = this;
@@ -103,9 +123,15 @@ module.exports = Base.$extend({
         MetaphorJs.Renderer.setSkip("style", false);
         MetaphorJs.Renderer.setSkip("script", false);
 
-        self.doc.pcall("renderer.initMetaphor", MetaphorJs, self, self.doc);
+        self.doc.pcall("initMetaphor", MetaphorJs, self, self.doc);
     },
 
+    /**
+     * @method
+     * Load templates into MetaphorJs
+     * @param {MetaphorJs} mjs
+     * @param {string} dir Templates directory
+     */
     loadTemplates: function(MetaphorJs, dir) {
 
         var self = this;
@@ -115,11 +141,18 @@ module.exports = Base.$extend({
         });
     },
 
+    /**
+     * @method
+     * Run MetaphorJs app
+     * @param {MetaphorJs} mjs
+     * @param {Renderer} renderer
+     * @param {Documentor} doc
+     */
     runMetaphor: function(MetaphorJs, doc, data) {
 
         var self = this;
 
-        self.doc.pcall("renderer.beforeMetaphor", MetaphorJs, self, self.doc);
+        self.doc.pcall("beforeMetaphor", MetaphorJs, self, self.doc);
 
         var appNodes    = MetaphorJs.select("[mjs-app]"),
             i, l, el;
@@ -129,38 +162,32 @@ module.exports = Base.$extend({
             MetaphorJs.initApp(el, MetaphorJs.getAttr(el, "mjs-app"), data, true);
         }
 
-        self.doc.pcall("renderer.afterMetaphor", MetaphorJs, self, self.doc);
+        self.doc.pcall("afterMetaphor", MetaphorJs, self, self.doc);
     },
 
 
-    resolveLinks: function() {
-
-        var self = this;
-
-        self.doc.eachItem(function(item) {
-            item.eachFlag(function(name, flag){
-                if (flag.type == "typeRef") {
-                    return '['+ flag.content +'](#'+ flag.ref +')';
-                }
-                if (typeof flag.content == "string") {
-                    flag.content = eachLink(flag.content, item, 
-                        function(type, name, url, fullName) {
-                        return '['+ (fullName || name || url) +']('+ (url || name) +')';
-                    });
-                }
-            });
-        });
-    },
-
+    /**
+     * @method
+     * Remove all previously copied resources and rendered files
+     */
     cleanupOutDir: function() {
 
     },
 
+    /**
+     * @method
+     * Copy all required resources to output directory
+     */
     copyToOut: function() {
 
     },
 
-    writeOut: function(out, done) {
+    /**
+     * @method
+     * Write output
+     * @returns {Promise}
+     */
+    writeOut: function(out) {
 
         if  (this.out) {
             fs.writeFileSync(this.out, out);
@@ -169,11 +196,14 @@ module.exports = Base.$extend({
             process.stdout.write(out);
         }
 
-        if (done) {
-            done();
-        }
+        return Promise.resolve();
     },
 
+    /**
+     * @method
+     * Render templates
+     * @returns {Promise}
+     */
     render: function() {
         return Promise.resolve();
     }

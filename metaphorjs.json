@@ -19,6 +19,7 @@
     "docs": {
         "renderer": {
             "type": "default",
+            "multipage": true,
             "data": {
                 "title": "MetaphorJs.Documentor"
             }
@@ -28,7 +29,8 @@
             "docs/hooks"
         ],
         "src": [
-            "src/hooks/**"
+            "src/**",
+            {"path": "assets/templates/**", "ext": "html", "class": "file.Template"}
         ],
         "includeExternal": false,
         "init": "assets/self-doc.js"

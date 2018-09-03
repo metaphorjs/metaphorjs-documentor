@@ -13,28 +13,32 @@ module.exports = function(flag, content, comment, item) {
         description,
         inx;
 
-    if (content.charAt(0) == '{') {
-        var curly = getCurly.call(this, content);
-        type = normalizeType.call(this, curly, file);
-        content = content.replace('{' + curly + '}', "").trim();
-    }
+    if (content && typeof content === "string") {
 
-    inx = content.indexOf(" ", 0);
-
-    if (inx > -1) {
-        name = content.substr(0, inx).trim();
-        content = content.substr(inx).trim();
-
-        if (content) {
-            description = content;
+        if (content.charAt(0) == '{') {
+            
+            var curly = getCurly.call(this, content);
+            type = normalizeType.call(this, curly, file);
+            content = content.replace('{' + curly + '}', "").trim();
         }
-    }
-    else if (content) {
-        if (!type) {
-            type = content;
+
+        inx = content.indexOf(" ", 0);
+
+        if (inx > -1) {
+            name = content.substr(0, inx).trim();
+            content = content.substr(inx).trim();
+
+            if (content) {
+                description = content;
+            }
         }
-        else {
-            name = content;
+        else if (content) {
+            if (!type) {
+                type = content;
+            }
+            else {
+                name = content;
+            }
         }
     }
 

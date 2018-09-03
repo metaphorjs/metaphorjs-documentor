@@ -11809,12 +11809,14 @@ var ListRenderer = defineClass({
             r = rs[i];
             if (r && r.attached) {
                 r.attached = false;
-                if (!self.tagMode) {
-                    parent.removeChild(r.el);
+                if (!self.tagMode && r.el.parentNode) {
+                    r.el.parentNode.removeChild(r.el);
                 }
                 else {
                     for (j = 0, jl = r.el.length; j < jl; j++) {
-                        parent.removeChild(r.el[j]);
+                        if (r.el[j].parentNode) {
+                            r.el[j].parentNode.removeChild(r.el[j]);
+                        }
                     }
                 }
             }
@@ -20619,8 +20621,8 @@ var generateTemplateNames = function(name){
 
     var list        = [],
         path        = name.split("."),
-        max         = path.length - 2,
-        last        = path.length - 1,
+        //max         = path.length - 3,
+        //last        = path.length - 1,
         exts        = [path[0], '*'],
         tmp, i, j, ext, e;
 
@@ -20630,14 +20632,15 @@ var generateTemplateNames = function(name){
         tmp = path.slice();
         tmp[0] = ext;
         list.push(tmp.join("."));
+        tmp[2] = "*";
+        list.push(tmp.join("."));
 
-        for (j = 1; j <= max; j++) {
-
+        /*for (j = 1; j <= max; j++) {
             for (i = last; i > last - j; i--) {
                 tmp[i] = "*";
                 list.push(tmp.join("."));
             }
-        }
+        }*/
     }
 
     return list.filter(function(value, index, self){
@@ -20999,6 +21002,17 @@ View.$extend({
 });
 
 
+nsAdd("filter.getChildren", function(item, scope, type) {
+    var i, l;
+    for (i = 0, l = item.children.length; i < l; i++) {
+        if (item.children[i].type == type) {
+            return item.children[i].items;
+        }
+    }
+    return [];
+});
+
+
 nsAdd("filter.highlightJson", function(input, scope, prop) {
     
     var hl = Prism.highlight(input, Prism.languages.javascript),
@@ -21060,6 +21074,18 @@ var globalCache = Cache.global();
 
 
 
+/**
+ * @group hook
+ * @function 
+ * Extract part of comment between curly brakets
+ * @param {string} content Full comment
+ * @param {int} start Start position
+ * @param {bool} backwards Backward lookup
+ * @param {bool} returnIndexes Return array with start and last index
+ * @param {string|array} brakets {
+ *  @default '{}'
+ * }
+ */
 var getCurly = globalCache.add("file.*.comment.getCurly", 
     function(content, start, backwards, returnIndexes, brakets) {
 

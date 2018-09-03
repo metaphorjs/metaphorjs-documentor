@@ -122,6 +122,11 @@ module.exports = (function(){
             return newItem;
         },
 
+        /**
+         * @method
+         * @param {string} type
+         * @param {string} name
+         */
         createChild: function(type, name) {
             var item = new Item({
                 doc: this.doc,
@@ -192,6 +197,7 @@ module.exports = (function(){
 
 
         /**
+         * @method
          * @return {string}
          */
         getSortableName: function() {
@@ -346,6 +352,7 @@ module.exports = (function(){
          *  @param {string} name
          *  @param {Flag} flag
          * }
+         * @param {object} context fn's 'this' object
          */
         eachFlag: function(fn, context) {
             var self = this, flag;
@@ -431,7 +438,9 @@ module.exports = (function(){
             }
         },
 
-
+        /**
+         * @method
+         */
         applyInheritance: function() {
 
             var self = this,
@@ -463,6 +472,9 @@ module.exports = (function(){
             });
         },
 
+        /**
+         * @method
+         */
         inheritFrom: function(parent, inheritanceFlag) {
 
             var self = this;
@@ -499,6 +511,10 @@ module.exports = (function(){
             self.pcall("extended", self, parent, inheritanceFlag)
         },
 
+        /**
+         * @method
+         * @returns {bool}
+         */
         hasInherited: function() {
             var has = false;
             this.eachChild(function(item){
@@ -511,7 +527,10 @@ module.exports = (function(){
 
 
 
-
+        /**
+         * @method
+         * @returns {array}
+         */
         getInheritedParents: function() {
 
             var parents = [],
@@ -555,11 +574,16 @@ module.exports = (function(){
 
         /**
          * @method
+         * @returns {Item}
          */
         getParent: function() {
             return this.parent;
         },
 
+        /**
+         * @method
+         * @returns {Item}
+         */
         getParentNamespace: function() {
 
             var parents     = this.getParents(),
@@ -623,6 +647,7 @@ module.exports = (function(){
 
         /**
          * @method
+         * @returns {string}
          */
         getFullName: function() {
             if (!this.fullName) {
@@ -631,7 +656,9 @@ module.exports = (function(){
             return this.fullName;
         },
 
-
+        /**
+         * @method
+         */
         resolveFullName: function() {
 
             var self = this;
@@ -645,14 +672,23 @@ module.exports = (function(){
             }
         },
 
+        /**
+         * @method
+         */
         resolveInheritanceNames: function() {
             this.resolveNames(["extends", "implements", "mixes", "md-extend"]);
         },
 
+        /**
+         * @method
+         */
         resolveOtherNames: function() {
             this.resolveNames(null, ["extends", "implements", "mixes", "md-extend"]);
         },
 
+        /**
+         * @method
+         */
         resolveNames: function(flags, notFlags) {
 
             var self = this, k;
@@ -824,7 +860,9 @@ module.exports = (function(){
             this.toStructExport[name] = value;
         },
 
-
+        /**
+         * @method
+         */
         exportData: function(currentParent, noChildren, noHelpers) {
 
             var exportData = this.pget("exportData");
@@ -900,6 +938,9 @@ module.exports = (function(){
             return exprt;
         },
 
+        /**
+         * @method
+         */
         exportToStructure: function() {
             return extend(
                 {
@@ -912,6 +953,11 @@ module.exports = (function(){
             );
         },
 
+        /**
+         * @method
+         * @param {array} items
+         * @returns {array}
+         */
         exportChildren: function(items, noHelpers, plain) {
 
             var self = this,
@@ -978,6 +1024,9 @@ module.exports = (function(){
             return exprt;
         },
 
+        /**
+         * @method
+         */
         destroy: function() {
 
             var k, i, l, items, flags, self = this;

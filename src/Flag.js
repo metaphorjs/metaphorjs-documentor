@@ -27,7 +27,7 @@ module.exports = (function(){
          * @param {string|object} content
          * @param {string} type
          * @param {object} props
-         * @param {string} file
+         * @param {string|File} file
          */
         $init: function(name, content, type, props, file) {
     
@@ -106,6 +106,10 @@ module.exports = (function(){
             return this.props[name];
         },
     
+        /**
+         * @method
+         * @returns {object}
+         */
         exportData: function() {
     
             var exportData = this.pget("flag." + this.type + ".exportData");

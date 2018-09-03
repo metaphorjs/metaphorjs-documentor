@@ -16,31 +16,6 @@ var Runner = Base.$extend({
 
     $class: "Runner",
 
-    /**
-     * @method
-     * @param {object} cfg {
-     *  @type {string} profile Profile name in metaphorjs.json in docs section
-     *  @type {object} renderer {
-     *      @type {string} type
-     *      @type {string} out Output directory or file
-     *      @type {object} data
-     *      @type {string|array} templates Paths to templates
-     *  }
-     *  @type {object} export {
-     *      @type {object} typePosition type=>position map
-     *  }
-     *  
-     *  @type {string|array} hooks Paths to hooks dirs
-     *  @type {string|array} files Paths to content files
-     *  @type {string|array} src Paths to src dirs
-     *  @type {string} extension
-     *  @type {bool} includeExternal
-     *  @type {bool} hideIncludes
-     *  
-     *  @type {object} contentSort
-     * }
-     * @returns {Promise}
-     */
     run: function(cfg) {
 
         cfg = cfg || {};
@@ -78,6 +53,9 @@ var Runner = Base.$extend({
         }
         if (args.out) {
             cfg.out = args.out;
+        }
+        else if (cfg.renderer.out) {
+            cfg.out = cfg.renderer.out;
         }
 
         self.doc = doc  = new Documentor({
@@ -161,13 +139,21 @@ var Runner = Base.$extend({
 
         cfg.src.forEach(function(dirName){
 
+            var opt = {};
+
+            if (typeof dirName !== "string") {
+                opt = dirName;
+                dirName = opt.path;
+            }
+
             var dir = self.preparePath(dirName, jsonFile);
 
             if (dir) {
-                doc.eat(dir, cfg.extension || "js", {
+                doc.eat(dir, opt.ext || cfg.extension || "js", {
                     namePrefix: cfg.namePrefix,
                     basePath: cfg.basePath || jsonFile.base,
-                    includeExternal: cfg.includeExternal
+                    includeExternal: cfg.includeExternal,
+                    class: opt.class
                 });
             }
         });
@@ -244,18 +230,67 @@ var Runner = Base.$extend({
     },
 
     getMjsDocRoot: function(){
-        //var dir     = __dirname.split("/").pop();
-        //    dir     = dir === "dist" ? __dirname +"/../" : __dirname + "/../../";
         return path.normalize(__dirname +"/../");
     }
 
 }, {
 
-    run: function(runCfg, runData, runOptions, errorCallback, doneCallback) {
-
+     /**
+     * @method
+     * @static
+     * @param {object} cfg {
+     *  Same config can be passed directly or taken from <code>metaphorjs.json</code>
+     *  from <code>docs</code> section. It supports multiple doc profiles.
+     *  When running <code>mjs-doc name</code> it will look for config
+     *  in docs.name section.
+     *  @type {string} profile Profile name in metaphorjs.json in docs section
+     *  @type {object} renderer {
+     *      @type {string} type
+     *      @type {string} out Output directory or file
+     *      @type {object} data
+     *      @type {string|array} templates Paths to templates
+     *  }
+     *  @type {object} export {
+     *      @type {object} typePosition type=>position map
+     *      @type {array} sort {
+     *          Item sorters
+     *          @type {string} type Sorter type - <code>sort.<type></code> hook
+     *          @type {...} rest Other config parameters that sorter needs
+     *      }
+     *      @type {array} contentSort {
+     *          Content sorters
+     *          @type {string} type Sorter type - <code>sort.<type></code> hook
+     *          @type {...} rest Other config parameters that sorter needs
+     *      }
+     *      @type {array} sortAll {
+     *          Overall sorters
+     *          @type {string} type Sorter type - <code>sort.<type></code> hook
+     *          @type {...} rest Other config parameters that sorter needs
+     *      }
+     *  }
+     *  
+     *  @type {string|array} hooks Paths to hooks dirs
+     *  @type {string|array} files Paths to content files
+     *  @type {string|array} src Paths to src dirs
+     *  @type {string} extension
+     *  @type {bool} includeExternal
+     *  @type {bool} hideIncludes
+     *  @type {array} sort {
+     *      Item sorters
+     *      @type {string} type Sorter type - <code>sort.<type></code> hook
+     *      @type {...} rest Other config parameters that sorter needs
+     *  }
+     *  @type {array} contentSort {
+     *      Content sorters
+     *      @type {string} type Sorter type - <code>sort.<type></code> hook
+     *      @type {...} rest Other config parameters that sorter needs
+     *  }
+     * }
+     * @returns {Promise}
+     */
+    run: function(cfg) {
         var runner = new Runner;
-        return runner.run(runCfg, runData, runOptions, errorCallback, doneCallback);
-
+        return runner.run(cfg);
     }
 
 });

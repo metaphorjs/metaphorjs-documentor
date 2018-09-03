@@ -6,6 +6,10 @@ var fs = require("fs"),
     Comment = require("../Comment.js"),
     hideLinks = require("../func/hideLinks.js");
 
+/**
+ * @class file.Source
+ * @extends File
+ */
 module.exports = File.$extend({
 
         $class: "file.Source",

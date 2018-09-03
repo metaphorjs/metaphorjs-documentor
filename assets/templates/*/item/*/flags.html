@@ -1,3 +1,6 @@
+<!--{
+    description: "Item flags"
+}-->
 <ul {each}="flags in .item.flags | toArray"
     {if}=".flags.key != 'returns' && .flags.key != 'returnDescription' && .flags.key != 'type'"
     class="item-flags">

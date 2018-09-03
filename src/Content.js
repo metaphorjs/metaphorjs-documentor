@@ -23,7 +23,7 @@ module.exports = Base.$extend({
     /**
      * @constructor
      * @param {object} cfg {
-     *  @type {string} file
+     *  @type {string|File} file
      *  @type {string} content
      *  @type {string} id
      *  @type {string} type
@@ -83,6 +83,7 @@ module.exports = Base.$extend({
 
     /**
      * @param {string} id
+     * @returns {bool}
      */
     isThe: function(id) {
         return this.id == id;
@@ -128,11 +129,17 @@ module.exports = Base.$extend({
         return this.props;
     },
 
+    /**
+     * Returns the same object as getTypeProps()
+     * @method
+     * @returns {object}
+     */
     getGroupProps: function() {
         return this.getTypeProps();
     },
 
     /**
+     * @method
      * @return {string}
      */
     getSortableName: function() {
@@ -163,11 +170,11 @@ module.exports = Base.$extend({
 
         return extend(
             {
-                id: this.id,
-                name: this.name,
+                id: self.id,
+                name: self.name,
                 pathPrefix: "content"
             }, 
-            this.toStructExport,
+            self.toStructExport,
             true, false
         );
     }
