@@ -13,7 +13,7 @@ module.exports = (function(){
      */
     var Flag = Base.$extend({
 
-        $class: "Flag",
+        $class: "MetaphorJs.docs.Flag",
     
         name: null,
         type: null,

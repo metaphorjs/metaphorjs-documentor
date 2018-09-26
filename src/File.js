@@ -143,6 +143,8 @@ module.exports = function(){
          */
         get: function(filePath, doc, options) {
 
+            options = options || {};
+
             if (!all[filePath]) {
 
                 var cls, def;

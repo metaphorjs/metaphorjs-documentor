@@ -1,7 +1,7 @@
 var View = require("metaphorjs/src/class/View.js");
 
 View.$extend({
-    $class: "DocsView",
+    $class: "MetaphorJs.DocsView",
     
     initView: function() {
 

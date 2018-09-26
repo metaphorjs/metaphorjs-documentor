@@ -19,5 +19,10 @@ module.exports = globalCache.add("file.*.contents", [
         type: "article",
         displayName: "Article",
         groupName: "Articles"
+    },
+    {
+        type: "guide",
+        displayName: "Guide",
+        groupName: "Guides"
     }
 ]);

@@ -1,12 +1,34 @@
 
-var isArray = require("metaphorjs/src/func/isArray.js");
+var isArray = require("metaphorjs/src/func/isArray.js"),
+    isPlainObject = require("metaphorjs/src/func/isPlainObject.js");
 
-module.exports = function(items, cfg, doc, options){
+module.exports = function(items, cfg, doc, options) {
+
     if (!cfg) {
         return items;
     }
+
     if (!isArray(cfg)) {
         cfg = [cfg];
+    }
+
+    var objMode = false,
+        k,
+        all = [],
+        sortItems = [];
+
+    if (!isArray(items) && isPlainObject(items)) {
+        objMode = true;
+        for (k in items) {
+            all.push({
+                key: k,
+                item: items[k]
+            });
+            sortItems.push(options.sortByKey ? k : items[k]);
+        }
+    }
+    else {
+        sortItems = items;
     }
 
     cfg.forEach(function(sortCfg) {
@@ -48,9 +70,26 @@ module.exports = function(items, cfg, doc, options){
             fn = doc.pget("sort." + sortType);
 
         if (fn) {
-            items = fn.call(null, items, sortCfg, doc);
+            sortItems = fn.call(null, sortItems, sortCfg, doc);
         }
     });
 
-    return items;
+    if (objMode) {
+        var res = {};
+        sortItems.forEach(function(item){
+            var i, l = all.length;
+            for (i = 0; i < l; i++) {
+                if (options.sortByKey && all[i].key === item) {
+                    res[all[i].key] = all[i].item;
+                }
+                else if (all[i].item === item) {
+                    res[all[i].key] = item;
+                }
+            }
+        });
+
+        return res;
+    }
+
+    return sortItems;
 };

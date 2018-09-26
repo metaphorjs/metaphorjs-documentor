@@ -9,12 +9,12 @@ var Base = require("./Base.js"),
  */
 module.exports = Base.$extend({
 
-    $class: "Content",
+    $class: "MetaphorJs.docs.Content",
 
     id: null,
     type: null,
     content: null,
-    title: null,
+    name: null,
     file: null,
     toStructExport: null,
     toExport: null,
@@ -51,6 +51,8 @@ module.exports = Base.$extend({
         if (!self.type) {
             self.type = "content";
         }
+
+        self.group = self.type;
 
         if (!self.id) {
             self.id = self.file.exportPath;

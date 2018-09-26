@@ -82,5 +82,8 @@ module.exports = globalCache.add("export.getStructure", function(doc, items){
         ));
     });
 
+    structure = doc.pcall("export.sortGroups", structure, doc.cfg, doc, {
+        sortByKey: true
+    });
     return doc.pcall("export.sortStructure", doc, structure);
 });

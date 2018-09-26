@@ -8,7 +8,7 @@ var Base = require("./Base.js");
  */
 var Comment = Base.$extend({
 
-    $class: "Comment",
+    $class: "MetaphorJs.docs.Comment",
 
     comment: null,
     doc: null,

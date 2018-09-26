@@ -4,8 +4,8 @@ var Base = require("./Base.js"),
     fs = require("fs"),
     path = require("path"),
     Documentor = require("./Documentor.js"),
-    JsonFile = require("metaphorjs-build/src/class/JsonFile.js"),
-    Build = require("metaphorjs-build/src/class/Build.js")
+    Config = require("metaphorjs-build/src/Config.js"),
+    Bundle = require("metaphorjs-build/src/Bundle.js")
     extend = require("metaphorjs/src/func/extend.js");
 
 /**
@@ -14,7 +14,7 @@ var Base = require("./Base.js"),
  */
 var Runner = Base.$extend({
 
-    $class: "Runner",
+    $class: "MetaphorJs.docs.Runner",
 
     run: function(cfg) {
 
@@ -24,7 +24,7 @@ var Runner = Base.$extend({
             args        = minimist(process.argv.slice(2), {boolean: true}),
             profileName = cfg.profile || args._[0] || "",
             json        = process.cwd() + "/metaphorjs.json",
-            jsonFile    = fs.existsSync(json) ? new JsonFile(json) : null,
+            jsonFile    = fs.existsSync(json) ? new Config(json) : null,
             profile,
             defaults    = {
                 renderer: {
@@ -117,12 +117,12 @@ var Runner = Base.$extend({
     },
 
     loadFiles: function(cfg, doc, jsonFile) {
-        var build = new Build(jsonFile);
-        build.collectFiles(cfg);
-        build.prepareBuildList();
+        var bundle = new Bundle("docs");
+        bundle.collect(jsonFile, null, cfg);
+        bundle.prepareBuildList();
 
-        build.buildList.forEach(function(file){
-            doc.addFile(file, {
+        bundle.eachFile(function(file){
+            doc.addFile(file.path, {
                 namePrefix: cfg.namePrefix,
                 basePath: cfg.basePath
             });

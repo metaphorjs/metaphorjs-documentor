@@ -1,5 +1,4 @@
 /node_modules/
 .DS_Store
 /assets/renderer/default/.sass-cache
-/package-lock.json
 /assets/renderer/default/bower_components

@@ -12,7 +12,7 @@ var fs = require("fs"),
  */
 module.exports = File.$extend({
 
-        $class: "file.Source",
+        $class: "MetaphorJs.docs.file.Source",
 
         /**
          * @type {[]}

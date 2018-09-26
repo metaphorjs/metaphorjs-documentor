@@ -12,7 +12,7 @@ var Base = require("./Base.js"),
  */
 module.exports = Base.$extend({
 
-    $class: "Renderer",
+    $class: "MetaphorJs.docs.Renderer",
 
     /**
      * @property

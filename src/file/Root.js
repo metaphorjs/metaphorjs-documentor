@@ -3,7 +3,7 @@ var File = require("../File.js");
 
 module.exports = File.$extend({
 
-    $class: "file.Root",
+    $class: "MetaphorJs.docs.file.Root",
 
     $init: function() {
         // skip all init

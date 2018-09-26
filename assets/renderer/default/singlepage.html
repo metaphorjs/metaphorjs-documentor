@@ -21,12 +21,15 @@
 
 <div class="container source-container">
     <div class="row item-group level-0" >
+        <div    {each}="content in .sourceTree.content"
+                class="col-md-12 item-group-items level-0"
+                {class}="'item-group-type-' + .content.type"
+                {include}=".content.template"></div>
         <div    {each}="item in .sourceTree.items"
                 {init}="this.showInherited = false"
                 class="col-md-12 item-group-items level-0"
-                {class}="'item-group-type-' + .item.type">
-        <mjs-include src=".item.template"></mjs-include>
-        </div>
+                {class}="'item-group-type-' + .item.type"
+                {include}=".item.template"></div>
     </div>
 </div>
 

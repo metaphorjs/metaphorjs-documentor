@@ -59,12 +59,12 @@ module.exports = (function(){
         {
             name: "root",
             namespace: true,
-            children: ["*", "!param"]
+            children: ["*", "!param", "!property"]
         },
         {
             name: "namespace",
             namespace: true,
-            children: ["*", "!namespace", "!param"],
+            children: ["*", "!namespace", "!param", "!property"],
             transform: {
                 "method": "function"
             },

@@ -7,11 +7,12 @@ var Renderer = require("../Renderer.js"),
     jsdom = require("jsdom"),
     isArray = require("metaphorjs/src/func/isArray.js"),
     extend = require("metaphorjs/src/func/extend.js"),
-    getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
+    getFileList = require("metaphorjs-build/src/func/getFileList.js"),
     initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
     Promise = require("metaphorjs-promise/src/lib/Promise.js");
 
 /**
+ * 
  * @class renderer.Default
  * @extends Renderer
  * Default renderer, single or multipage.

@@ -1,6 +1,6 @@
-var nsAdd = require("metaphorjs-namespace/src/func/nsAdd.js");
+var MetaphorJs = require("metaphorjs/src/MetaphorJs.js");
 
-nsAdd("filter.highlightJson", function(input, scope, prop) {
+MetaphorJs.filter.highlightJson = function(input, scope, prop) {
     
     var hl = Prism.highlight(input, Prism.languages.javascript),
         r = /\/\*fold-start ([^*]+)\*\//,
@@ -43,4 +43,4 @@ nsAdd("filter.highlightJson", function(input, scope, prop) {
     }
 
     return hl;
-});
+};

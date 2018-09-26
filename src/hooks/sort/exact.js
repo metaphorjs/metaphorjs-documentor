@@ -34,7 +34,9 @@ module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
 
         items.forEach(function(item){
 
-            var is = item.isThe(entry);
+            var is;
+            is = typeof item === "string" ? 
+                    item == entry : item.isThe(entry);
 
             if (!is && all) {
                 res.push(item);

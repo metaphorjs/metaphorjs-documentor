@@ -12,7 +12,7 @@ module.exports = File.$extend({
 
     contentType: null,
 
-    $class: "file.Content",
+    $class: "MetaphorJs.docs.file.Content",
 
     $init: function() {
 

@@ -4,8 +4,8 @@ var Component = require("metaphorjs/src/class/Component.js"),
     raf = require("metaphorjs-animate/src/func/raf.js");
 
 Component.$extend({
-    $class: "DocsContent",
-    template: ".content.template",
+    $class: "MetaphorJs.DocsContent",
+    template: "this.content.template",
 
     initComponent: function() {
         var self = this;

@@ -9,7 +9,7 @@ if (process.env['METAPHORJS_DEV'] || args.dev) {
 
     require("../../metaphorjs/dev/mockery.js");
 
-    var getFileList = require("metaphorjs/src/func/fs/getFileList.js");
+    var getFileList = require("metaphorjs-build/src/func/getFileList.js");
     var Runner = require("../src/Runner.js");
 
     getFileList(process.env['METAPHORJS_PATH'] + 

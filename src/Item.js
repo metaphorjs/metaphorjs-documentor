@@ -16,7 +16,7 @@ module.exports = (function(){
      */
     var Item = Base.$extend({
 
-        $class: "Item",
+        $class: "MetaphorJs.docs.Item",
 
         doc: null,
         file: null,
@@ -918,10 +918,10 @@ module.exports = (function(){
                             exprt.booleanFlags.push(flag.name);
                         }
                         else {
-                            if (!exprt.flags[k]) {
+                            if (!exprt.flags.hasOwnProperty(k)) {
                                 exprt.flags[k] = [];
                             }
-                            if (!exprt.plainFlags[k]) {
+                            if (!exprt.plainFlags.hasOwnProperty(k)) {
                                 exprt.plainFlags[k] = [];
                             }
                             exprt.flags[k].push(flag.exportData(noHelpers));
@@ -1027,7 +1027,7 @@ module.exports = (function(){
         /**
          * @method
          */
-        destroy: function() {
+        onDestroy: function() {
 
             var k, i, l, items, flags, self = this;
 

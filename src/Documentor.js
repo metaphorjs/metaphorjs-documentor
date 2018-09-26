@@ -1,8 +1,9 @@
 
 var Base = require("./Base.js"),
+    MetaphorJs = require("metaphorjs/src/MetaphorJs.js"),
     isFile = require("metaphorjs/src/func/fs/isFile.js"),
     extend = require("metaphorjs/src/func/extend.js"),
-    getFileList = require("metaphorjs/src/func/fs/getFileList.js"),
+    getFileList = require("metaphorjs-build/src/func/getFileList.js"),
     undf = require("metaphorjs/src/var/undf.js"),
     path = require("path"),
     SourceFile = require("./file/Source.js"),
@@ -11,6 +12,7 @@ var Base = require("./Base.js"),
     Item = require("./Item.js"),
     Content = require("./Content.js"),
     Cache = require("metaphorjs/src/lib/Cache.js"),
+    
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
     ns = require("metaphorjs-namespace/src/var/ns.js"),
@@ -28,9 +30,8 @@ require("./file/Content.js");
  * @mixes mixin.Observable
  */
 module.exports = Base.$extend({
-
-    $class: "Documentor",
-    $mixins: ["mixin.Observable"],
+    $class: "MetaphorJs.docs.Documentor",
+    $mixins: [MetaphorJs.mixin.Observable],
 
     files: null,
     root: null,
@@ -279,7 +280,6 @@ module.exports = Base.$extend({
             }
 
             self.files[filePath] = file;
-
             file.process();
         }
         else {
@@ -460,7 +460,6 @@ module.exports = Base.$extend({
                 file
             );
         });
-
     },
 
     /**
@@ -532,7 +531,7 @@ module.exports = Base.$extend({
     /**
      * @method
      */
-    destroy: function() {
+    onDestroy: function() {
         this.clear();
     },
 

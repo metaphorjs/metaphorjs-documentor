@@ -4,7 +4,7 @@ var File = require("metaphorjs-documentor/src/File.js"),
     createGetter = require("metaphorjs-watchable/src/func/createGetter.js");
 
 module.exports = File.$extend({
-    $class: "file.Template",
+    $class: "MetaphorJs.docs.file.Template",
 
     process: function() {
         var self    = this,
@@ -15,7 +15,6 @@ module.exports = File.$extend({
 
         if (!props) {
             return;
-
         }
 
         var item = new Item({

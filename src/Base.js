@@ -1,11 +1,13 @@
-var cs = require("metaphorjs-class/src/var/cs.js"),
+var cls = require("metaphorjs-class/src/cls.js"),
     isPlainObject = require("metaphorjs/src/func/isPlainObject.js"),
     extend = require("metaphorjs/src/func/extend.js");
 
 /**
  * @class Base
  */
-module.exports = cs.define({
+module.exports = cls({
+
+    $class: "MetaphorJs.docs.Base",
 
     /**
      * @ignore

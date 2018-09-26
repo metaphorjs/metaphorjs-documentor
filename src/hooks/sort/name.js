@@ -12,13 +12,16 @@ var globalCache = require("../../var/globalCache.js");
  * @param {Documentor} doc
  * @returns {array}
  */
-module.exports = globalCache.add("sort.name", function(item, cfg, doc){
+module.exports = globalCache.add("sort.name", function(items, cfg, doc){
 
     items.sort(function(a, b) {
-        if (a.getSortableName() == b.getSortableName()) {
+        var aName = typeof a === "string" ? a : a.getSortableName(),
+            bName = typeof b === "string" ? b : b.getSortableName();
+
+        if (aName == bName) {
             return 0;
         }
-        return a.getSortableName() < b.getSortableName() ? -1 : 1;
+        return aName < bName ? -1 : 1;
     });
 
     return items;

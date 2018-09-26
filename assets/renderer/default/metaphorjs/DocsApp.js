@@ -10,7 +10,7 @@ var App = require("metaphorjs/src/class/App.js"),
     nextUid = require("metaphorjs/src/func/nextUid.js");
 
 App.$extend({
-    $class: "DocsApp",
+    $class: "MetaphorJs.DocsApp",
     loading: 0,
 
     $init: function() {
