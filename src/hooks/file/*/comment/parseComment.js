@@ -68,7 +68,7 @@ module.exports = (function(){
                 originalFlag = null;
 
                 if (part.charAt(part.length - 1) == '{') {
-                    sub     = getCurly(text, inx + lines[i].length - 1);
+                    sub     = getCurly(text, inx + lines[i].length - 1) || "";
                     part    = part.substring(0, part.length - 2).trim();
                     i      += sub.trim().split("\n").length + 1;
                 }

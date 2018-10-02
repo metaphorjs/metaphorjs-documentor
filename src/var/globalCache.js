@@ -1,4 +1,4 @@
+var MetaphorJs = require("metaphorjs-shared/src/MetaphorJs.js");
+require("metaphorjs-shared/src/lib/Cache.js");
 
-var lib_Cache = require("metaphorjs-shared/src/lib/Cache.js");
-
-module.exports = lib_Cache.global();
+module.exports = MetaphorJs.lib.Cache.global();

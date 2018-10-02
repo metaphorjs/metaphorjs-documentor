@@ -478,12 +478,11 @@ module.exports = (function(){
         inheritFrom: function(parent, inheritanceFlag) {
 
             var self = this;
-
             var res = self.pcall("extend", self, parent, inheritanceFlag);
 
             if (res !== false) {
 
-                parent.eachItem(function(item){
+                parent.eachItem(function(item) {
                     if (!self.getItem(item.type, item.name)) {
                         var newItem = item.clone(self);
                         if (inheritanceFlag != "md-extend") {
@@ -764,7 +763,7 @@ module.exports = (function(){
 
             var exec = function(item) {
 
-                if (typeof fn == "function") {
+                if (typeof fn === "function") {
                     fn.apply(context, [item].concat(args));
                 }
                 else {
@@ -981,7 +980,7 @@ module.exports = (function(){
 
             items.forEach(function (child) {
 
-                if (child.file.hidden) {
+                if (child.level < 2 && child.file.hidden) {
                     return;
                 }
 

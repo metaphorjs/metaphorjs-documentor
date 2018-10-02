@@ -1,7 +1,8 @@
+require("metaphorjs-promise/src/lib/Promise.js");
 
 var Renderer = require("../Renderer.js"),
-    lib_Promise = require("metaphorjs-promise/src/lib/Promise.js"),
-    globalCache = require("../var/globalCache.js");
+    globalCache = require("../var/globalCache.js"),
+    MetaphorJs = require("metaphorjs-shared/src/MetaphorJs.js");
 
 /**
  * @class renderer.Json
@@ -15,7 +16,7 @@ module.exports = globalCache.add("renderer.json", Renderer.$extend({
             JSON.stringify(this.doc.exportData(), null, 2)
         );
 
-        return lib_Promise.resolve();
+        return MetaphorJs.lib.Promise.resolve();
     }
 
 }));

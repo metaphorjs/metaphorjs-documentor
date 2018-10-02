@@ -9,7 +9,9 @@ var Renderer = require("../Renderer.js"),
     extend = require("metaphorjs-shared/src/func/extend.js"),
     getFileList = require("metaphorjs-build/src/func/getFileList.js"),
     initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
-    lib_Promise = require("metaphorjs-promise/src/lib/Promise.js");
+    MetaphorJs = require("metaphorjs-shared/src/MetaphorJs.js");
+    
+require("metaphorjs-promise/src/lib/Promise.js");
 
 /**
  * 
@@ -224,7 +226,6 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
     getResource: function(path) {
         var self    = this,
             tplDir  = this.templateDir,
-            p       = new lib_Promise,
             code;
 
         if (self.assetPaths[path]) {
@@ -234,32 +235,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             code = fs.readFileSync(tplDir +"/"+ path);
         }
 
-        /*if (path.indexOf(".min.") === -1) {
-            console.log("not minified")
-            if (path.indexOf(".js") !== -1) {
-                console.log("is js", "minifying", self.assetPaths[path])
-                
-                var args = [];
-                args.push('--js=' + self.assetPaths[path]);
-                //args.push('--language_in=ECMASCRIPT5_STRICT');
-                var ccjs    = require.resolve("closurecompiler")
-                                    .replace("ClosureCompiler.js", "bin/ccjs"),
-                    chunks  = [];
-
-                proc    = child.spawn(ccjs, args);
-                proc.stderr.pipe(process.stderr);
-                proc.stdout.on("data", function(chunk){
-                    chunks.push(chunk);
-                });
-                proc.on("close", function(){
-                    p.resolve(Buffer.concat(chunks));
-                });
-
-                return p;
-            }
-        }*/
-        
-        return lib_Promise.resolve(code);
+        return MetaphorJs.lib.Promise.resolve(code);
     },
 
     writeResources: function() {
@@ -285,19 +261,14 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             ));
         }
 
-        //if (self.data.multipage) {
-        //    var jsonData = JSON.stringify(self.data.sourceTree, null, 2);
-        //    fs.writeFileSync(outDir + "/assets/data.json", jsonData);
-       // }
-
-        return lib_Promise.all(promises);
+        return MetaphorJs.lib.Promise.all(promises);
     },
 
     writeOut: function(out) {
         var self    = this,
             outDir  = this.out;
         fs.writeFileSync(outDir + "/index.html", out);
-        return lib_Promise.resolve();
+        return MetaphorJs.lib.Promise.resolve();
     },
 
     copyResources: function(from, to) {
@@ -305,7 +276,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             fse.rmrfSync(to);
         }
 
-        var p = new lib_Promise,
+        var p = new MetaphorJs.lib.Promise,
             self = this;
 
         fse.copyRecursive(from, to, function(err){

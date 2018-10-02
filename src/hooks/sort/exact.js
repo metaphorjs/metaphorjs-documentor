@@ -18,7 +18,9 @@ var globalCache = require("../../var/globalCache.js");
 module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
 
     var res = [],
-        all = false;
+        append = [],
+        all = false,
+        origItems = items.slice();
 
     cfg.order.forEach(function(entry){
         
@@ -32,28 +34,39 @@ module.exports = globalCache.add("sort.exact", function(items, cfg, doc) {
             entry = entry.substr(1);
         }
 
-        items.forEach(function(item){
+        var leftovers = [],
+            item,
+            is;
+        
+        while (item = origItems.shift()) {
 
-            var is;
             is = typeof item === "string" ? 
                     item == entry : item.isThe(entry);
 
             if (!is && all) {
                 res.push(item);
+                continue;
             }
 
             if (is && not) {
-                return;
+                continue;
             }
 
             if (is) {
-                res.push(item);
                 if (all) {
-                    all = false;
+                    append.push(item);
                 }
+                else {
+                    res.push(item);
+                }
+                continue;
             }
-        });
+
+            leftovers.push(item);
+        }
+
+        origItems = leftovers.slice();
     });
 
-    return res;
+    return res.concat(append);
 });

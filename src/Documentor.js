@@ -15,9 +15,10 @@ var fs = require("fs"),
     generateNames = require("./func/generateNames.js"),
     ns = require("metaphorjs-namespace/src/var/ns.js"),
     nextUid = require("metaphorjs-shared/src/func/nextUid.js"),
-    lib_Cache = require("metaphorjs-shared/src/lib/Cache.js"),
-    mixin_Observable = require("metaphorjs-observable/src/mixin/Observable.js");
+    MetaphorJs = require("metaphorjs-shared/src/MetaphorJs.js");
 
+require("metaphorjs-observable/src/mixin/Observable.js");
+require("metaphorjs-shared/src/lib/Cache.js");
 require("./file/Source.js");
 require("./file/Content.js");
 
@@ -29,7 +30,7 @@ require("./file/Content.js");
  */
 module.exports = Base.$extend({
     $class: "MetaphorJs.docs.Documentor",
-    $mixins: [mixin_Observable],
+    $mixins: [MetaphorJs.mixin.Observable],
 
     files: null,
     root: null,
@@ -66,7 +67,7 @@ module.exports = Base.$extend({
 
         extend(self, cfg, true, false);
 
-        self.hooks      = new lib_Cache(true);
+        self.hooks      = new MetaphorJs.lib.Cache(true);
 
         self.hookDirs.push(path.normalize(self.runner.getMjsDocRoot() + "/src/hooks"));
 
@@ -489,10 +490,11 @@ module.exports = Base.$extend({
         };
 
         self.root.eachChild(function(item){
-            if (item.file.hidden){
+            if (item.file.hidden) {
                 return;
             }
-            var typeProps   = item.getTypeProps();
+
+            var typeProps = item.getTypeProps();
             if (typeProps && typeProps.virtual) {
                 return;
             }

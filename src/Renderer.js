@@ -1,10 +1,11 @@
+require("metaphorjs-promise/src/lib/Promise.js");
 
 var Base = require("./Base.js"),
     extend = require("metaphorjs-shared/src/func/extend.js"),
     fs = require("fs"),
     prismClass = require("./func/prismClass.js"),
-    lib_Promise = require("metaphorjs-promise/src/lib/Promise.js"),
-    toJsonTemplate = require("./func/toJsonTemplate.js");
+    toJsonTemplate = require("./func/toJsonTemplate.js"),
+    MetaphorJs = require("metaphorjs-shared/src/MetaphorJs.js");
 
 /**
  * @class Renderer
@@ -196,7 +197,7 @@ module.exports = Base.$extend({
             process.stdout.write(out);
         }
 
-        return lib_Promise.resolve();
+        return MetaphorJs.lib.Promise.resolve();
     },
 
     /**
@@ -205,7 +206,7 @@ module.exports = Base.$extend({
      * @returns {Promise}
      */
     render: function() {
-        return lib_Promise.resolve();
+        return MetaphorJs.lib.Promise.resolve();
     }
 
 });

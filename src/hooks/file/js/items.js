@@ -14,7 +14,7 @@ module.exports = (function(){
             transform: {
                 "function": "method",
                 "constructor": "method",
-                "var":      "property"
+                "var": "property"
             },
             displayName: displayName,
             groupName: groupName
@@ -37,14 +37,14 @@ module.exports = (function(){
 
         var children = ["!param"];
 
-        if (name == "var" || name == "property") {
+        if (name === "var" || name === "property") {
             children.push("event");
         }
 
         return {
             name: name,
-            stackable: name != "param",
-            onePerComment: true,
+            stackable: name !== "param",
+            onePerComment: name !== "param",
             children: children,
             transform: {
                 "var": "property"
@@ -82,6 +82,7 @@ module.exports = (function(){
             groupName: "Modules"
         },
         classes("class", "Class", "Classes"),
+        classes("object", "Object", "Objects"),
         classes("interface", "Interface", "Interfaces"),
         classes("mixin", "Mixin", "Mixins"),
         classes("plugin", "Plugin", "Plugins"),

@@ -431,6 +431,4 @@ module.exports = File.$extend({
         getContextStack: function() {
             return this.contextStack.slice();
         }
-
-
     });
