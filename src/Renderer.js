@@ -1,9 +1,9 @@
 
 var Base = require("./Base.js"),
-    extend = require("metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs-shared/src/func/extend.js"),
     fs = require("fs"),
     prismClass = require("./func/prismClass.js"),
-    Promise = require("metaphorjs-promise/src/lib/Promise.js"),
+    lib_Promise = require("metaphorjs-promise/src/lib/Promise.js"),
     toJsonTemplate = require("./func/toJsonTemplate.js");
 
 /**
@@ -196,7 +196,7 @@ module.exports = Base.$extend({
             process.stdout.write(out);
         }
 
-        return Promise.resolve();
+        return lib_Promise.resolve();
     },
 
     /**
@@ -205,7 +205,7 @@ module.exports = Base.$extend({
      * @returns {Promise}
      */
     render: function() {
-        return Promise.resolve();
+        return lib_Promise.resolve();
     }
 
 });

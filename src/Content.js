@@ -1,7 +1,7 @@
 
 var Base = require("./Base.js"),
     File = require("./File.js"),
-    extend = require("metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs-shared/src/func/extend.js");
 
 /**
  * @class Content

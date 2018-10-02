@@ -1,6 +1,6 @@
 
 var globalCache = require("../../../../var/globalCache.js"),
-    extend = require("metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs-shared/src/func/extend.js");
 
 /**
  * @group hook

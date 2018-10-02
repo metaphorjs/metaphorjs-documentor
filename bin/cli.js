@@ -7,7 +7,7 @@ var args = require("minimist")(process.argv.slice(2), {
 
 if (process.env['METAPHORJS_DEV'] || args.dev) {
 
-    require("../../metaphorjs/dev/mockery.js");
+    require("../../metaphorjs/dev/env.js");
 
     var getFileList = require("metaphorjs-build/src/func/getFileList.js");
     var Runner = require("../src/Runner.js");

@@ -5,11 +5,11 @@ var Renderer = require("../Renderer.js"),
     fs = require("fs"),
     fse = require("fs.extra"),
     jsdom = require("jsdom"),
-    isArray = require("metaphorjs/src/func/isArray.js"),
-    extend = require("metaphorjs/src/func/extend.js"),
+    isArray = require("metaphorjs-shared/src/func/isArray.js"),
+    extend = require("metaphorjs-shared/src/func/extend.js"),
     getFileList = require("metaphorjs-build/src/func/getFileList.js"),
     initMetaphorTemplates = require("../func/initMetaphorTemplates.js"),
-    Promise = require("metaphorjs-promise/src/lib/Promise.js");
+    lib_Promise = require("metaphorjs-promise/src/lib/Promise.js");
 
 /**
  * 
@@ -40,7 +40,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         self.$super.apply(self, arguments);
 
         if (!self.out) {
-            throw "Cannot render to stdout";
+            throw new Error("Cannot render to stdout");
         }
 
         if (!self.data) {
@@ -224,7 +224,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
     getResource: function(path) {
         var self    = this,
             tplDir  = this.templateDir,
-            p       = new Promise,
+            p       = new lib_Promise,
             code;
 
         if (self.assetPaths[path]) {
@@ -259,7 +259,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             }
         }*/
         
-        return Promise.resolve(code);
+        return lib_Promise.resolve(code);
     },
 
     writeResources: function() {
@@ -290,14 +290,14 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
         //    fs.writeFileSync(outDir + "/assets/data.json", jsonData);
        // }
 
-        return Promise.all(promises);
+        return lib_Promise.all(promises);
     },
 
     writeOut: function(out) {
         var self    = this,
             outDir  = this.out;
         fs.writeFileSync(outDir + "/index.html", out);
-        return Promise.resolve();
+        return lib_Promise.resolve();
     },
 
     copyResources: function(from, to) {
@@ -305,7 +305,7 @@ module.exports = globalCache.add("renderer.default", Renderer.$extend({
             fse.rmrfSync(to);
         }
 
-        var p = new Promise,
+        var p = new lib_Promise,
             self = this;
 
         fse.copyRecursive(from, to, function(err){

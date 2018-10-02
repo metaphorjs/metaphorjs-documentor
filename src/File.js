@@ -1,8 +1,8 @@
 var Base = require("./Base.js"),
     fs = require("fs"),
     path = require("path"),
-    isRegExp = require("metaphorjs/src/func/isRegExp.js"),
-    extend = require("metaphorjs/src/func/extend.js");
+    isRegExp = require("metaphorjs-shared/src/func/isRegExp.js"),
+    extend = require("metaphorjs-shared/src/func/extend.js");
 
 module.exports = function(){
 

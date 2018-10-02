@@ -1,25 +1,23 @@
 
-var Base = require("./Base.js"),
-    MetaphorJs = require("metaphorjs/src/MetaphorJs.js"),
-    isFile = require("metaphorjs/src/func/fs/isFile.js"),
-    extend = require("metaphorjs/src/func/extend.js"),
+var fs = require("fs"),
+    Base = require("./Base.js"),
+    
+    extend = require("metaphorjs-shared/src/func/extend.js"),
     getFileList = require("metaphorjs-build/src/func/getFileList.js"),
-    undf = require("metaphorjs/src/var/undf.js"),
+    undf = require("metaphorjs-shared/src/var/undf.js"),
     path = require("path"),
     SourceFile = require("./file/Source.js"),
     RootFile = require("./file/Root.js"),
     File = require("./File.js"),
     Item = require("./Item.js"),
     Content = require("./Content.js"),
-    Cache = require("metaphorjs/src/lib/Cache.js"),
-    
     globalCache = require("./var/globalCache.js"),
     generateNames = require("./func/generateNames.js"),
     ns = require("metaphorjs-namespace/src/var/ns.js"),
-    nextUid = require("metaphorjs/src/func/nextUid.js");
+    nextUid = require("metaphorjs-shared/src/func/nextUid.js"),
+    lib_Cache = require("metaphorjs-shared/src/lib/Cache.js"),
+    mixin_Observable = require("metaphorjs-observable/src/mixin/Observable.js");
 
-
-require("metaphorjs-observable/src/mixin/Observable.js");
 require("./file/Source.js");
 require("./file/Content.js");
 
@@ -27,11 +25,11 @@ require("./file/Content.js");
 /**
  * @class Documentor
  * @extends Base
- * @mixes mixin.Observable
+ * @mixes MetaphorJs.mixin.Observable
  */
 module.exports = Base.$extend({
     $class: "MetaphorJs.docs.Documentor",
-    $mixins: [MetaphorJs.mixin.Observable],
+    $mixins: [mixin_Observable],
 
     files: null,
     root: null,
@@ -68,7 +66,7 @@ module.exports = Base.$extend({
 
         extend(self, cfg, true, false);
 
-        self.hooks      = new Cache(true);
+        self.hooks      = new lib_Cache(true);
 
         self.hookDirs.push(path.normalize(self.runner.getMjsDocRoot() + "/src/hooks"));
 
@@ -224,17 +222,17 @@ module.exports = Base.$extend({
         options = options || {};
 
         if (!ext) {
-            throw "Extension required";
+            throw new Error("Extension required");
         }
         if (!directory) {
-            throw "Directory or file required";
+            throw new Error("Directory or file required");
         }
 
         options.hidden = options.hidden === undf ? false : options.hidden;
 
         var self = this;
 
-        if (isFile(directory)) {
+        if (fs.existsSync(directory)) {
             self.addFile(directory, extend({}, options, {
                 startDir: path.dirname(directory)
             }));

@@ -1,6 +1,6 @@
 var cls = require("metaphorjs-class/src/cls.js"),
-    isPlainObject = require("metaphorjs/src/func/isPlainObject.js"),
-    extend = require("metaphorjs/src/func/extend.js");
+    isPlainObject = require("metaphorjs-shared/src/func/isPlainObject.js"),
+    extend = require("metaphorjs-shared/src/func/extend.js");
 
 /**
  * @class Base

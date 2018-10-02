@@ -1,6 +1,6 @@
 
-var isArray = require("metaphorjs/src/func/isArray.js"),
-    isPlainObject = require("metaphorjs/src/func/isPlainObject.js");
+var isArray = require("metaphorjs-shared/src/func/isArray.js"),
+    isPlainObject = require("metaphorjs-shared/src/func/isPlainObject.js");
 
 module.exports = function(items, cfg, doc, options) {
 

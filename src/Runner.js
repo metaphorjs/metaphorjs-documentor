@@ -6,7 +6,7 @@ var Base = require("./Base.js"),
     Documentor = require("./Documentor.js"),
     Config = require("metaphorjs-build/src/Config.js"),
     Bundle = require("metaphorjs-build/src/Bundle.js")
-    extend = require("metaphorjs/src/func/extend.js");
+    extend = require("metaphorjs-shared/src/func/extend.js");
 
 /**
  * @class Runner
@@ -70,7 +70,7 @@ var Runner = Base.$extend({
         if (cfg.out) {
             cfg.out = self.preparePath(cfg.out, jsonFile, true);
             if (!cfg.out) {
-                throw "Cannot write to " + cfg.out;
+                throw new Error("Cannot write to " + cfg.out);
             }
         }
 
@@ -91,7 +91,7 @@ var Runner = Base.$extend({
         var rendererCls = doc.getRenderer(cfg.renderer.type || "default");
 
         if (!rendererCls) {
-            throw "Cannot find renderer " + rendererCls;
+            throw new Error("Cannot find renderer " + rendererCls);
         }
 
         doc.prepare();
@@ -176,7 +176,7 @@ var Runner = Base.$extend({
                 doc.loadHooks(dir);
             }
             else {
-                throw "Directory " + dir + " not found";
+                throw new Error("Directory " + dir + " not found");
             }
         });
     },

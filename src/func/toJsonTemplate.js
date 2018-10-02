@@ -1,7 +1,6 @@
 
-var toBool = require("metaphorjs/src/func/toBool.js"),
-    nextUid = require("metaphorjs/src/func/nextUid.js"),
-    trim = require("metaphorjs/src/func/trim.js"),
+var toBool = require("metaphorjs-shared/src/func/toBool.js"),
+    nextUid = require("metaphorjs-shared/src/func/nextUid.js"),
     getCurly = require("../hooks/file/*/comment/getCurly.js");
 
 module.exports = (function() {
@@ -169,7 +168,7 @@ module.exports = (function() {
                         inxs = getCurly(json, inx, false, true, brakets),
                         part = json.substring(inxs[0], inxs[1]);
 
-                    if (trim(part).length > 50) {
+                    if (part.trim().length > 50) {
                         fold = {
                             inxs: inxs,
                             part: part

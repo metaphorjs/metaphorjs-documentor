@@ -1,11 +1,11 @@
 
 var Base = require("./Base.js"),
     Flag = require("./Flag.js"),
-    isArray = require("metaphorjs/src/func/isArray.js"),
-    toArray = require("metaphorjs/src/func/array/toArray.js"),
-    undf = require("metaphorjs/src/var/undf.js"),
-    copy = require("metaphorjs/src/func/copy.js"),
-    emptyFn = require("metaphorjs/src/func/emptyFn.js");
+    isArray = require("metaphorjs-shared/src/func/isArray.js"),
+    toArray = require("metaphorjs-shared/src/func/toArray.js"),
+    undf = require("metaphorjs-shared/src/var/undf.js"),
+    copy = require("metaphorjs-shared/src/func/copy.js"),
+    emptyFn = require("metaphorjs-shared/src/func/emptyFn.js");
 
 
 module.exports = (function(){

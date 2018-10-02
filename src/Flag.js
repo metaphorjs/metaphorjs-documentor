@@ -1,8 +1,8 @@
 
 var Base = require("./Base.js"),
-    extend = require("metaphorjs/src/func/extend.js"),
+    extend = require("metaphorjs-shared/src/func/extend.js"),
     fs = require("fs"),
-    copy = require("metaphorjs/src/func/copy.js"),
+    copy = require("metaphorjs-shared/src/func/copy.js"),
     path = require("path");
 
 module.exports = (function(){
