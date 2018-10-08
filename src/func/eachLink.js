@@ -1,5 +1,5 @@
 
-var rUrl = require("metaphorjs/src/var/rUrl.js");
+var rUrl = require("metaphorjs-shared/src/var/regexp/url.js");
 
 module.exports = function(str, cmtItem, cb, context) {
 
