@@ -498,6 +498,9 @@ module.exports = Base.$extend({
             if (typeProps && typeProps.virtual) {
                 return;
             }
+            if (item.hasFlag("md-virtual")) {
+                return;
+            }
 
             items.push(item);
         });

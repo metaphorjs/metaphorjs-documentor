@@ -81,6 +81,18 @@ module.exports = (function(){
             displayName: "Module",
             groupName: "Modules"
         },
+        {
+            name: "virtualobject",
+            virtual: true,
+            stackable: true,
+            onePerComment: false,
+            children: ["*", "!namespace", "!module", "!param"],
+            transform: {
+                "var": "property"
+            },
+            displayName: "",
+            groupName: ""
+        },
         classes("class", "Class", "Classes"),
         classes("object", "Object", "Objects"),
         classes("interface", "Interface", "Interfaces"),

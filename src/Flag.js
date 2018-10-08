@@ -30,44 +30,44 @@ module.exports = (function(){
          * @param {string|File} file
          */
         $init: function(name, content, type, props, file) {
-    
+
             var ct,
                 self = this;
-    
+
             self.file = file;
             self.name = name;
-    
-            if (content && typeof content == "object") {
+
+            if (content && typeof content === "object") {
                 type = content.type;
                 ct = content.contentType;
                 content = content.content;
             }
-    
+
             type = type || (typeof content);
-    
+
             self.props = props || {};
-    
-            if (type == "file") {
+
+            if (type === "file") {
                 self.props["fromFile"] = content;
                 self.props["fileType"] = path.extname(content).substr(1);
                 content = fs.readFileSync(content).toString();
                 type = ct || "string";
             }
-    
+
             self.type = type;
             self.content = content;
         },
-    
+
         /**
          * @method
          * @returns {Flag}
          */
         clone: function() {
             return new Flag(
-                this.name, 
-                this.content, 
+                this.name,
+                this.content,
                 this.type,
-                copy(this.props), 
+                copy(this.props),
                 this.file
             );
         },

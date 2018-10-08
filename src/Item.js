@@ -993,6 +993,9 @@ module.exports = (function(){
                     if (typeProps && typeProps.virtual) {
                         return;
                     }
+                    if (child.hasFlag("md-virtual")) {
+                        return;
+                    }
 
                     chGroups[type] = {
                         isApiGroup: true,
